@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(npm install *)",
+      "Bash(node -e \"const a = require\\('@prisma/adapter-better-sqlite3'\\); console.log\\(Object.keys\\(a\\)\\)\")",
+      "Bash(Get-Content \"C:\\\\Users\\\\USER~1.DES\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-User-DESKTOP-R26AVG6-Documents-buildpro\\\\baf7a01b-c5c9-4c78-b2e3-4dee0e71c4f0\\\\tasks\\\\bg8awvzqr.output\")",
+      "Bash(npm run *)",
+      "Bash(curl *)",
+      "Bash(node -e \"require\\('recharts'\\); console.log\\('ok'\\)\")",
+      "Bash(npx shadcn@latest add table dialog label select textarea --overwrite -y)",
+      "Bash(npx shadcn@latest add tabs scroll-area --overwrite -y)",
+      "Bash(npx shadcn@latest add switch --overwrite -y)",
+      "Bash(npx next *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\User.DESKTOP-R26AVG6\\\\Documents\\\\buildpro\\\\src\\\\app\\\\\\(app\\)\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\User.DESKTOP-R26AVG6\\\\Documents\\\\buildpro\\\\src\\\\app\\\\\\(app\\)\" -Recurse -Directory)",
+      "Bash(Select-Object FullName)",
+      "Bash(Sort-Object FullName)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\User.DESKTOP-R26AVG6\\\\Documents\\\\buildpro\\\\src\\\\app\\\\\\(app\\)\" -Depth 1 -Force | Where-Object { $_.PSIsContainer } | ForEach-Object { $_.Name })",
+      "Bash(Get-ChildItem *)"
+    ]
+  }
+}

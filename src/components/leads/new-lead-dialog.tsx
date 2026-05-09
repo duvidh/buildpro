@@ -1,0 +1,234 @@
+"use client";
+
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Plus, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { createLead } from "@/actions/leads";
+import { createLeadSchema, type CreateLeadInput } from "@/lib/schemas/lead-schema";
+import { LEAD_SOURCE_LABELS, LEAD_URGENCY_CONFIG } from "./lead-status-badge";
+
+export function NewLeadDialog() {
+  const [open, setOpen] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<CreateLeadInput>({
+    resolver: zodResolver(createLeadSchema),
+    defaultValues: {
+      name: "",
+      phone: "",
+      source: "OTHER" as const,
+      urgency: "MEDIUM" as const,
+    },
+  });
+
+  async function onSubmit(data: CreateLeadInput) {
+    setServerError(null);
+    const res = await createLead(data);
+    if (res.success) {
+      reset();
+      setOpen(false);
+    } else {
+      setServerError(res.error);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm">
+          <Plus className="h-4 w-4 me-1.5" />
+          ליד חדש
+        </Button>
+      </DialogTrigger>
+
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>הוספת ליד חדש</DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
+          {/* Row: name + phone */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="name">
+                שם מלא <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="name"
+                placeholder="ישראל ישראלי"
+                {...register("name")}
+              />
+              {errors.name && (
+                <p className="text-xs text-destructive">{errors.name.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="phone">
+                טלפון ראשי <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="phone"
+                placeholder="050-1234567"
+                type="tel"
+                dir="ltr"
+                {...register("phone")}
+              />
+              {errors.phone && (
+                <p className="text-xs text-destructive">{errors.phone.message}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Row: phone2 + email */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="phone2">טלפון נוסף</Label>
+              <Input
+                id="phone2"
+                placeholder="03-1234567"
+                type="tel"
+                dir="ltr"
+                {...register("phone2")}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="email">אימייל</Label>
+              <Input
+                id="email"
+                placeholder="israel@example.com"
+                type="email"
+                dir="ltr"
+                {...register("email")}
+              />
+              {errors.email && (
+                <p className="text-xs text-destructive">{errors.email.message}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Property address */}
+          <div className="space-y-1.5">
+            <Label htmlFor="propertyAddress">כתובת הנכס</Label>
+            <Input
+              id="propertyAddress"
+              placeholder="רחוב הרצל 1, תל אביב"
+              {...register("propertyAddress")}
+            />
+          </div>
+
+          {/* Row: source + urgency */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>מקור ליד</Label>
+              <Select
+                defaultValue="OTHER"
+                onValueChange={(v) => setValue("source", v as CreateLeadInput["source"])}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(LEAD_SOURCE_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>דחיפות</Label>
+              <Select
+                defaultValue="MEDIUM"
+                onValueChange={(v) => setValue("urgency", v as CreateLeadInput["urgency"])}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(LEAD_URGENCY_CONFIG).map(([value, cfg]) => (
+                    <SelectItem key={value} value={value}>
+                      {cfg.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Budget */}
+          <div className="space-y-1.5">
+            <Label htmlFor="budget">תקציב משוער (₪)</Label>
+            <Input
+              id="budget"
+              placeholder="500000"
+              type="number"
+              dir="ltr"
+              {...register("budget")}
+            />
+            {errors.budget && (
+              <p className="text-xs text-destructive">{errors.budget.message}</p>
+            )}
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-1.5">
+            <Label htmlFor="notes">הערות</Label>
+            <Textarea
+              id="notes"
+              placeholder="פרטים נוספים על הליד..."
+              rows={3}
+              {...register("notes")}
+            />
+          </div>
+
+          {serverError && (
+            <p className="text-sm text-destructive">{serverError}</p>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
+              ביטול
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="h-4 w-4 me-1.5 animate-spin" />}
+              שמור ליד
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

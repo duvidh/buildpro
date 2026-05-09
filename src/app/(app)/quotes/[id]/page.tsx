@@ -1,0 +1,127 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { ArrowRight, FileText } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { getQuoteById } from "@/actions/quotes";
+import { getClients } from "@/actions/clients";
+import { getCatalogItems } from "@/actions/catalog";
+import { QuoteHeaderForm } from "@/components/quotes/quote-header-form";
+import { QuoteCalculator } from "@/components/quotes/quote-calculator";
+
+const STATUS_LABELS: Record<string, string> = {
+  DRAFT: "טיוטה",
+  SENT: "נשלחה",
+  ACCEPTED: "אושרה",
+  REJECTED: "נדחתה",
+  EXPIRED: "פגת תוקף",
+};
+
+const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+  DRAFT: "secondary",
+  SENT: "outline",
+  ACCEPTED: "default",
+  REJECTED: "destructive",
+  EXPIRED: "secondary",
+};
+
+function fmtDate(d: Date | string | null | undefined): string {
+  if (!d) return "";
+  return new Date(d).toISOString().split("T")[0];
+}
+
+export default async function QuoteDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+
+  const [quote, clients, catalogItems] = await Promise.all([
+    getQuoteById(id),
+    getClients(),
+    getCatalogItems(),
+  ]);
+
+  if (!quote) notFound();
+
+  const clientOptions = clients.map((c) => ({ id: c.id, name: c.name }));
+  const catalogOptions = catalogItems.map((c) => ({
+    id: c.id,
+    name: c.name,
+    unit: c.unit,
+    unitCost: c.unitCost,
+    category: c.category,
+  }));
+
+  return (
+    <div className="flex flex-col gap-6 p-6 max-w-6xl mx-auto">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Link href="/quotes" className="hover:text-foreground transition-colors">
+          הצעות מחיר
+        </Link>
+        <ArrowRight className="h-3.5 w-3.5" />
+        <span className="text-foreground font-medium">
+          {quote.quoteNumber ?? "הצעה חדשה"}
+        </span>
+      </nav>
+
+      {/* Page title + badge */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <FileText className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">
+              {quote.quoteNumber ?? "הצעת מחיר"}
+            </h1>
+            <p className="text-sm text-muted-foreground">{quote.client.name}</p>
+          </div>
+        </div>
+        <Badge variant={STATUS_VARIANT[quote.status] ?? "secondary"} className="text-sm px-3 py-1">
+          {STATUS_LABELS[quote.status] ?? quote.status}
+        </Badge>
+      </div>
+
+      <Separator />
+
+      {/* Header form */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">פרטי הצעה</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <QuoteHeaderForm
+            quoteId={quote.id}
+            clients={clientOptions}
+            initialValues={{
+              clientId: quote.client.id,
+              date: fmtDate(quote.date),
+              validUntil: fmtDate(quote.validUntil),
+              status: quote.status,
+              notes: quote.notes,
+            }}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Calculator */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">פריטי הצעה</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <QuoteCalculator
+            quoteId={quote.id}
+            initialItems={quote.items}
+            catalogItems={catalogOptions}
+            taxPercent={quote.taxPercent}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

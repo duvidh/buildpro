@@ -1,0 +1,141 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { db } from "@/lib/db";
+import { ExpenseCategory } from "@/generated/prisma/client";
+
+// ─── Fetch ────────────────────────────────────────────────────────────────────
+
+export async function getEmployees() {
+  return db.employee.findMany({
+    where: { active: true },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, hourlyRate: true },
+  });
+}
+
+export async function getActiveProjects() {
+  return db.project.findMany({
+    where: { status: { in: ["ACTIVE", "PLANNING"] } },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
+}
+
+export async function getTimeEntriesByProject(projectId: string) {
+  return db.timeEntry.findMany({
+    where: { projectId },
+    orderBy: { date: "desc" },
+    include: { employee: { select: { id: true, name: true } } },
+  });
+}
+
+export async function getExpensesByProject(projectId: string) {
+  return db.expense.findMany({
+    where: { projectId },
+    orderBy: { date: "desc" },
+    include: { employee: { select: { id: true, name: true } } },
+  });
+}
+
+export async function getDailyLogsByProject(projectId: string) {
+  return db.dailyLog.findMany({
+    where: { projectId },
+    orderBy: { date: "desc" },
+    include: { supervisor: { select: { id: true, name: true } } },
+  });
+}
+
+export async function getAllDailyLogs() {
+  return db.dailyLog.findMany({
+    orderBy: { date: "desc" },
+    take: 100,
+    include: {
+      project: { select: { id: true, name: true } },
+      supervisor: { select: { id: true, name: true } },
+    },
+  });
+}
+
+// ─── Create ───────────────────────────────────────────────────────────────────
+
+export async function createTimeEntry(data: {
+  projectId: string;
+  employeeId: string;
+  date: string;
+  hours: number;
+  hourlyRate: number;
+  description?: string;
+}) {
+  const { projectId, employeeId, date, hours, hourlyRate, description } = data;
+  await db.timeEntry.create({
+    data: {
+      projectId,
+      employeeId,
+      date: new Date(date),
+      hours,
+      hourlyRate,
+      totalCost: hours * hourlyRate,
+      description: description || null,
+    },
+  });
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/field");
+  return { success: true as const };
+}
+
+export async function createExpense(data: {
+  projectId: string;
+  date: string;
+  amount: number;
+  category: string;
+  description?: string;
+  receiptUrl?: string;
+}) {
+  const { projectId, date, amount, category, description, receiptUrl } = data;
+  await db.expense.create({
+    data: {
+      projectId,
+      date: new Date(date),
+      amount,
+      category: category as ExpenseCategory,
+      description: description || null,
+      receiptUrl: receiptUrl || null,
+    },
+  });
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/field");
+  return { success: true as const };
+}
+
+export async function createDailyLog(data: {
+  projectId: string;
+  date: string;
+  weatherConditions?: string;
+  visitors?: string;
+  safetyIncidents?: string;
+  notes?: string;
+}) {
+  const { projectId, date, weatherConditions, visitors, safetyIncidents, notes } = data;
+
+  const existing = await db.dailyLog.findUnique({
+    where: { projectId_date: { projectId, date: new Date(date) } },
+  });
+  if (existing) {
+    return { success: false as const, error: "יומן עבודה כבר קיים לתאריך זה." };
+  }
+
+  await db.dailyLog.create({
+    data: {
+      projectId,
+      date: new Date(date),
+      weatherConditions: weatherConditions || null,
+      visitors: visitors || null,
+      safetyIncidents: safetyIncidents || null,
+      notes: notes || null,
+    },
+  });
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/field");
+  return { success: true as const };
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,6 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   MoreHorizontal, PhoneCall, UserCheck, Loader2, Pencil, Trash2, Users,
+  ArrowUpDown, ArrowUp, ArrowDown, Search, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { NewLeadDialog } from "@/components/leads/new-lead-dialog";
@@ -66,12 +67,36 @@ type Lead = {
   createdAt: string;
 };
 
+type SortKey = "name" | "status" | "urgency" | "budget" | "createdAt";
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat("he-IL", {
     day: "2-digit", month: "2-digit", year: "numeric",
   }).format(new Date(iso));
+}
+
+const URGENCY_ORDER: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+const STATUS_ORDER: Record<string, number> = {
+  NEW: 0, CONTACTED: 1, MEETING_SCHEDULED: 2,
+  QUOTE_SENT: 3, NEGOTIATION: 4, CONVERTED: 5, LOST: 6,
+};
+
+function compareLeads(a: Lead, b: Lead, key: SortKey, dir: "asc" | "desc"): number {
+  let diff = 0;
+  if (key === "name") {
+    diff = a.name.localeCompare(b.name, "he");
+  } else if (key === "status") {
+    diff = (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
+  } else if (key === "urgency") {
+    diff = (URGENCY_ORDER[a.urgency] ?? 99) - (URGENCY_ORDER[b.urgency] ?? 99);
+  } else if (key === "budget") {
+    diff = (a.budget ?? -1) - (b.budget ?? -1);
+  } else if (key === "createdAt") {
+    diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  }
+  return dir === "asc" ? diff : -diff;
 }
 
 // ─── Status dropdown ──────────────────────────────────────────────────────────
@@ -341,6 +366,56 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
   const [deletingLeadId, setDeletingLeadId] = useState<string | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
 
+  // ── Sort state ──────────────────────────────────────────────────────────────
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  // ── Filter state ────────────────────────────────────────────────────────────
+  const [searchText, setSearchText] = useState("");
+  const [filterEmployeeId, setFilterEmployeeId] = useState<string>("");
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  function SortIcon({ field }: { field: SortKey }) {
+    if (sortKey !== field)
+      return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50 shrink-0" />;
+    return sortDir === "asc"
+      ? <ArrowUp className="h-3 w-3 text-foreground shrink-0" />
+      : <ArrowDown className="h-3 w-3 text-foreground shrink-0" />;
+  }
+
+  const processedLeads = useMemo(() => {
+    let result = leads;
+
+    if (searchText.trim()) {
+      const q = searchText.toLowerCase();
+      result = result.filter(
+        (l) =>
+          l.name.toLowerCase().includes(q) ||
+          l.phone.includes(q) ||
+          (l.email ?? "").toLowerCase().includes(q) ||
+          (l.propertyAddress ?? "").toLowerCase().includes(q)
+      );
+    }
+
+    if (filterEmployeeId) {
+      result = result.filter((l) => l.assignedEmployeeId === filterEmployeeId);
+    }
+
+    if (sortKey) {
+      result = [...result].sort((a, b) => compareLeads(a, b, sortKey, sortDir));
+    }
+
+    return result;
+  }, [leads, searchText, filterEmployeeId, sortKey, sortDir]);
+
   function handleConfirmDelete() {
     if (!deletingLeadId) return;
     startDeleteTransition(async () => {
@@ -368,89 +443,182 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
 
   return (
     <>
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/40 hover:bg-muted/40">
-            <TableHead className="w-[180px]">שם</TableHead>
-            <TableHead className="text-center">טלפון</TableHead>
-            <TableHead className="hidden md:table-cell">כתובת נכס</TableHead>
-            <TableHead className="hidden sm:table-cell">מקור</TableHead>
-            <TableHead>דחיפות</TableHead>
-            <TableHead>סטטוס</TableHead>
-            <TableHead className="hidden lg:table-cell">תקציב</TableHead>
-            <TableHead className="hidden md:table-cell">תאריך</TableHead>
-            <TableHead className="w-28">פעולות</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {leads.map((lead) => (
-            <TableRow
-              key={lead.id}
-              className="group cursor-pointer hover:bg-muted/50"
-              onClick={() => setEditingLead(lead)}
+      {/* ── Filter / Search bar ───────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        {/* Search */}
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
+          <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+          <Input
+            className="ps-8 h-9 text-sm"
+            placeholder="חיפוש לפי שם, טלפון..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+          {searchText && (
+            <button
+              className="absolute end-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              onClick={() => setSearchText("")}
             >
-              <TableCell className="font-medium">{lead.name}</TableCell>
-              <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                <a
-                  href={`tel:${lead.phone}`}
-                  className="inline-flex items-center gap-1.5 text-sm text-foreground hover:text-primary transition-colors"
-                  dir="ltr"
-                >
-                  <PhoneCall className="h-3.5 w-3.5 shrink-0 opacity-60" />
-                  {lead.phone}
-                </a>
-              </TableCell>
-              <TableCell className="hidden md:table-cell text-muted-foreground text-sm max-w-[160px] truncate">
-                {lead.propertyAddress || "—"}
-              </TableCell>
-              <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
-                {LEAD_SOURCE_LABELS[lead.source] ?? lead.source}
-              </TableCell>
-              <TableCell><LeadUrgencyBadge urgency={lead.urgency} /></TableCell>
-              <TableCell onClick={(e) => e.stopPropagation()}>
-                <StatusDropdown lead={lead} />
-              </TableCell>
-              <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                {lead.budget ? `₪${lead.budget.toLocaleString("he-IL")}` : "—"}
-              </TableCell>
-              <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                {formatDate(lead.createdAt)}
-              </TableCell>
-              <TableCell onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center gap-1.5 justify-end">
-                  <ConvertButton lead={lead} />
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost" size="icon"
-                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setEditingLead(lead)}>
-                        <Pencil className="h-4 w-4 me-2" />
-                        עריכה
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => setDeletingLeadId(lead.id)}
-                      >
-                        <Trash2 className="h-4 w-4 me-2" />
-                        מחיקה
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
 
-      {/* Edit — key forces re-mount with fresh form state for each lead */}
+        {/* Employee filter */}
+        {employees.length > 0 && (
+          <Select value={filterEmployeeId} onValueChange={setFilterEmployeeId}>
+            <SelectTrigger className="h-9 w-44 text-sm">
+              <SelectValue placeholder="סנן לפי נציג" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">כל הנציגים</SelectItem>
+              {employees.map((e) => (
+                <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        {/* Active filter indicator */}
+        {(searchText || filterEmployeeId) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 text-xs text-muted-foreground gap-1"
+            onClick={() => { setSearchText(""); setFilterEmployeeId(""); }}
+          >
+            <X className="h-3.5 w-3.5" />
+            נקה סינון
+            <span className="ms-1 font-medium text-foreground">
+              ({processedLeads.length}/{leads.length})
+            </span>
+          </Button>
+        )}
+      </div>
+
+      {processedLeads.length === 0 ? (
+        <div className="rounded-xl border border-border/50 py-14 text-center text-muted-foreground text-sm">
+          לא נמצאו לידים התואמים את הסינון
+        </div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/40 hover:bg-muted/40">
+              <TableHead
+                className="w-[180px] cursor-pointer select-none"
+                onClick={() => handleSort("name")}
+              >
+                <div className="flex items-center gap-1">
+                  שם <SortIcon field="name" />
+                </div>
+              </TableHead>
+              <TableHead className="text-center">טלפון</TableHead>
+              <TableHead className="hidden md:table-cell">כתובת נכס</TableHead>
+              <TableHead className="hidden sm:table-cell">מקור</TableHead>
+              <TableHead
+                className="cursor-pointer select-none"
+                onClick={() => handleSort("urgency")}
+              >
+                <div className="flex items-center gap-1">
+                  דחיפות <SortIcon field="urgency" />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none"
+                onClick={() => handleSort("status")}
+              >
+                <div className="flex items-center gap-1">
+                  סטטוס <SortIcon field="status" />
+                </div>
+              </TableHead>
+              <TableHead
+                className="hidden lg:table-cell cursor-pointer select-none"
+                onClick={() => handleSort("budget")}
+              >
+                <div className="flex items-center gap-1">
+                  תקציב <SortIcon field="budget" />
+                </div>
+              </TableHead>
+              <TableHead
+                className="hidden md:table-cell cursor-pointer select-none"
+                onClick={() => handleSort("createdAt")}
+              >
+                <div className="flex items-center gap-1">
+                  תאריך <SortIcon field="createdAt" />
+                </div>
+              </TableHead>
+              <TableHead className="w-28">פעולות</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {processedLeads.map((lead) => (
+              <TableRow
+                key={lead.id}
+                className="group cursor-pointer hover:bg-muted/50"
+                onClick={() => setEditingLead(lead)}
+              >
+                <TableCell className="font-medium">{lead.name}</TableCell>
+                <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                  <a
+                    href={`tel:${lead.phone}`}
+                    className="inline-flex items-center gap-1.5 text-sm text-foreground hover:text-primary transition-colors"
+                    dir="ltr"
+                  >
+                    <PhoneCall className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                    {lead.phone}
+                  </a>
+                </TableCell>
+                <TableCell className="hidden md:table-cell text-muted-foreground text-sm max-w-[160px] truncate">
+                  {lead.propertyAddress || "—"}
+                </TableCell>
+                <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
+                  {LEAD_SOURCE_LABELS[lead.source] ?? lead.source}
+                </TableCell>
+                <TableCell><LeadUrgencyBadge urgency={lead.urgency} /></TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <StatusDropdown lead={lead} />
+                </TableCell>
+                <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                  {lead.budget ? `₪${lead.budget.toLocaleString("he-IL")}` : "—"}
+                </TableCell>
+                <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                  {formatDate(lead.createdAt)}
+                </TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center gap-1.5 justify-end">
+                    <ConvertButton lead={lead} />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost" size="icon"
+                          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditingLead(lead)}>
+                          <Pencil className="h-4 w-4 me-2" />
+                          עריכה
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setDeletingLeadId(lead.id)}
+                        >
+                          <Trash2 className="h-4 w-4 me-2" />
+                          מחיקה
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+
       {editingLead && (
         <EditLeadDialog
           key={editingLead.id}
@@ -461,7 +629,6 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
         />
       )}
 
-      {/* Safe delete confirmation */}
       <AlertDialog
         open={!!deletingLeadId}
         onOpenChange={(open) => { if (!open) setDeletingLeadId(null); }}

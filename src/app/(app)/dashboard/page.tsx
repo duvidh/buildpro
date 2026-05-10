@@ -9,6 +9,7 @@ import {
   CalendarDays,
   ChevronLeft,
   AlertCircle,
+  CreditCard,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +74,14 @@ const PRIORITY_CONFIG: Record<string, { label: string; className: string }> = {
   LOW:    { label: "נמוך",      className: "bg-gray-100 text-gray-600 border-gray-200" },
 };
 
+const PAYMENT_METHOD_LABELS: Record<string, { label: string; className: string }> = {
+  BANK_TRANSFER: { label: "העברה",   className: "bg-blue-50 text-blue-700 border-blue-200" },
+  CHECK:         { label: "צ׳ק",     className: "bg-violet-50 text-violet-700 border-violet-200" },
+  CASH:          { label: "מזומן",   className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  CREDIT_CARD:   { label: "אשראי",   className: "bg-orange-50 text-orange-700 border-orange-200" },
+  OTHER:         { label: "אחר",     className: "bg-gray-50 text-gray-600 border-gray-200" },
+};
+
 const PROJECT_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   ACTIVE:    { label: "פעיל",  className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
   PLANNING:  { label: "תכנון", className: "bg-blue-100 text-blue-700 border-blue-200" },
@@ -83,7 +92,7 @@ const PROJECT_STATUS_CONFIG: Record<string, { label: string; className: string }
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
-  const [{ kpis, projects, upcomingTasks, chartData, currentMonth, totalChartRevenue, avgMonthlyRevenue }, clients] =
+  const [{ kpis, projects, upcomingTasks, chartData, currentMonth, totalChartRevenue, avgMonthlyRevenue, recentPayments }, clients] =
     await Promise.all([getDashboardData(), getClients()]);
 
   const clientOptions = clients.map((c) => ({ id: c.id, name: c.name, address: c.address ?? "" }));
@@ -215,6 +224,76 @@ export default async function DashboardPage() {
         <CardContent className="pb-4">
           {/* chartData is { month: string, revenue: number }[] — safe to pass to Client Component */}
           <RevenueChart data={chartData} currentMonth={currentMonth} />
+        </CardContent>
+      </Card>
+
+      {/* Recent Payments */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-semibold">תשלומים אחרונים</CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className="text-xs text-muted-foreground"
+            >
+              <Link href="/projects">
+                לפרויקטים
+                <ChevronLeft className="h-3.5 w-3.5 ms-1" />
+              </Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {recentPayments.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-center px-4">
+              <p className="text-sm text-muted-foreground">אין תשלומים שנרשמו עדיין.</p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-border">
+              {recentPayments.map((payment) => {
+                const method = PAYMENT_METHOD_LABELS[payment.method] ?? PAYMENT_METHOD_LABELS.OTHER;
+                const dateText = new Intl.DateTimeFormat("he-IL", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "2-digit",
+                }).format(new Date(payment.date));
+                return (
+                  <li
+                    key={payment.id}
+                    className="flex items-center gap-3 px-5 py-3 hover:bg-muted/40 transition-colors"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50">
+                      <CreditCard className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {payment.invoice.client.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {payment.invoice.project.name} · {payment.invoice.invoiceNumber}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className="text-sm font-semibold text-emerald-600">
+                        ₪{payment.amount.toLocaleString("he-IL", { maximumFractionDigits: 0 })}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] px-1.5 py-0 h-4 ${method.className}`}
+                        >
+                          {method.label}
+                        </Badge>
+                        <span className="text-[11px] text-muted-foreground">{dateText}</span>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </CardContent>
       </Card>
 

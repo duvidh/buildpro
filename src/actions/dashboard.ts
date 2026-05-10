@@ -25,6 +25,7 @@ export async function getDashboardData() {
     recentProjects,
     upcomingTasks,
     invoicesForChart,
+    recentPayments,
   ] = await Promise.all([
     // Active leads (not converted or lost)
     db.lead.count({
@@ -85,6 +86,24 @@ export async function getDashboardData() {
       where: { date: { gte: sixMonthsAgo } },
       select: { date: true, paidAmount: true },
     }),
+    // Recent payments for dashboard widget
+    db.payment.findMany({
+      orderBy: { date: "desc" },
+      take: 5,
+      select: {
+        id: true,
+        amount: true,
+        date: true,
+        method: true,
+        invoice: {
+          select: {
+            invoiceNumber: true,
+            client: { select: { name: true } },
+            project: { select: { name: true } },
+          },
+        },
+      },
+    }),
   ]);
 
   // Build 6-month chart data (month label + total revenue)
@@ -122,5 +141,6 @@ export async function getDashboardData() {
     currentMonth: HE_MONTHS[now.getMonth()],
     totalChartRevenue,
     avgMonthlyRevenue: Math.round(totalChartRevenue / 6),
+    recentPayments,
   };
 }

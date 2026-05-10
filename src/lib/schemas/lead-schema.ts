@@ -14,6 +14,7 @@ export const createLeadSchema = z.object({
   urgency: z.enum(LEAD_URGENCY_VALUES),
   budget: z.string().optional(),
   notes: z.string().optional(),
+  assignedEmployeeId: z.string().optional(),
 });
 
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;

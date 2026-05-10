@@ -2,8 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import {
   Plus,
@@ -12,6 +10,8 @@ import {
   Trash2,
   MoreHorizontal,
   ChevronRight,
+  User,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,13 +30,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -44,8 +37,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Combobox } from "@/components/ui/combobox";
 import { createQuote, deleteQuote } from "@/actions/quotes";
-import { createQuoteSchema, type CreateQuoteInput } from "@/lib/schemas/quote-schema";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -56,15 +49,18 @@ type Quote = {
   validUntil: Date | string | null;
   status: string;
   total: number;
-  client: { id: string; name: string };
+  client: { id: string; name: string } | null;
+  lead: { id: string; name: string } | null;
   _count: { items: number };
 };
 
 type Client = { id: string; name: string };
+type Lead = { id: string; name: string };
 
 type Props = {
   quotes: Quote[];
   clients: Client[];
+  leads: Lead[];
 };
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
@@ -95,35 +91,42 @@ function StatusBadge({ status }: { status: string }) {
 
 // ─── New quote dialog ─────────────────────────────────────────────────────────
 
-function NewQuoteDialog({ clients }: { clients: Client[] }) {
+function NewQuoteDialog({ clients, leads }: { clients: Client[]; leads: Lead[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [clientError, setClientError] = useState("");
+  const [mode, setMode] = useState<"client" | "lead">("client");
+  const [clientId, setClientId] = useState("");
+  const [leadId, setLeadId] = useState("");
+  const [error, setError] = useState("");
 
-  const { handleSubmit, setValue, reset } = useForm<CreateQuoteInput>({
-    resolver: zodResolver(createQuoteSchema),
-    defaultValues: { clientId: "" },
-  });
+  const clientOptions = clients.map((c) => ({ value: c.id, label: c.name }));
+  const leadOptions = leads.map((l) => ({ value: l.id, label: l.name }));
 
-  function submit(data: CreateQuoteInput) {
-    if (!data.clientId) {
-      setClientError("בחר לקוח");
-      return;
+  function handleOpen(val: boolean) {
+    setOpen(val);
+    if (!val) {
+      setClientId("");
+      setLeadId("");
+      setError("");
     }
-    setClientError("");
+  }
+
+  function submit() {
+    if (mode === "client" && !clientId) { setError("בחר לקוח"); return; }
+    if (mode === "lead" && !leadId) { setError("בחר ליד"); return; }
+    setError("");
     startTransition(async () => {
-      const res = await createQuote(data);
+      const res = await createQuote(mode === "client" ? { clientId } : { leadId });
       if (res.success) {
-        setOpen(false);
-        reset();
+        handleOpen(false);
         router.push(`/quotes/${res.quoteId}`);
       }
     });
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpen}>
       <DialogTrigger asChild>
         <Button className="gap-2">
           <Plus className="h-4 w-4" />
@@ -134,32 +137,69 @@ function NewQuoteDialog({ clients }: { clients: Client[] }) {
         <DialogHeader>
           <DialogTitle>הצעת מחיר חדשה</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(submit)} className="flex flex-col gap-4 mt-2">
-          <div className="flex flex-col gap-1.5">
-            <Label>לקוח *</Label>
-            <Select
-              onValueChange={(val) => {
-                setValue("clientId", val);
-                setClientError("");
-              }}
+        <div className="flex flex-col gap-4 mt-2">
+          {/* Mode toggle */}
+          <div className="flex rounded-lg border border-border overflow-hidden">
+            <button
+              type="button"
+              onClick={() => { setMode("client"); setError(""); }}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium transition-colors ${
+                mode === "client"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-transparent text-muted-foreground hover:bg-muted"
+              }`}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="בחר לקוח" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {clientError && <p className="text-xs text-destructive">{clientError}</p>}
+              <User className="h-3.5 w-3.5" />
+              לקוח
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode("lead"); setError(""); }}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium transition-colors ${
+                mode === "lead"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-transparent text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <Users className="h-3.5 w-3.5" />
+              ליד
+            </button>
           </div>
-          <Button type="submit" disabled={isPending} className="self-end">
+
+          {/* Selection */}
+          <div className="flex flex-col gap-1.5">
+            {mode === "client" ? (
+              <>
+                <Label>לקוח *</Label>
+                <Combobox
+                  options={clientOptions}
+                  value={clientId}
+                  onValueChange={(v) => { setClientId(v); setError(""); }}
+                  placeholder="בחר לקוח..."
+                  searchPlaceholder="חיפוש לקוח..."
+                  emptyText="לא נמצאו לקוחות"
+                />
+              </>
+            ) : (
+              <>
+                <Label>ליד *</Label>
+                <Combobox
+                  options={leadOptions}
+                  value={leadId}
+                  onValueChange={(v) => { setLeadId(v); setError(""); }}
+                  placeholder="בחר ליד..."
+                  searchPlaceholder="חיפוש ליד..."
+                  emptyText="לא נמצאו לידים"
+                />
+              </>
+            )}
+            {error && <p className="text-xs text-destructive">{error}</p>}
+          </div>
+
+          <Button onClick={submit} disabled={isPending} className="self-end">
             {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "צור הצעה"}
           </Button>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -167,7 +207,7 @@ function NewQuoteDialog({ clients }: { clients: Client[] }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export function QuotesContent({ quotes, clients }: Props) {
+export function QuotesContent({ quotes, clients, leads }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -191,7 +231,7 @@ export function QuotesContent({ quotes, clients }: Props) {
           <h1 className="text-2xl font-bold">הצעות מחיר</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{quotes.length} הצעות</p>
         </div>
-        <NewQuoteDialog clients={clients} />
+        <NewQuoteDialog clients={clients} leads={leads} />
       </div>
 
       {/* Empty state */}
@@ -199,7 +239,7 @@ export function QuotesContent({ quotes, clients }: Props) {
         <div className="flex flex-col items-center gap-4 py-16 text-center text-muted-foreground">
           <FileText className="h-12 w-12 opacity-30" />
           <p className="text-sm">אין הצעות מחיר עדיין</p>
-          <NewQuoteDialog clients={clients} />
+          <NewQuoteDialog clients={clients} leads={leads} />
         </div>
       )}
 
@@ -210,7 +250,7 @@ export function QuotesContent({ quotes, clients }: Props) {
             <TableHeader>
               <TableRow>
                 <TableHead>מספר הצעה</TableHead>
-                <TableHead>לקוח</TableHead>
+                <TableHead>לקוח / ליד</TableHead>
                 <TableHead>תאריך</TableHead>
                 <TableHead>בתוקף עד</TableHead>
                 <TableHead>סטטוס</TableHead>
@@ -220,56 +260,69 @@ export function QuotesContent({ quotes, clients }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {quotes.map((q) => (
-                <TableRow
-                  key={q.id}
-                  className="cursor-pointer hover:bg-muted/40"
-                  onClick={() => router.push(`/quotes/${q.id}`)}
-                >
-                  <TableCell className="font-mono font-medium text-sm">
-                    {q.quoteNumber ?? "—"}
-                  </TableCell>
-                  <TableCell>{q.client.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{fmtDate(q.date)}</TableCell>
-                  <TableCell className="text-muted-foreground">{fmtDate(q.validUntil)}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={q.status} />
-                  </TableCell>
-                  <TableCell className="text-center text-muted-foreground">
-                    {q._count.items}
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {q.total > 0
-                      ? `₪${q.total.toLocaleString("he-IL", { maximumFractionDigits: 0 })}`
-                      : "—"}
-                  </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/quotes/${q.id}`}>
-                            <ChevronRight className="h-4 w-4 ms-1" />
-                            פתח הצעה
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => handleDelete(q.id)}
-                          disabled={isPending}
-                        >
-                          <Trash2 className="h-4 w-4 ms-1" />
-                          מחק
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {quotes.map((q) => {
+                const entityName = q.client?.name ?? q.lead?.name ?? "—";
+                const isLead = !q.client && !!q.lead;
+                return (
+                  <TableRow
+                    key={q.id}
+                    className="cursor-pointer hover:bg-muted/40"
+                    onClick={() => router.push(`/quotes/${q.id}`)}
+                  >
+                    <TableCell className="font-mono font-medium text-sm">
+                      {q.quoteNumber ?? "—"}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        {isLead && (
+                          <Badge variant="outline" className="text-[10px] h-4 px-1.5 py-0 bg-amber-50 text-amber-700 border-amber-200">
+                            ליד
+                          </Badge>
+                        )}
+                        {entityName}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{fmtDate(q.date)}</TableCell>
+                    <TableCell className="text-muted-foreground">{fmtDate(q.validUntil)}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={q.status} />
+                    </TableCell>
+                    <TableCell className="text-center text-muted-foreground">
+                      {q._count.items}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {q.total > 0
+                        ? `₪${q.total.toLocaleString("he-IL", { maximumFractionDigits: 0 })}`
+                        : "—"}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/quotes/${q.id}`}>
+                              <ChevronRight className="h-4 w-4 ms-1" />
+                              פתח הצעה
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => handleDelete(q.id)}
+                            disabled={isPending}
+                          >
+                            <Trash2 className="h-4 w-4 ms-1" />
+                            מחק
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>

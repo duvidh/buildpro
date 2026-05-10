@@ -18,7 +18,9 @@
       "Bash(Select-Object FullName)",
       "Bash(Sort-Object FullName)",
       "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\User.DESKTOP-R26AVG6\\\\Documents\\\\buildpro\\\\src\\\\app\\\\\\(app\\)\" -Depth 1 -Force | Where-Object { $_.PSIsContainer } | ForEach-Object { $_.Name })",
-      "Bash(Get-ChildItem *)"
+      "Bash(Get-ChildItem *)",
+      "Bash(node *)",
+      "Bash(npx prisma *)"
     ]
   }
 }

@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { createProjectSchema, type CreateProjectInput } from "@/lib/schemas/project-schema";
+import {
+  createProjectSchema, type CreateProjectInput,
+  updateProjectSchema, type UpdateProjectInput,
+} from "@/lib/schemas/project-schema";
 
 export async function getProjects() {
   return db.project.findMany({
@@ -145,6 +148,29 @@ export async function getProjectById(id: string) {
       },
     },
   });
+}
+
+export async function updateProject(id: string, raw: UpdateProjectInput) {
+  const parsed = updateProjectSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאת ולידציה" };
+  }
+  const { name, description, address, status, startDate, endDate, contractValue } = parsed.data;
+  await db.project.update({
+    where: { id },
+    data: {
+      name,
+      description: description || null,
+      address: address || null,
+      status,
+      startDate: startDate ? new Date(startDate) : null,
+      endDate: endDate ? new Date(endDate) : null,
+      contractValue: contractValue ? parseFloat(contractValue) || 0 : 0,
+    },
+  });
+  revalidatePath(`/projects/${id}`);
+  revalidatePath("/projects");
+  return { success: true as const };
 }
 
 export async function updateProjectSettings(

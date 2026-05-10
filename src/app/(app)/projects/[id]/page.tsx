@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { getProjectById } from "@/actions/projects";
 import { ProjectTabs } from "@/components/projects/project-tabs";
+import { EditProjectDialog } from "@/components/projects/edit-project-dialog";
 
 const PROJECT_STATUS: Record<string, { label: string; className: string }> = {
   PLANNING:  { label: "תכנון",  className: "bg-blue-100 text-blue-700 border-blue-200" },
@@ -43,8 +44,10 @@ export default async function ProjectDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const project = await getProjectById(id);
-  if (!project) notFound();
+  const raw = await getProjectById(id);
+  if (!raw) notFound();
+  // Serialize all Date objects — Client Components cannot receive Date instances as props
+  const project = JSON.parse(JSON.stringify(raw)) as typeof raw;
 
   const status = PROJECT_STATUS[project.status];
   const startDate = fmtDate(project.startDate);
@@ -62,7 +65,7 @@ export default async function ProjectDetailPage({
   const settings = project.settings ?? defaultSettings;
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full px-4 md:px-8 py-6 space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild className="text-muted-foreground -me-1">
@@ -95,12 +98,26 @@ export default async function ProjectDetailPage({
                     <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
                   )}
                 </div>
-                <Badge
-                  variant="outline"
-                  className={`text-xs px-2.5 py-0.5 ${status?.className}`}
-                >
-                  {status?.label ?? project.status}
-                </Badge>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge
+                    variant="outline"
+                    className={`text-xs px-2.5 py-0.5 ${status?.className}`}
+                  >
+                    {status?.label ?? project.status}
+                  </Badge>
+                  <EditProjectDialog
+                    project={{
+                      id: project.id,
+                      name: project.name,
+                      description: project.description,
+                      address: project.address,
+                      status: project.status,
+                      startDate: project.startDate as string | null,
+                      endDate: project.endDate as string | null,
+                      contractValue: project.contractValue,
+                    }}
+                  />
+                </div>
               </div>
 
               <Separator className="my-3" />

@@ -13,3 +13,15 @@ export const createProjectSchema = z.object({
 });
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
+
+export const updateProjectSchema = z.object({
+  name: z.string().min(2, "שם חייב להכיל לפחות 2 תווים"),
+  description: z.string().optional(),
+  address: z.string().optional(),
+  status: z.enum(PROJECT_STATUS_VALUES),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  contractValue: z.string().optional(),
+});
+
+export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;

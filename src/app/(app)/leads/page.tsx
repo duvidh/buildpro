@@ -1,31 +1,49 @@
 import { Suspense } from "react";
 import { Users } from "lucide-react";
 import { getLeads } from "@/actions/leads";
+import { getEmployees } from "@/actions/hr";
 import { LeadsTable } from "@/components/leads/leads-table";
 import { NewLeadDialog } from "@/components/leads/new-lead-dialog";
 import {
   LEAD_STATUS_CONFIG,
-  LEAD_URGENCY_CONFIG,
 } from "@/components/leads/lead-status-badge";
 import { Badge } from "@/components/ui/badge";
 import { LeadStatus } from "@/generated/prisma/client";
 
-async function LeadsContent() {
+type EmployeeOption = { id: string; name: string };
+
+async function LeadsContent({ employees }: { employees: EmployeeOption[] }) {
   const leads = await getLeads();
 
   const counts = {
     total: leads.length,
     new: leads.filter((l) => l.status === LeadStatus.NEW).length,
     active: leads.filter(
-      (l) =>
-        l.status !== LeadStatus.CONVERTED && l.status !== LeadStatus.LOST
+      (l) => l.status !== LeadStatus.CONVERTED && l.status !== LeadStatus.LOST
     ).length,
     converted: leads.filter((l) => l.status === LeadStatus.CONVERTED).length,
   };
 
+  const serializedLeads = leads.map((l) => ({
+    id: l.id,
+    name: l.name,
+    phone: l.phone,
+    phone2: l.phone2,
+    email: l.email,
+    propertyAddress: l.propertyAddress,
+    source: l.source,
+    status: l.status,
+    urgency: l.urgency,
+    budget: l.budget,
+    notes: l.notes,
+    convertedToId: l.convertedToId,
+    assignedEmployeeId: l.assignedEmployeeId,
+    assignedEmployee: l.assignedEmployee,
+    createdAt: l.createdAt.toISOString(),
+  }));
+
   return (
     <>
-      {/* Stats row */}
       <div className="flex flex-wrap gap-2 mb-4">
         {[
           { label: `סה"כ לידים`, value: counts.total, className: "bg-slate-100 text-slate-700 border-slate-200" },
@@ -39,19 +57,19 @@ async function LeadsContent() {
           </Badge>
         ))}
       </div>
-
-      {/* Table */}
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-        <LeadsTable leads={leads} />
-      </div>
+      <LeadsTable leads={serializedLeads} employees={employees} />
     </>
   );
 }
 
-export default function LeadsPage() {
+export default async function LeadsPage() {
+  const rawEmployees = await getEmployees();
+  const employees: EmployeeOption[] = rawEmployees
+    .filter((e) => e.active)
+    .map((e) => ({ id: e.id, name: e.name }));
+
   return (
     <div className="space-y-4">
-      {/* Page header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
@@ -66,10 +84,9 @@ export default function LeadsPage() {
             </p>
           </div>
         </div>
-        <NewLeadDialog />
+        <NewLeadDialog employees={employees} />
       </div>
 
-      {/* Content (Suspense for streaming) */}
       <Suspense
         fallback={
           <div className="flex items-center justify-center py-20">
@@ -77,7 +94,7 @@ export default function LeadsPage() {
           </div>
         }
       >
-        <LeadsContent />
+        <LeadsContent employees={employees} />
       </Suspense>
     </div>
   );

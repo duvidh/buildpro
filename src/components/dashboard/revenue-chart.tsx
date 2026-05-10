@@ -11,16 +11,7 @@ import {
   Cell,
 } from "recharts";
 
-const data = [
-  { month: "דצמ׳", revenue: 210000 },
-  { month: "ינו׳", revenue: 185000 },
-  { month: "פבר׳", revenue: 245000 },
-  { month: "מרץ", revenue: 230000 },
-  { month: "אפר׳", revenue: 285000 },
-  { month: "מאי", revenue: 320000 },
-];
-
-const CURRENT_MONTH = "מאי";
+type ChartPoint = { month: string; revenue: number };
 
 function CustomTooltip({
   active,
@@ -42,7 +33,13 @@ function CustomTooltip({
   );
 }
 
-export function RevenueChart() {
+export function RevenueChart({
+  data,
+  currentMonth,
+}: {
+  data: ChartPoint[];
+  currentMonth: string;
+}) {
   return (
     <ResponsiveContainer width="100%" height={260}>
       <BarChart data={data} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
@@ -64,17 +61,16 @@ export function RevenueChart() {
           tickFormatter={(v) => `₪${v / 1000}K`}
           width={52}
         />
-        <Tooltip content={<CustomTooltip />} cursor={{ fill: "var(--color-muted)", opacity: 0.4 }} />
+        <Tooltip
+          content={<CustomTooltip />}
+          cursor={{ fill: "var(--color-muted)", opacity: 0.4 }}
+        />
         <Bar dataKey="revenue" radius={[6, 6, 0, 0]} maxBarSize={52}>
           {data.map((entry) => (
             <Cell
               key={entry.month}
-              fill={
-                entry.month === CURRENT_MONTH
-                  ? "var(--color-primary)"
-                  : "var(--color-primary)"
-              }
-              opacity={entry.month === CURRENT_MONTH ? 1 : 0.55}
+              fill="var(--color-primary)"
+              opacity={entry.month === currentMonth ? 1 : 0.55}
             />
           ))}
         </Bar>

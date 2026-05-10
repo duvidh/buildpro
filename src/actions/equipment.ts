@@ -85,6 +85,16 @@ export async function unassignEquipment(equipmentId: string) {
   return { success: true as const };
 }
 
+export async function deleteEquipment(id: string) {
+  try {
+    await db.equipment.delete({ where: { id } });
+    revalidatePath("/equipment");
+    return { success: true as const };
+  } catch {
+    return { success: false as const, error: "לא ניתן למחוק ציוד עם רשומות שיוך משויכות." };
+  }
+}
+
 export async function updateEquipmentStatus(id: string, status: EquipmentStatus) {
   await db.equipment.update({ where: { id }, data: { status } });
   revalidatePath("/equipment");

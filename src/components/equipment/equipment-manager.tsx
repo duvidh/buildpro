@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Wrench, FolderKanban, X } from "lucide-react";
+import { toast } from "sonner";
+import { Plus, Wrench, FolderKanban, X, MoreHorizontal, Trash2, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -13,6 +14,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -24,6 +42,7 @@ import {
   createEquipment,
   assignEquipmentToProject,
   unassignEquipment,
+  deleteEquipment,
 } from "@/actions/equipment";
 
 type EquipmentItem = {
@@ -79,8 +98,11 @@ export function EquipmentManager({
   const [assignOpen, setAssignOpen] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState("");
   const [form, setForm] = useState(EMPTY);
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const [isDeleting, startDeleteTransition] = useTransition();
 
   const filtered = equipment.filter((e) => {
     if (statusFilter !== "ALL" && e.status !== statusFilter) return false;
@@ -96,7 +118,7 @@ export function EquipmentManager({
   const maintenanceCount = equipment.filter((e) => e.status === "MAINTENANCE").length;
 
   function handleAdd() {
-    if (!form.name.trim()) { setError("שם הציוד הוא שדה חובה."); return; }
+    if (!form.name.trim()) { setFormError("שם הציוד הוא שדה חובה."); return; }
     startTransition(async () => {
       const res = await createEquipment({
         name: form.name.trim(),
@@ -105,10 +127,11 @@ export function EquipmentManager({
         purchaseDate: form.purchaseDate || undefined,
         notes: form.notes || undefined,
       });
-      if (!res.success) { setError(res.error); return; }
+      if (!res.success) { setFormError(res.error); return; }
+      toast.success("ציוד נוסף בהצלחה");
       setAddOpen(false);
       setForm(EMPTY);
-      setError(null);
+      setFormError(null);
       window.location.reload();
     });
   }
@@ -117,6 +140,7 @@ export function EquipmentManager({
     if (!selectedProject) return;
     startTransition(async () => {
       await assignEquipmentToProject(equipmentId, selectedProject);
+      toast.success("ציוד שויך לפרויקט");
       setAssignOpen(null);
       setSelectedProject("");
       window.location.reload();
@@ -126,13 +150,30 @@ export function EquipmentManager({
   function handleUnassign(equipmentId: string) {
     startTransition(async () => {
       await unassignEquipment(equipmentId);
+      toast.success("ציוד שוחרר מהפרויקט");
       setEquipment((prev) =>
         prev.map((e) =>
           e.id === equipmentId
-            ? { ...e, status: "AVAILABLE", logs: [], currentProjectId: null }
+            ? { ...e, status: "AVAILABLE", logs: [] }
             : e
         )
       );
+    });
+  }
+
+  function handleConfirmDelete() {
+    if (!deletingId) return;
+    setDeleteError(null);
+    startDeleteTransition(async () => {
+      const res = await deleteEquipment(deletingId);
+      if (res.success) {
+        toast.success("הציוד נמחק בהצלחה");
+        setEquipment((prev) => prev.filter((e) => e.id !== deletingId));
+        setDeletingId(null);
+      } else {
+        setDeleteError(res.error ?? "שגיאה במחיקה");
+        toast.error(res.error ?? "לא ניתן למחוק ציוד זה");
+      }
     });
   }
 
@@ -211,9 +252,9 @@ export function EquipmentManager({
                   <Label>הערות</Label>
                   <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="מידע נוסף..." />
                 </div>
-                {error && <p className="text-sm text-red-500">{error}</p>}
+                {formError && <p className="text-sm text-red-500">{formError}</p>}
                 <div className="flex justify-end gap-2 pt-1">
-                  <Button variant="outline" onClick={() => { setAddOpen(false); setForm(EMPTY); setError(null); }}>ביטול</Button>
+                  <Button variant="outline" onClick={() => { setAddOpen(false); setForm(EMPTY); setFormError(null); }}>ביטול</Button>
                   <Button onClick={handleAdd}>הוסף</Button>
                 </div>
               </div>
@@ -263,7 +304,7 @@ export function EquipmentManager({
               <th className="text-center font-medium text-muted-foreground px-4 py-3 text-xs">סטטוס</th>
               <th className="text-start font-medium text-muted-foreground px-4 py-3 text-xs hidden sm:table-cell">פרויקט נוכחי</th>
               <th className="text-end font-medium text-muted-foreground px-4 py-3 text-xs hidden md:table-cell">שווי</th>
-              <th className="px-4 py-3 text-xs"></th>
+              <th className="text-end font-medium text-muted-foreground px-4 py-3 text-xs">פעולות</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -313,28 +354,38 @@ export function EquipmentManager({
                     {eq.value ? fmtShekel(eq.value) : "—"}
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex justify-end gap-1">
-                      {eq.status === "IN_USE" || activeLog ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs text-muted-foreground"
-                          onClick={() => handleUnassign(eq.id)}
-                        >
-                          <X className="h-3.5 w-3.5 me-1" />
-                          שחרר
-                        </Button>
-                      ) : eq.status === "AVAILABLE" ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => setAssignOpen(eq.id)}
-                        >
-                          <FolderKanban className="h-3.5 w-3.5 me-1" />
-                          שייך
-                        </Button>
-                      ) : null}
+                    <div className="flex justify-end">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {(eq.status === "IN_USE" || activeLog) && (
+                            <DropdownMenuItem onClick={() => handleUnassign(eq.id)}>
+                              <X className="h-4 w-4 me-2" />
+                              שחרר מפרויקט
+                            </DropdownMenuItem>
+                          )}
+                          {eq.status === "AVAILABLE" && (
+                            <DropdownMenuItem onClick={() => setAssignOpen(eq.id)}>
+                              <FolderKanban className="h-4 w-4 me-2" />
+                              שייך לפרויקט
+                            </DropdownMenuItem>
+                          )}
+                          {(eq.status === "IN_USE" || activeLog || eq.status === "AVAILABLE") && (
+                            <DropdownMenuSeparator />
+                          )}
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => { setDeleteError(null); setDeletingId(eq.id); }}
+                          >
+                            <Trash2 className="h-4 w-4 me-2" />
+                            מחיקה
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </td>
                 </tr>
@@ -343,6 +394,33 @@ export function EquipmentManager({
           </tbody>
         </table>
       </div>
+
+      {/* Delete confirmation */}
+      <AlertDialog
+        open={!!deletingId}
+        onOpenChange={(v) => { if (!v) { setDeletingId(null); setDeleteError(null); } }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>האם אתה בטוח?</AlertDialogTitle>
+            <AlertDialogDescription>
+              פעולה זו תמחק את הציוד לצמיתות ואינה הפיכה.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteError && <p className="text-sm text-destructive px-1">{deleteError}</p>}
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting && <Loader2 className="h-4 w-4 me-1.5 animate-spin" />}
+              מחק ציוד
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

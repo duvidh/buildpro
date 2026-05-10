@@ -195,8 +195,10 @@ model Lead {
   urgency         LeadUrgency @default(MEDIUM)
   budget          Float?
   notes           String?
-  assignedToId    String?
-  assignedTo      User?       @relation("LeadAssignee", fields: [assignedToId], references: [id])
+  assignedToId         String?
+  assignedTo           User?     @relation("LeadAssignee", fields: [assignedToId], references: [id])
+  assignedEmployeeId   String?
+  assignedEmployee     Employee? @relation("LeadEmployee", fields: [assignedEmployeeId], references: [id])
   convertedAt     DateTime?
   convertedToId   String?
   client          Client?     @relation("LeadToClient", fields: [convertedToId], references: [id])
@@ -477,6 +479,7 @@ model Employee {
   timeEntries   TimeEntry[]
   expenses      Expense[]
   equipmentLogs EquipmentLog[]
+  assignedLeads Lead[]         @relation("LeadEmployee")
 }
 
 model TimeEntry {
@@ -548,8 +551,8 @@ model EquipmentLog {
 
 model Quote {
   id          String      @id @default(cuid())
-  clientId    String
-  client      Client      @relation(fields: [clientId], references: [id])
+  clientId    String?
+  client      Client?     @relation(fields: [clientId], references: [id])
   projectId   String?
   project     Project?    @relation(fields: [projectId], references: [id])
   leadId      String?

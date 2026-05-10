@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Tabs,
@@ -9,17 +10,19 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   FolderKanban,
   FileText,
   Receipt,
-  CheckSquare,
   LayoutDashboard,
-  CalendarDays,
   ExternalLink,
+  Plus,
+  Loader2,
 } from "lucide-react";
+import { createQuote } from "@/actions/quotes";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -143,33 +146,62 @@ function ProjectsTab({ projects, clientId }: { projects: Project[]; clientId: st
   );
 }
 
-function QuotesTab({ quotes }: { quotes: Quote[] }) {
-  if (!quotes.length) return <EmptyState label="הצעות מחיר" />;
+function QuotesTab({
+  quotes,
+  clientId,
+  onCreateQuote,
+  isCreating,
+}: {
+  quotes: Quote[];
+  clientId: string;
+  onCreateQuote: () => void;
+  isCreating: boolean;
+}) {
   return (
-    <ul className="divide-y divide-border">
-      {quotes.map((q) => (
-        <li key={q.id} className="flex items-center justify-between gap-3 px-1 py-3">
-          <div>
-            <p className="text-sm font-medium text-foreground">
-              {q.quoteNumber ? `הצעה #${q.quoteNumber}` : "הצעה ללא מספר"}
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {fmt(q.date)}
-              {q.validUntil && ` · בתוקף עד ${fmt(q.validUntil)}`}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Badge
-              variant="outline"
-              className={`text-[10px] h-4 px-1.5 py-0 ${QUOTE_STATUS[q.status]?.className}`}
-            >
-              {QUOTE_STATUS[q.status]?.label ?? q.status}
-            </Badge>
-            <span className="text-sm font-semibold">{fmtCurrency(q.total)}</span>
-          </div>
-        </li>
-      ))}
-    </ul>
+    <div>
+      <div className="flex justify-end mb-3">
+        <Button size="sm" onClick={onCreateQuote} disabled={isCreating} className="gap-1.5">
+          {isCreating ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Plus className="h-4 w-4" />
+          )}
+          צור הצעת מחיר
+        </Button>
+      </div>
+      {quotes.length === 0 ? (
+        <EmptyState label="הצעות מחיר" />
+      ) : (
+        <ul className="divide-y divide-border">
+          {quotes.map((q) => (
+            <li key={q.id} className="flex items-center justify-between gap-3 px-1 py-3">
+              <div>
+                <Link
+                  href={`/quotes/${q.id}`}
+                  className="text-sm font-medium text-foreground hover:text-primary flex items-center gap-1 group"
+                >
+                  {q.quoteNumber ? `הצעה #${q.quoteNumber}` : "הצעה ללא מספר"}
+                  <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+                </Link>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {fmt(q.date)}
+                  {q.validUntil && ` · בתוקף עד ${fmt(q.validUntil)}`}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] h-4 px-1.5 py-0 ${QUOTE_STATUS[q.status]?.className}`}
+                >
+                  {QUOTE_STATUS[q.status]?.label ?? q.status}
+                </Badge>
+                <span className="text-sm font-semibold">{fmtCurrency(q.total)}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -214,69 +246,105 @@ function InvoicesTab({ invoices }: { invoices: Invoice[] }) {
 
 export function ClientTabs({ clientId, projects, quotes, invoices }: ClientTabsProps) {
   const [tab, setTab] = useState("overview");
+  const router = useRouter();
+  const [isCreatingQuote, startQuoteTransition] = useTransition();
+
+  function handleCreateQuote() {
+    startQuoteTransition(async () => {
+      const res = await createQuote({ clientId });
+      if (res.success) {
+        router.push(`/quotes/${res.quoteId}`);
+      }
+    });
+  }
 
   return (
-    <Tabs value={tab} onValueChange={setTab} className="w-full">
-      <TabsList className="w-full justify-start border-b border-border rounded-none bg-transparent p-0 h-auto gap-0">
-        {[
-          { value: "overview",  icon: LayoutDashboard, label: "סקירה",        count: null },
-          { value: "projects",  icon: FolderKanban,    label: "פרויקטים",     count: projects.length },
-          { value: "quotes",    icon: FileText,        label: "הצעות מחיר",  count: quotes.length },
-          { value: "invoices",  icon: Receipt,         label: "חשבוניות",    count: invoices.length },
-        ].map(({ value, icon: Icon, label, count }) => (
-          <TabsTrigger
-            key={value}
-            value={value}
-            className="relative rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2.5 text-sm font-medium text-muted-foreground data-[state=active]:text-foreground"
-          >
-            <Icon className="h-4 w-4 me-1.5" />
-            {label}
-            {count !== null && count > 0 && (
-              <span className="ms-1.5 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-muted text-[10px] font-medium text-muted-foreground">
-                {count}
-              </span>
-            )}
-          </TabsTrigger>
-        ))}
-      </TabsList>
+    <div className="w-full">
+      {/* Prominent action bar */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-0 border-b-0">
+        <p className="text-sm font-semibold text-foreground">פרטי לקוח</p>
+        <Button
+          size="sm"
+          onClick={handleCreateQuote}
+          disabled={isCreatingQuote}
+          className="gap-1.5"
+        >
+          {isCreatingQuote ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Plus className="h-4 w-4" />
+          )}
+          צור הצעת מחיר
+        </Button>
+      </div>
 
-      <TabsContent value="overview" className="pt-4">
-        {projects.length === 0 && quotes.length === 0 && invoices.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-muted-foreground text-sm">לקוח חדש — אין נתונים עדיין.</p>
-            <p className="text-muted-foreground text-xs mt-1">
-              התחל על ידי יצירת פרויקט או הצעת מחיר ללקוח.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {projects.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2">פרויקטים אחרונים</h3>
-                <ProjectsTab projects={projects.slice(0, 3)} clientId={clientId} />
-              </div>
-            )}
-          </div>
-        )}
-      </TabsContent>
+      <Tabs value={tab} onValueChange={setTab} className="w-full">
+        <TabsList className="w-full justify-start border-b border-border rounded-none bg-transparent p-0 h-auto gap-0">
+          {[
+            { value: "overview",  icon: LayoutDashboard, label: "סקירה",        count: null },
+            { value: "projects",  icon: FolderKanban,    label: "פרויקטים",     count: projects.length },
+            { value: "quotes",    icon: FileText,        label: "הצעות מחיר",  count: quotes.length },
+            { value: "invoices",  icon: Receipt,         label: "חשבוניות",    count: invoices.length },
+          ].map(({ value, icon: Icon, label, count }) => (
+            <TabsTrigger
+              key={value}
+              value={value}
+              className="relative rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2.5 text-sm font-medium text-muted-foreground data-[state=active]:text-foreground"
+            >
+              <Icon className="h-4 w-4 me-1.5" />
+              {label}
+              {count !== null && count > 0 && (
+                <span className="ms-1.5 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-muted text-[10px] font-medium text-muted-foreground">
+                  {count}
+                </span>
+              )}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      <TabsContent value="projects" className="pt-4">
-        <ScrollArea className="max-h-[500px]">
-          <ProjectsTab projects={projects} clientId={clientId} />
-        </ScrollArea>
-      </TabsContent>
+        <TabsContent value="overview" className="pt-4 px-1">
+          {projects.length === 0 && quotes.length === 0 && invoices.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <p className="text-muted-foreground text-sm">לקוח חדש — אין נתונים עדיין.</p>
+              <p className="text-muted-foreground text-xs mt-1">
+                התחל על ידי יצירת פרויקט או הצעת מחיר ללקוח.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {projects.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-2">פרויקטים אחרונים</h3>
+                  <ProjectsTab projects={projects.slice(0, 3)} clientId={clientId} />
+                </div>
+              )}
+            </div>
+          )}
+        </TabsContent>
 
-      <TabsContent value="quotes" className="pt-4">
-        <ScrollArea className="max-h-[500px]">
-          <QuotesTab quotes={quotes} />
-        </ScrollArea>
-      </TabsContent>
+        <TabsContent value="projects" className="pt-4 px-1">
+          <ScrollArea className="max-h-[500px]">
+            <ProjectsTab projects={projects} clientId={clientId} />
+          </ScrollArea>
+        </TabsContent>
 
-      <TabsContent value="invoices" className="pt-4">
-        <ScrollArea className="max-h-[500px]">
-          <InvoicesTab invoices={invoices} />
-        </ScrollArea>
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="quotes" className="pt-4 px-1">
+          <ScrollArea className="max-h-[500px]">
+            <QuotesTab
+              quotes={quotes}
+              clientId={clientId}
+              onCreateQuote={handleCreateQuote}
+              isCreating={isCreatingQuote}
+            />
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="invoices" className="pt-4 px-1">
+          <ScrollArea className="max-h-[500px]">
+            <InvoicesTab invoices={invoices} />
+          </ScrollArea>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

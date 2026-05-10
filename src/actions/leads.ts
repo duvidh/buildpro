@@ -8,7 +8,10 @@ import { createLeadSchema, type CreateLeadInput } from "@/lib/schemas/lead-schem
 export async function getLeads() {
   return db.lead.findMany({
     orderBy: { createdAt: "desc" },
-    include: { assignedTo: { select: { id: true, name: true } } },
+    include: {
+      assignedTo: { select: { id: true, name: true } },
+      assignedEmployee: { select: { id: true, name: true } },
+    },
   });
 }
 
@@ -18,7 +21,7 @@ export async function createLead(raw: CreateLeadInput) {
     return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאת ולידציה" };
   }
 
-  const { budget, email, ...rest } = parsed.data;
+  const { budget, email, assignedEmployeeId, ...rest } = parsed.data;
   const budgetNum = budget ? parseFloat(budget.replace(/,/g, "")) : null;
 
   await db.lead.create({
@@ -26,6 +29,7 @@ export async function createLead(raw: CreateLeadInput) {
       ...rest,
       email: email || null,
       budget: budgetNum && !isNaN(budgetNum) ? budgetNum : null,
+      assignedEmployeeId: assignedEmployeeId || null,
     },
   });
 
@@ -33,10 +37,48 @@ export async function createLead(raw: CreateLeadInput) {
   return { success: true as const };
 }
 
+export async function updateLead(id: string, raw: CreateLeadInput) {
+  const parsed = createLeadSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאת ולידציה" };
+  }
+  const { budget, email, assignedEmployeeId, ...rest } = parsed.data;
+  const budgetNum = budget ? parseFloat(budget.replace(/,/g, "")) : null;
+  await db.lead.update({
+    where: { id },
+    data: {
+      ...rest,
+      email: email || null,
+      budget: budgetNum && !isNaN(budgetNum) ? budgetNum : null,
+      assignedEmployeeId: assignedEmployeeId || null,
+    },
+  });
+  revalidatePath("/leads");
+  return { success: true as const };
+}
+
+export async function deleteLead(id: string) {
+  try {
+    await db.lead.delete({ where: { id } });
+    revalidatePath("/leads");
+    return { success: true as const };
+  } catch {
+    return { success: false as const, error: "לא ניתן למחוק את הליד" };
+  }
+}
+
 export async function updateLeadStatus(id: string, status: LeadStatusValue) {
   await db.lead.update({ where: { id }, data: { status } });
   revalidatePath("/leads");
   return { success: true as const };
+}
+
+export async function getLeadsForSelect() {
+  return db.lead.findMany({
+    where: { status: { not: "CONVERTED" } },
+    select: { id: true, name: true },
+    orderBy: { createdAt: "desc" },
+  });
 }
 
 export async function convertLeadToClient(leadId: string) {

@@ -1,6 +1,42 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
+
+export async function recordPayment(
+  invoiceId: string,
+  data: { amount: number; method: string; date: string; reference?: string }
+) {
+  const invoice = await db.invoice.findUnique({
+    where: { id: invoiceId },
+    select: { total: true, paidAmount: true, status: true, projectId: true },
+  });
+  if (!invoice) return { success: false as const, error: "חשבונית לא נמצאה" };
+  if (invoice.status === "PAID") return { success: false as const, error: "החשבונית כבר שולמה במלואה" };
+
+  const newPaid = Math.round((invoice.paidAmount + data.amount) * 100) / 100;
+  const newStatus = newPaid >= invoice.total ? "PAID" : "PARTIALLY_PAID";
+
+  await db.$transaction([
+    db.payment.create({
+      data: {
+        invoiceId,
+        date: new Date(data.date),
+        amount: data.amount,
+        method: data.method as any,
+        reference: data.reference || null,
+      },
+    }),
+    db.invoice.update({
+      where: { id: invoiceId },
+      data: { paidAmount: newPaid, status: newStatus as any },
+    }),
+  ]);
+
+  revalidatePath(`/projects/${invoice.projectId}`);
+  revalidatePath("/clients");
+  return { success: true as const };
+}
 
 const HE_MONTHS = [
   "ינו׳","פבר׳","מרץ","אפר׳","מאי","יונ׳",

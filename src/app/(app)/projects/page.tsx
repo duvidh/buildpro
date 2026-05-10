@@ -34,9 +34,14 @@ async function ProjectsContent() {
 
   if (projects.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="text-muted-foreground text-sm">אין פרויקטים עדיין.</p>
-        <p className="text-muted-foreground text-xs mt-1">לחץ על ״פרויקט חדש״ כדי להתחיל.</p>
+      <div className="rounded-3xl bg-white/90 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col items-center justify-center py-20 text-center px-4">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mb-4">
+          <FolderKanban className="h-7 w-7 text-primary" />
+        </div>
+        <p className="text-base font-semibold text-foreground">אין פרויקטים עדיין</p>
+        <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+          לחץ על ״פרויקט חדש״ בפינה הימנית העליונה כדי ליצור את הפרויקט הראשון שלך.
+        </p>
       </div>
     );
   }
@@ -133,7 +138,7 @@ async function ProjectsContent() {
 
 export default async function ProjectsPage() {
   const clients = await getClients();
-  const clientOptions = clients.map((c) => ({ id: c.id, name: c.name }));
+  const clientOptions = clients.map((c) => ({ id: c.id, name: c.name, address: c.address ?? "" }));
 
   return (
     <div className="space-y-4">

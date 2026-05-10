@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Combobox } from "@/components/ui/combobox";
 import { Plus, Loader2 } from "lucide-react";
 import { createProjectSchema, type CreateProjectInput } from "@/lib/schemas/project-schema";
 import { createProject } from "@/actions/projects";
@@ -35,7 +36,7 @@ const STATUS_LABELS: Record<string, string> = {
   CANCELLED: "בוטל",
 };
 
-type ClientOption = { id: string; name: string };
+type ClientOption = { id: string; name: string; address: string };
 
 export function NewProjectDialog({ clients }: { clients: ClientOption[] }) {
   const [open, setOpen] = useState(false);
@@ -52,6 +53,16 @@ export function NewProjectDialog({ clients }: { clients: ClientOption[] }) {
     resolver: zodResolver(createProjectSchema),
     defaultValues: { status: "PLANNING" },
   });
+
+  const clientComboOptions = clients.map((c) => ({ value: c.id, label: c.name }));
+
+  function handleClientChange(clientId: string) {
+    setValue("clientId", clientId);
+    const client = clients.find((c) => c.id === clientId);
+    if (client?.address) {
+      setValue("address", client.address);
+    }
+  }
 
   function onSubmit(data: CreateProjectInput) {
     startTransition(async () => {
@@ -87,18 +98,13 @@ export function NewProjectDialog({ clients }: { clients: ClientOption[] }) {
 
           <div className="space-y-1.5">
             <Label>לקוח *</Label>
-            <Select onValueChange={(v) => setValue("clientId", v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="בחר לקוח" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              options={clientComboOptions}
+              onValueChange={handleClientChange}
+              placeholder="בחר לקוח..."
+              searchPlaceholder="חיפוש לקוח..."
+              emptyText="לא נמצאו לקוחות"
+            />
             {errors.clientId && (
               <p className="text-xs text-destructive">{errors.clientId.message}</p>
             )}

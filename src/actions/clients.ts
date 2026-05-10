@@ -1,6 +1,21 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
+import { clientSchema, type ClientInput } from "@/lib/schemas/client-schema";
+
+export async function createClient(raw: ClientInput) {
+  const parsed = clientSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאה" };
+  }
+  const { email, ...rest } = parsed.data;
+  const client = await db.client.create({
+    data: { ...rest, email: email || null },
+  });
+  revalidatePath("/clients");
+  return { success: true as const, clientId: client.id };
+}
 
 export async function getClients() {
   return db.client.findMany({
@@ -11,6 +26,30 @@ export async function getClients() {
       invoices: { select: { total: true, paidAmount: true } },
     },
   });
+}
+
+export async function updateClient(id: string, raw: ClientInput) {
+  const parsed = clientSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאה" };
+  }
+  const { email, ...rest } = parsed.data;
+  await db.client.update({
+    where: { id },
+    data: { ...rest, email: email || null },
+  });
+  revalidatePath("/clients");
+  return { success: true as const };
+}
+
+export async function deleteClient(id: string) {
+  try {
+    await db.client.delete({ where: { id } });
+    revalidatePath("/clients");
+    return { success: true as const };
+  } catch {
+    return { success: false as const, error: "לא ניתן למחוק לקוח עם נתונים משויכים (פרויקטים / חשבוניות)" };
+  }
 }
 
 export async function getClientById(id: string) {

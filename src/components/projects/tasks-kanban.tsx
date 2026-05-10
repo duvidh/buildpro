@@ -4,11 +4,14 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
 import {
   MoreHorizontal,
   Plus,
   Loader2,
   Sparkles,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,10 +40,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { createTask, updateTaskStatus, deleteTask, seedProjectTasks } from "@/actions/tasks";
+import { createTask, updateTask, updateTaskStatus, deleteTask, seedProjectTasks } from "@/actions/tasks";
 import { seedProjectMilestones } from "@/actions/milestones";
 import { createTaskSchema, type CreateTaskInput } from "@/lib/schemas/task-schema";
-import { TASK_PRIORITY_VALUES } from "@/lib/constants/task-enums";
+import { TASK_PRIORITY_VALUES, TASK_STATUS_VALUES } from "@/lib/constants/task-enums";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,6 +61,17 @@ type TasksKanbanProps = {
   projectId: string;
   tasks: Task[];
 };
+
+// ─── Schemas ──────────────────────────────────────────────────────────────────
+
+const updateTaskSchema = z.object({
+  name: z.string().min(2, "שם חייב להכיל לפחות 2 תווים"),
+  description: z.string().optional(),
+  status: z.enum(TASK_STATUS_VALUES),
+  priority: z.enum(TASK_PRIORITY_VALUES),
+  dueDate: z.string().optional(),
+});
+type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -130,16 +144,132 @@ function isOverdue(date: Date | null) {
   return new Date(date) < new Date();
 }
 
+function isoToDateInput(d: Date | null): string {
+  if (!d) return "";
+  return new Date(d).toISOString().slice(0, 10);
+}
+
+// ─── Edit Dialog ──────────────────────────────────────────────────────────────
+
+function EditTaskDialog({
+  task,
+  open,
+  onOpenChange,
+  onEdited,
+}: {
+  task: Task;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onEdited: () => void;
+}) {
+  const [isPending, startTransition] = useTransition();
+
+  const { register, handleSubmit, setValue, formState: { errors } } =
+    useForm<UpdateTaskInput>({
+      resolver: zodResolver(updateTaskSchema),
+      defaultValues: {
+        name: task.name,
+        description: task.description ?? "",
+        status: task.status as UpdateTaskInput["status"],
+        priority: task.priority as UpdateTaskInput["priority"],
+        dueDate: isoToDateInput(task.dueDate),
+      },
+    });
+
+  function onSubmit(data: UpdateTaskInput) {
+    startTransition(async () => {
+      const res = await updateTask(task.id, data);
+      if (res.success) {
+        toast.success("משימה עודכנה בהצלחה");
+        onOpenChange(false);
+        onEdited();
+      } else {
+        toast.error("שגיאה בעדכון המשימה");
+      }
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[440px]">
+        <DialogHeader>
+          <DialogTitle>עריכת משימה</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-1">
+          <div className="space-y-1.5">
+            <Label>שם המשימה *</Label>
+            <Input {...register("name")} />
+            {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>סטטוס</Label>
+              <Select
+                defaultValue={task.status}
+                onValueChange={(v) => setValue("status", v as UpdateTaskInput["status"])}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {TASK_STATUS_VALUES.map((s) => (
+                    <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>עדיפות</Label>
+              <Select
+                defaultValue={task.priority}
+                onValueChange={(v) => setValue("priority", v as UpdateTaskInput["priority"])}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {TASK_PRIORITY_VALUES.map((p) => (
+                    <SelectItem key={p} value={p}>{PRIORITY_LABELS[p]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>תאריך יעד</Label>
+            <Input type="date" {...register("dueDate")} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>תיאור</Label>
+            <Textarea {...register("description")} rows={2} placeholder="פרטים נוספים..." />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              ביטול
+            </Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending && <Loader2 className="h-4 w-4 animate-spin me-1.5" />}
+              שמור שינויים
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function TaskCard({
   task,
   onStatusChange,
   onDelete,
+  onEdit,
 }: {
   task: Task;
   onStatusChange: (id: string, status: string) => void;
   onDelete: (id: string) => void;
+  onEdit: (task: Task) => void;
 }) {
   const priority = PRIORITY_CONFIG[task.priority];
   const due = task.dueDate ? new Date(task.dueDate) : null;
@@ -167,6 +297,11 @@ function TaskCard({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuItem onClick={() => onEdit(task)}>
+              <Pencil className="h-3.5 w-3.5 me-2" />
+              ערוך
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs text-muted-foreground">שנה סטטוס</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {otherStatuses.map((s) => (
@@ -350,6 +485,7 @@ function SeedDemoButton({ projectId, onDone }: { projectId: string; onDone: () =
 export function TasksKanban({ projectId, tasks }: TasksKanbanProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   function handleStatusChange(id: string, status: string) {
     startTransition(async () => {
@@ -361,6 +497,7 @@ export function TasksKanban({ projectId, tasks }: TasksKanbanProps) {
   function handleDelete(id: string) {
     startTransition(async () => {
       await deleteTask(id);
+      toast.success("משימה נמחקה");
       router.refresh();
     });
   }
@@ -405,6 +542,7 @@ export function TasksKanban({ projectId, tasks }: TasksKanbanProps) {
                     task={task}
                     onStatusChange={handleStatusChange}
                     onDelete={handleDelete}
+                    onEdit={setEditingTask}
                   />
                 ))}
                 {colTasks.length === 0 && (
@@ -417,6 +555,16 @@ export function TasksKanban({ projectId, tasks }: TasksKanbanProps) {
           );
         })}
       </div>
+
+      {editingTask && (
+        <EditTaskDialog
+          key={editingTask.id}
+          task={editingTask}
+          open={!!editingTask}
+          onOpenChange={(v) => { if (!v) setEditingTask(null); }}
+          onEdited={() => { setEditingTask(null); router.refresh(); }}
+        />
+      )}
     </div>
   );
 }

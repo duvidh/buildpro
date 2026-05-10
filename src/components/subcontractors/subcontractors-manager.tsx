@@ -1,8 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Star, Phone, Mail, Building2, Package, CheckCircle2, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import {
+  Plus, Star, Phone, Mail, Package,
+  MoreHorizontal, Pencil, Trash2, Loader2,
+} from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -20,8 +24,29 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
-import { createSubcontractor } from "@/actions/subcontractors";
+import {
+  createSubcontractor,
+  updateSubcontractor,
+  deleteSubcontractor,
+} from "@/actions/subcontractors";
 
 type Supplier = {
   id: string;
@@ -64,21 +89,6 @@ function StarRating({ rating }: { rating: number | null }) {
   );
 }
 
-function FeedbackBanner({ type, message }: { type: "success" | "error"; message: string }) {
-  return (
-    <div className={`flex items-center gap-2 rounded-lg p-3 text-sm border ${
-      type === "success"
-        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-        : "bg-red-50 text-red-700 border-red-200"
-    }`}>
-      {type === "success"
-        ? <CheckCircle2 className="h-4 w-4 shrink-0" />
-        : <AlertCircle className="h-4 w-4 shrink-0" />}
-      {message}
-    </div>
-  );
-}
-
 const EMPTY_FORM = {
   name: "",
   type: "SUBCONTRACTOR",
@@ -89,19 +99,129 @@ const EMPTY_FORM = {
   notes: "",
 };
 
+// ─── Edit Dialog ──────────────────────────────────────────────────────────────
+
+function EditSupplierDialog({
+  supplier,
+  open,
+  onOpenChange,
+  onSaved,
+}: {
+  supplier: Supplier;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onSaved: (patch: Partial<Supplier>) => void;
+}) {
+  const [isPending, startTransition] = useTransition();
+  const [form, setForm] = useState({
+    name: supplier.name,
+    type: supplier.type,
+    contactName: supplier.contactName ?? "",
+    phone: supplier.phone ?? "",
+    email: supplier.email ?? "",
+    address: supplier.address ?? "",
+    notes: supplier.notes ?? "",
+  });
+
+  function handleSave() {
+    if (!form.name.trim()) return;
+    startTransition(async () => {
+      const res = await updateSubcontractor(supplier.id, {
+        name: form.name.trim(),
+        type: form.type,
+        contactName: form.contactName || undefined,
+        phone: form.phone || undefined,
+        email: form.email || undefined,
+        address: form.address || undefined,
+        notes: form.notes || undefined,
+      });
+      if (res.success) {
+        toast.success(`${form.type === "SUBCONTRACTOR" ? "קבלן המשנה" : "הספק"} עודכן בהצלחה`);
+        onSaved({
+          name: form.name.trim(),
+          type: form.type,
+          contactName: form.contactName || null,
+          phone: form.phone || null,
+          email: form.email || null,
+          address: form.address || null,
+          notes: form.notes || null,
+        });
+        onOpenChange(false);
+      } else {
+        toast.error("שגיאה בעדכון");
+      }
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>עריכת ספק / קבלן — {supplier.name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 pt-1">
+          <div className="space-y-1.5">
+            <Label>סוג *</Label>
+            <Select value={form.type} onValueChange={(v) => setForm(f => ({ ...f, type: v }))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="SUBCONTRACTOR">קבלן משנה</SelectItem>
+                <SelectItem value="SUPPLIER">ספק</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>שם החברה / עצמאי *</Label>
+            <Input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>איש קשר</Label>
+              <Input value={form.contactName} onChange={(e) => setForm(f => ({ ...f, contactName: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>טלפון</Label>
+              <Input value={form.phone} onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))} />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>דוא״ל</Label>
+            <Input type="email" value={form.email} onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>כתובת</Label>
+            <Input value={form.address} onChange={(e) => setForm(f => ({ ...f, address: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>הערות</Label>
+            <Textarea className="resize-none" rows={2} value={form.notes} onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))} />
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>ביטול</Button>
+            <Button disabled={!form.name.trim() || isPending} onClick={handleSave}>
+              {isPending && <Loader2 className="h-4 w-4 me-1.5 animate-spin" />}
+              שמור שינויים
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export function SubcontractorsManager({ initial }: Props) {
   const [items, setItems] = useState(initial);
   const [filter, setFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [editingItem, setEditingItem] = useState<Supplier | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-
-  function showFeedback(type: "success" | "error", message: string) {
-    setFeedback({ type, message });
-    setTimeout(() => setFeedback(null), 4000);
-  }
+  const [isDeleting, startDeleteTransition] = useTransition();
 
   function handleSubmit() {
     if (!form.name.trim()) return;
@@ -116,6 +236,7 @@ export function SubcontractorsManager({ initial }: Props) {
         notes: form.notes || undefined,
       });
       if (res.success) {
+        toast.success(`${form.type === "SUBCONTRACTOR" ? "קבלן המשנה" : "הספק"} נוסף בהצלחה`);
         const newItem: Supplier = {
           id: crypto.randomUUID(),
           name: form.name.trim(),
@@ -132,7 +253,24 @@ export function SubcontractorsManager({ initial }: Props) {
         setItems((prev) => [...prev, newItem].sort((a, b) => a.name.localeCompare(b.name, "he")));
         setForm(EMPTY_FORM);
         setOpen(false);
-        showFeedback("success", `${form.type === "SUBCONTRACTOR" ? "קבלן המשנה" : "הספק"} נוסף בהצלחה!`);
+      } else {
+        toast.error("שגיאה בהוספה");
+      }
+    });
+  }
+
+  function handleConfirmDelete() {
+    if (!deletingId) return;
+    setDeleteError(null);
+    startDeleteTransition(async () => {
+      const res = await deleteSubcontractor(deletingId);
+      if (res.success) {
+        toast.success("הרשומה נמחקה בהצלחה");
+        setItems((prev) => prev.filter((s) => s.id !== deletingId));
+        setDeletingId(null);
+      } else {
+        setDeleteError(res.error ?? "שגיאה במחיקה");
+        toast.error(res.error ?? "לא ניתן למחוק רשומה זו");
       }
     });
   }
@@ -149,8 +287,6 @@ export function SubcontractorsManager({ initial }: Props) {
 
   return (
     <div className="space-y-5">
-      {feedback && <FeedbackBanner type={feedback.type} message={feedback.message} />}
-
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3">
         <Input
@@ -255,6 +391,7 @@ export function SubcontractorsManager({ initial }: Props) {
                 <th className="text-start px-4 py-3 font-medium text-muted-foreground text-xs">פרטי קשר</th>
                 <th className="text-end px-4 py-3 font-medium text-muted-foreground text-xs">דירוג</th>
                 <th className="text-end px-4 py-3 font-medium text-muted-foreground text-xs">חוזים</th>
+                <th className="text-end px-4 py-3 font-medium text-muted-foreground text-xs">פעולות</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -304,12 +441,81 @@ export function SubcontractorsManager({ initial }: Props) {
                       {s._count.contracts}
                     </span>
                   </td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditingItem(s)}>
+                            <Pencil className="h-4 w-4 me-2" />
+                            עריכה
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => { setDeleteError(null); setDeletingId(s.id); }}
+                          >
+                            <Trash2 className="h-4 w-4 me-2" />
+                            מחיקה
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      {/* Edit dialog */}
+      {editingItem && (
+        <EditSupplierDialog
+          key={editingItem.id}
+          supplier={editingItem}
+          open={!!editingItem}
+          onOpenChange={(v) => { if (!v) setEditingItem(null); }}
+          onSaved={(patch) => {
+            setItems((prev) =>
+              prev.map((s) => (s.id === editingItem.id ? { ...s, ...patch } : s))
+            );
+            setEditingItem(null);
+          }}
+        />
+      )}
+
+      {/* Delete confirmation */}
+      <AlertDialog
+        open={!!deletingId}
+        onOpenChange={(v) => { if (!v) { setDeletingId(null); setDeleteError(null); } }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>האם אתה בטוח?</AlertDialogTitle>
+            <AlertDialogDescription>
+              פעולה זו תמחק את הרשומה לצמיתות.
+              לא ניתן למחוק ספק שיש לו חוזים משויכים.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteError && <p className="text-sm text-destructive px-1">{deleteError}</p>}
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting && <Loader2 className="h-4 w-4 me-1.5 animate-spin" />}
+              מחק
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

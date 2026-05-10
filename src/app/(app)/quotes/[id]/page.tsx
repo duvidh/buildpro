@@ -55,6 +55,9 @@ export default async function QuoteDetailPage({
     category: c.category,
   }));
 
+  const entityName = quote.client?.name ?? quote.lead?.name ?? "ללא שיוך";
+  const isLeadQuote = !quote.client && !!quote.lead;
+
   return (
     <div className="flex flex-col gap-6 p-6 max-w-6xl mx-auto">
       {/* Breadcrumb */}
@@ -78,7 +81,14 @@ export default async function QuoteDetailPage({
             <h1 className="text-2xl font-bold">
               {quote.quoteNumber ?? "הצעת מחיר"}
             </h1>
-            <p className="text-sm text-muted-foreground">{quote.client.name}</p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              {isLeadQuote && (
+                <Badge variant="outline" className="text-[10px] h-4 px-1.5 py-0 bg-amber-50 text-amber-700 border-amber-200">
+                  ליד
+                </Badge>
+              )}
+              <p className="text-sm text-muted-foreground">{entityName}</p>
+            </div>
           </div>
         </div>
         <Badge variant={STATUS_VARIANT[quote.status] ?? "secondary"} className="text-sm px-3 py-1">
@@ -97,8 +107,9 @@ export default async function QuoteDetailPage({
           <QuoteHeaderForm
             quoteId={quote.id}
             clients={clientOptions}
+            leadName={quote.lead?.name ?? null}
             initialValues={{
-              clientId: quote.client.id,
+              clientId: quote.client?.id ?? "",
               date: fmtDate(quote.date),
               validUntil: fmtDate(quote.validUntil),
               status: quote.status,

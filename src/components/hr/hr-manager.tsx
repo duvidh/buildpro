@@ -1,9 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { UserCog, Plus, Phone, ShieldCheck, ShieldAlert, Clock } from "lucide-react";
+import { toast } from "sonner";
+import {
+  UserCog, Plus, Phone, ShieldCheck, ShieldAlert, Clock,
+  MoreHorizontal, Pencil, Trash2, Loader2,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -14,7 +18,24 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { createEmployee, toggleEmployeeActive } from "@/actions/hr";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { createEmployee, updateEmployee, deleteEmployee, toggleEmployeeActive } from "@/actions/hr";
 
 type Employee = {
   id: string;
@@ -44,6 +65,104 @@ const CERT_CONFIG: Record<CertStatus, { label: string; cls: string; Icon: React.
 
 const EMPTY = { name: "", trade: "", phone: "", idNumber: "", hourlyRate: "", startDate: "" };
 
+// ─── Edit Dialog ──────────────────────────────────────────────────────────────
+
+function EditEmployeeDialog({
+  employee,
+  open,
+  onOpenChange,
+  onSaved,
+}: {
+  employee: Employee;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onSaved: (patch: { name: string; trade: string | null; phone: string | null; idNumber: string | null; hourlyRate: number }) => void;
+}) {
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    name: employee.name,
+    trade: employee.trade ?? "",
+    phone: employee.phone ?? "",
+    idNumber: employee.idNumber ?? "",
+    hourlyRate: employee.hourlyRate ? String(employee.hourlyRate) : "",
+  });
+
+  function handleSave() {
+    if (!form.name.trim()) { setError("שם העובד הוא שדה חובה."); return; }
+    setError(null);
+    startTransition(async () => {
+      const res = await updateEmployee(employee.id, {
+        name: form.name.trim(),
+        trade: form.trade || undefined,
+        phone: form.phone || undefined,
+        idNumber: form.idNumber || undefined,
+        hourlyRate: form.hourlyRate ? parseFloat(form.hourlyRate) : undefined,
+      });
+      if (res.success) {
+        toast.success("פרטי העובד עודכנו");
+        onSaved({
+          name: form.name.trim(),
+          trade: form.trade || null,
+          phone: form.phone || null,
+          idNumber: form.idNumber || null,
+          hourlyRate: form.hourlyRate ? parseFloat(form.hourlyRate) : 0,
+        });
+        onOpenChange(false);
+      } else {
+        setError(res.error ?? "שגיאה בעדכון");
+        toast.error("שגיאה בעדכון העובד");
+      }
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md" dir="rtl">
+        <DialogHeader>
+          <DialogTitle>עריכת עובד — {employee.name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 pt-2">
+          <div className="space-y-1">
+            <Label>שם מלא *</Label>
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="ישראל ישראלי" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>מקצוע / תפקיד</Label>
+              <Input value={form.trade} onChange={(e) => setForm({ ...form, trade: e.target.value })} placeholder="מנהל עבודה" />
+            </div>
+            <div className="space-y-1">
+              <Label>טלפון</Label>
+              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="050-1234567" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>מספר ת.ז</Label>
+              <Input value={form.idNumber} onChange={(e) => setForm({ ...form, idNumber: e.target.value })} placeholder="123456789" />
+            </div>
+            <div className="space-y-1">
+              <Label>תעריף שעתי (₪)</Label>
+              <Input type="number" value={form.hourlyRate} onChange={(e) => setForm({ ...form, hourlyRate: e.target.value })} placeholder="100" />
+            </div>
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="outline" onClick={() => { onOpenChange(false); setError(null); }}>ביטול</Button>
+            <Button onClick={handleSave} disabled={isPending}>
+              {isPending && <Loader2 className="h-4 w-4 me-1.5 animate-spin" />}
+              שמור שינויים
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export function HRManager({ initial }: { initial: Employee[] }) {
   const [employees, setEmployees] = useState(initial);
   const [search, setSearch] = useState("");
@@ -51,7 +170,11 @@ export function HRManager({ initial }: { initial: Employee[] }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [error, setError] = useState<string | null>(null);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [deletingEmployeeId, setDeletingEmployeeId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const [isDeleting, startDeleteTransition] = useTransition();
 
   const filtered = employees.filter((e) => {
     if (!showInactive && !e.active) return false;
@@ -81,7 +204,6 @@ export function HRManager({ initial }: { initial: Employee[] }) {
       setOpen(false);
       setForm(EMPTY);
       setError(null);
-      // Refresh optimistically — full data comes from next navigation
       window.location.reload();
     });
   }
@@ -90,6 +212,22 @@ export function HRManager({ initial }: { initial: Employee[] }) {
     setEmployees((prev) => prev.map((e) => (e.id === id ? { ...e, active } : e)));
     startTransition(async () => {
       await toggleEmployeeActive(id, active);
+    });
+  }
+
+  function handleConfirmDelete() {
+    if (!deletingEmployeeId) return;
+    setDeleteError(null);
+    startDeleteTransition(async () => {
+      const res = await deleteEmployee(deletingEmployeeId);
+      if (res.success) {
+        toast.success("העובד נמחק בהצלחה");
+        setEmployees((prev) => prev.filter((e) => e.id !== deletingEmployeeId));
+        setDeletingEmployeeId(null);
+      } else {
+        setDeleteError(res.error ?? "שגיאה במחיקה");
+        toast.error(res.error ?? "לא ניתן למחוק עובד זה");
+      }
     });
   }
 
@@ -189,12 +327,13 @@ export function HRManager({ initial }: { initial: Employee[] }) {
               <th className="text-end font-medium text-muted-foreground px-4 py-3 text-xs">תעריף שעתי</th>
               <th className="text-center font-medium text-muted-foreground px-4 py-3 text-xs">אישור בטיחות</th>
               <th className="text-center font-medium text-muted-foreground px-4 py-3 text-xs">פעיל</th>
+              <th className="text-end font-medium text-muted-foreground px-4 py-3 text-xs">פעולות</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center text-muted-foreground text-sm py-10">
+                <td colSpan={7} className="text-center text-muted-foreground text-sm py-10">
                   לא נמצאו עובדים.
                 </td>
               </tr>
@@ -248,12 +387,80 @@ export function HRManager({ initial }: { initial: Employee[] }) {
                       />
                     </div>
                   </td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditingEmployee(emp)}>
+                            <Pencil className="h-4 w-4 me-2" />
+                            עריכה
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => { setDeleteError(null); setDeletingEmployeeId(emp.id); }}
+                          >
+                            <Trash2 className="h-4 w-4 me-2" />
+                            מחיקה
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+
+      {/* Edit dialog */}
+      {editingEmployee && (
+        <EditEmployeeDialog
+          key={editingEmployee.id}
+          employee={editingEmployee}
+          open={!!editingEmployee}
+          onOpenChange={(v) => { if (!v) setEditingEmployee(null); }}
+          onSaved={(patch) => {
+            setEmployees((prev) =>
+              prev.map((e) => (e.id === editingEmployee.id ? { ...e, ...patch } : e))
+            );
+            setEditingEmployee(null);
+          }}
+        />
+      )}
+
+      {/* Delete confirmation */}
+      <AlertDialog
+        open={!!deletingEmployeeId}
+        onOpenChange={(v) => { if (!v) { setDeletingEmployeeId(null); setDeleteError(null); } }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>האם אתה בטוח?</AlertDialogTitle>
+            <AlertDialogDescription>
+              פעולה זו תמחק את העובד לצמיתות ואינה הפיכה.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteError && <p className="text-sm text-destructive px-1">{deleteError}</p>}
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting && <Loader2 className="h-4 w-4 me-1.5 animate-spin" />}
+              מחק עובד
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

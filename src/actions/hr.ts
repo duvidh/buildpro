@@ -40,6 +40,40 @@ export async function createEmployee(data: {
   }
 }
 
+export async function updateEmployee(
+  id: string,
+  data: { name: string; trade?: string; phone?: string; idNumber?: string; hourlyRate?: number }
+) {
+  try {
+    await db.employee.update({
+      where: { id },
+      data: {
+        name: data.name,
+        trade: data.trade || null,
+        phone: data.phone || null,
+        idNumber: data.idNumber || null,
+        hourlyRate: data.hourlyRate ?? 0,
+      },
+    });
+    revalidatePath("/hr");
+    return { success: true as const };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "שגיאה";
+    if (msg.includes("idNumber")) return { success: false as const, error: "מספר ת.ז כבר קיים במערכת." };
+    return { success: false as const, error: "שגיאה בעדכון העובד." };
+  }
+}
+
+export async function deleteEmployee(id: string) {
+  try {
+    await db.employee.delete({ where: { id } });
+    revalidatePath("/hr");
+    return { success: true as const };
+  } catch {
+    return { success: false as const, error: "לא ניתן למחוק עובד עם נתונים משויכים." };
+  }
+}
+
 export async function toggleEmployeeActive(id: string, active: boolean) {
   await db.employee.update({ where: { id }, data: { active } });
   revalidatePath("/hr");

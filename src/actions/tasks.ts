@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { createTaskSchema, type CreateTaskInput } from "@/lib/schemas/task-schema";
 import type { TaskStatusValue } from "@/lib/constants/task-enums";
+import { TaskPriority } from "@/generated/prisma/client";
 
 export async function getAllTasks() {
   return db.task.findMany({
@@ -46,6 +47,31 @@ export async function updateTaskStatus(id: string, status: TaskStatusValue) {
   });
   revalidatePath(`/projects/${task.projectId}`);
   revalidatePath("/tasks");
+  return { success: true as const };
+}
+
+export async function updateTask(
+  id: string,
+  data: {
+    name: string;
+    description?: string;
+    status: string;
+    priority: string;
+    dueDate?: string;
+  }
+) {
+  const task = await db.task.update({
+    where: { id },
+    data: {
+      name: data.name,
+      description: data.description || null,
+      status: data.status as TaskStatusValue,
+      priority: data.priority as TaskPriority,
+      dueDate: data.dueDate ? new Date(data.dueDate) : null,
+      completedAt: data.status === "DONE" ? new Date() : null,
+    },
+  });
+  revalidatePath(`/projects/${task.projectId}`);
   return { success: true as const };
 }
 

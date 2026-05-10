@@ -1,10 +1,27 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   LayoutDashboard,
   CheckSquare,
@@ -26,8 +43,12 @@ import {
   TrendingDown,
   Users,
   Wrench,
+  Lock,
+  Plus,
+  Loader2,
 } from "lucide-react";
 import { updateProjectSettings } from "@/actions/projects";
+import { recordPayment } from "@/actions/finance";
 import { TasksKanban } from "@/components/projects/tasks-kanban";
 import { MilestonesTimeline } from "@/components/projects/milestones-timeline";
 import { QCTab } from "@/components/projects/qc-tab";
@@ -541,6 +562,165 @@ function FieldReportsTab({
   );
 }
 
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  BANK_TRANSFER: "העברה בנקאית",
+  CHECK: "צ'ק",
+  CASH: "מזומן",
+  CREDIT_CARD: "כרטיס אשראי",
+  OTHER: "אחר",
+};
+
+function AddPaymentDialog({
+  invoice,
+  onSuccess,
+}: {
+  invoice: Invoice;
+  onSuccess: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState("BANK_TRANSFER");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [reference, setReference] = useState("");
+  const [error, setError] = useState("");
+
+  const isPaid = invoice.status === "PAID";
+  const balance = invoice.total - invoice.paidAmount;
+
+  function handleOpen(val: boolean) {
+    setOpen(val);
+    if (!val) {
+      setAmount("");
+      setReference("");
+      setError("");
+    }
+  }
+
+  function submit() {
+    const amountNum = parseFloat(amount);
+    if (!amount || isNaN(amountNum) || amountNum <= 0) {
+      setError("הכנס סכום תקין");
+      return;
+    }
+    if (amountNum > balance + 0.01) {
+      setError(`הסכום גבוה מהיתרה (${fmtShekel(balance)})`);
+      return;
+    }
+    setError("");
+    startTransition(async () => {
+      const res = await recordPayment(invoice.id, {
+        amount: amountNum,
+        method,
+        date,
+        reference: reference || undefined,
+      });
+      if (res.success) {
+        handleOpen(false);
+        onSuccess();
+      } else {
+        setError(res.error ?? "שגיאה");
+      }
+    });
+  }
+
+  if (isPaid) {
+    return (
+      <div className="flex items-center justify-center gap-1 text-muted-foreground" title="שולמה במלואה">
+        <Lock className="h-3.5 w-3.5" />
+        <span className="text-xs">שולמה</span>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-6 text-xs px-2 gap-1"
+        onClick={() => handleOpen(true)}
+      >
+        <Plus className="h-3 w-3" />
+        תשלום
+      </Button>
+
+      <Dialog open={open} onOpenChange={handleOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>הוסף תשלום</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-1">
+            <div className="text-sm text-muted-foreground">
+              חשבונית <span className="font-medium text-foreground">#{invoice.invoiceNumber}</span>
+              {" · "}יתרה לתשלום:{" "}
+              <span className="font-semibold text-foreground">{fmtShekel(balance)}</span>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label>סכום (₪) *</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                dir="ltr"
+                placeholder={fmtShekel(balance).replace("₪", "")}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label>תאריך תשלום *</Label>
+              <Input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label>אמצעי תשלום</Label>
+              <Select value={method} onValueChange={setMethod}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(PAYMENT_METHOD_LABELS).map(([val, label]) => (
+                    <SelectItem key={val} value={val}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label>אסמכתא</Label>
+              <Input
+                placeholder="מספר שיק, אסמכתא..."
+                dir="ltr"
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+              />
+            </div>
+
+            {error && <p className="text-xs text-destructive">{error}</p>}
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button type="button" variant="outline" size="sm" onClick={() => handleOpen(false)}>
+                ביטול
+              </Button>
+              <Button size="sm" onClick={submit} disabled={isPending}>
+                {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin me-1.5" />}
+                שמור תשלום
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 function FinancialsTab({
   contractValue,
   timeEntries,
@@ -556,6 +736,7 @@ function FinancialsTab({
   invoices: Invoice[];
   changeRequests: ChangeRequestEntry[];
 }) {
+  const router = useRouter();
   const approvedCRs = changeRequests.filter(cr => cr.status === "APPROVED").reduce((s, cr) => s + cr.costImpact, 0);
   const budget = contractValue + approvedCRs;
   const laborCost = timeEntries.reduce((s, te) => s + te.totalCost, 0);
@@ -661,6 +842,7 @@ function FinancialsTab({
                   <th className="text-end font-medium text-muted-foreground px-3 py-2 text-xs">סכום</th>
                   <th className="text-end font-medium text-muted-foreground px-3 py-2 text-xs">שולם</th>
                   <th className="text-end font-medium text-muted-foreground px-3 py-2 text-xs">יתרה</th>
+                  <th className="text-center font-medium text-muted-foreground px-3 py-2 text-xs">פעולה</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -680,6 +862,9 @@ function FinancialsTab({
                       </td>
                       <td className="px-3 py-2.5 text-end tabular-nums">
                         {bal > 0 ? <span className="text-orange-600 font-medium">{fmtShekel(bal)}</span> : <span className="text-muted-foreground">—</span>}
+                      </td>
+                      <td className="px-3 py-2.5 text-center">
+                        <AddPaymentDialog invoice={inv} onSuccess={() => router.refresh()} />
                       </td>
                     </tr>
                   );
@@ -907,9 +1092,18 @@ export function ProjectTabs({
   risks,
   workPackages,
 }: ProjectTabsProps) {
-  const [tab, setTab] = useState("overview");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState(() => searchParams.get("tab") ?? "overview");
   const [settings, setSettings] = useState<SettingsState>(initialSettings);
   const [, startTransition] = useTransition();
+
+  function handleTabChange(value: string) {
+    setTab(value);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", value);
+    router.replace(`?${params.toString()}`, { scroll: false });
+  }
 
   function toggleSetting(key: keyof SettingsState, value: boolean) {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -940,7 +1134,7 @@ export function ProjectTabs({
     "relative rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2.5 text-sm font-medium text-muted-foreground data-[state=active]:text-foreground shrink-0";
 
   return (
-    <Tabs value={tab} onValueChange={setTab} className="w-full">
+    <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
       <ScrollArea className="w-full" type="scroll">
         <TabsList className="w-full justify-start border-b border-border rounded-none bg-transparent p-0 h-auto gap-0 min-w-max">
           {[

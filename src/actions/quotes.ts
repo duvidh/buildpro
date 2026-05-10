@@ -10,6 +10,7 @@ export async function getQuotes() {
     orderBy: { createdAt: "desc" },
     include: {
       client: { select: { id: true, name: true } },
+      lead: { select: { id: true, name: true } },
       _count: { select: { items: true } },
     },
   });
@@ -20,6 +21,7 @@ export async function getQuoteById(id: string) {
     where: { id },
     include: {
       client: { select: { id: true, name: true } },
+      lead: { select: { id: true, name: true } },
       items: {
         orderBy: { order: "asc" },
         include: {
@@ -42,7 +44,8 @@ export async function createQuote(data: CreateQuoteInput) {
   const quoteNumber = await generateQuoteNumber();
   const quote = await db.quote.create({
     data: {
-      clientId: data.clientId,
+      clientId: data.clientId || null,
+      leadId: data.leadId || null,
       projectId: data.projectId || null,
       quoteNumber,
       date: new Date(),

@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AppSidebar } from "./app-sidebar";
+import { MOCK_CURRENT_USER } from "@/lib/config/app-config";
 
 const pageTitles: Record<string, string> = {
   "/dashboard":    "לוח בקרה",
@@ -119,19 +120,19 @@ export function AppHeader() {
           >
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                מ
+                {MOCK_CURRENT_USER.initials}
               </AvatarFallback>
             </Avatar>
             <span className="hidden sm:block text-sm font-medium text-foreground">
-              מנהל מערכת
+              {MOCK_CURRENT_USER.name}
             </span>
             <ChevronDown className="hidden sm:block h-3.5 w-3.5 text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
           <DropdownMenuLabel>
-            <p className="font-medium">מנהל מערכת</p>
-            <p className="text-xs text-muted-foreground font-normal">admin@buildpro.co.il</p>
+            <p className="font-medium">{MOCK_CURRENT_USER.name}</p>
+            <p className="text-xs text-muted-foreground font-normal">{MOCK_CURRENT_USER.email}</p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>

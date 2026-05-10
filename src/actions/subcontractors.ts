@@ -37,6 +37,36 @@ export async function createSubcontractor(data: {
   return { success: true as const };
 }
 
+export async function updateSubcontractor(
+  id: string,
+  data: { name: string; type: string; contactName?: string; phone?: string; email?: string; address?: string; notes?: string }
+) {
+  await db.supplier.update({
+    where: { id },
+    data: {
+      name: data.name,
+      type: data.type as SupplierType,
+      contactName: data.contactName || null,
+      phone: data.phone || null,
+      email: data.email || null,
+      address: data.address || null,
+      notes: data.notes || null,
+    },
+  });
+  revalidatePath("/subcontractors");
+  return { success: true as const };
+}
+
+export async function deleteSubcontractor(id: string) {
+  try {
+    await db.supplier.delete({ where: { id } });
+    revalidatePath("/subcontractors");
+    return { success: true as const };
+  } catch {
+    return { success: false as const, error: "לא ניתן למחוק ספק עם חוזים משויכים." };
+  }
+}
+
 export async function updateSubcontractorRating(id: string, rating: number) {
   await db.supplier.update({ where: { id }, data: { rating } });
   revalidatePath("/subcontractors");

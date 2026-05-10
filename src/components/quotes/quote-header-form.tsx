@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +35,7 @@ type Props = {
     notes?: string | null;
   };
   clients: Client[];
+  leadName?: string | null;
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -46,8 +48,9 @@ const STATUS_LABELS: Record<string, string> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function QuoteHeaderForm({ quoteId, initialValues, clients }: Props) {
+export function QuoteHeaderForm({ quoteId, initialValues, clients, leadName }: Props) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isLeadQuote = !initialValues.clientId && !!leadName;
 
   const { register, watch, setValue, getValues } = useForm<UpdateQuoteHeaderInput>({
     resolver: zodResolver(updateQuoteHeaderSchema),
@@ -75,27 +78,36 @@ export function QuoteHeaderForm({ quoteId, initialValues, clients }: Props) {
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {/* Client */}
+      {/* Client or Lead */}
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="clientId">לקוח</Label>
-        <Select
-          defaultValue={initialValues.clientId}
-          onValueChange={(val) => {
-            setValue("clientId", val);
-            autoSave();
-          }}
-        >
-          <SelectTrigger id="clientId">
-            <SelectValue placeholder="בחר לקוח" />
-          </SelectTrigger>
-          <SelectContent>
-            {clients.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {isLeadQuote ? (
+          <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-border bg-muted/40">
+            <Badge variant="outline" className="text-[10px] h-4 px-1.5 py-0 bg-amber-50 text-amber-700 border-amber-200 shrink-0">
+              ליד
+            </Badge>
+            <span className="text-sm text-muted-foreground truncate">{leadName}</span>
+          </div>
+        ) : (
+          <Select
+            defaultValue={initialValues.clientId}
+            onValueChange={(val) => {
+              setValue("clientId", val);
+              autoSave();
+            }}
+          >
+            <SelectTrigger id="clientId">
+              <SelectValue placeholder="בחר לקוח" />
+            </SelectTrigger>
+            <SelectContent>
+              {clients.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Date */}

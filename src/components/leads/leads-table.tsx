@@ -466,12 +466,15 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
 
         {/* Employee filter */}
         {employees.length > 0 && (
-          <Select value={filterEmployeeId} onValueChange={setFilterEmployeeId}>
+          <Select
+            value={filterEmployeeId || "__all__"}
+            onValueChange={(v) => setFilterEmployeeId(v === "__all__" ? "" : v)}
+          >
             <SelectTrigger className="h-9 w-44 text-sm">
               <SelectValue placeholder="סנן לפי נציג" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">כל הנציגים</SelectItem>
+              <SelectItem value="__all__">כל הנציגים</SelectItem>
               {employees.map((e) => (
                 <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
               ))}

@@ -73,6 +73,7 @@ export async function seedUsers() {
   if (count > 0) return { success: true as const, skipped: true };
 
   await db.user.createMany({
+    skipDuplicates: true,
     data: [
       {
         name: "מנהל מערכת",

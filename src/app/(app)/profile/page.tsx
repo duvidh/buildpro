@@ -1,10 +1,12 @@
+export const dynamic = "force-dynamic";
+
 import { User } from "lucide-react";
 import { seedUsers, getCurrentUser } from "@/actions/users";
 import { ProfileClient } from "@/components/profile/profile-client";
 import { notFound } from "next/navigation";
 
 export default async function ProfilePage() {
-  await seedUsers();
+  if (process.env.NODE_ENV !== "production") await seedUsers();
   const user = await getCurrentUser();
   if (!user) notFound();
 

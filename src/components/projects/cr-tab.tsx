@@ -12,6 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { createChangeRequest, updateChangeRequestStatus, seedChangeRequests } from "@/actions/change-orders";
+import { fmtShekel, fmtDate } from "@/lib/utils";
 
 type ChangeRequestEntry = {
   id: string;
@@ -29,16 +30,6 @@ const CR_STATUS: Record<string, { label: string; cls: string }> = {
   APPROVED: { label: "אושר",  cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
   REJECTED: { label: "נדחה",  cls: "bg-red-100 text-red-700 border-red-200" },
 };
-
-function fmtShekel(v: number) {
-  if (Math.abs(v) >= 1_000_000) return `₪${(v / 1_000_000).toFixed(1)}M`;
-  if (Math.abs(v) >= 1_000) return `₪${(v / 1_000).toFixed(0)}K`;
-  return `₪${v.toLocaleString("he-IL", { maximumFractionDigits: 0 })}`;
-}
-
-function fmt(date: Date) {
-  return new Intl.DateTimeFormat("he-IL").format(new Date(date));
-}
 
 const EMPTY = { description: "", requestedBy: "", costImpact: "", scheduleImpact: "" };
 
@@ -189,6 +180,7 @@ export function CRTab({
 
       {/* Table */}
       <div className="rounded-lg border border-border overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-muted/40">
             <tr>
@@ -206,7 +198,7 @@ export function CRTab({
                 <tr key={cr.id} className="hover:bg-muted/20">
                   <td className="px-3 py-2.5 max-w-[180px]">
                     <p className="text-xs leading-snug">{cr.description}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">{fmt(cr.date)}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{fmtDate(cr.date)}</p>
                     {cr.scheduleImpact > 0 && (
                       <p className="text-[11px] text-orange-600 mt-0.5">+{cr.scheduleImpact} ימי עיכוב</p>
                     )}
@@ -255,6 +247,7 @@ export function CRTab({
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

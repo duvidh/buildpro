@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Suspense } from "react";
 import { Building2 } from "lucide-react";
 import { getClients } from "@/actions/clients";

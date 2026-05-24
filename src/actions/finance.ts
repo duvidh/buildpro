@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
+import { PaymentMethod, InvoiceStatus } from "@/generated/prisma/client";
 
 export async function recordPayment(
   invoiceId: string,
@@ -12,10 +13,10 @@ export async function recordPayment(
     select: { total: true, paidAmount: true, status: true, projectId: true },
   });
   if (!invoice) return { success: false as const, error: "חשבונית לא נמצאה" };
-  if (invoice.status === "PAID") return { success: false as const, error: "החשבונית כבר שולמה במלואה" };
+  if (invoice.status === InvoiceStatus.PAID) return { success: false as const, error: "החשבונית כבר שולמה במלואה" };
 
   const newPaid = Math.round((invoice.paidAmount + data.amount) * 100) / 100;
-  const newStatus = newPaid >= invoice.total ? "PAID" : "PARTIALLY_PAID";
+  const newStatus: InvoiceStatus = newPaid >= invoice.total ? InvoiceStatus.PAID : InvoiceStatus.PARTIALLY_PAID;
 
   await db.$transaction([
     db.payment.create({
@@ -23,13 +24,13 @@ export async function recordPayment(
         invoiceId,
         date: new Date(data.date),
         amount: data.amount,
-        method: data.method as any,
+        method: data.method as PaymentMethod,
         reference: data.reference || null,
       },
     }),
     db.invoice.update({
       where: { id: invoiceId },
-      data: { paidAmount: newPaid, status: newStatus as any },
+      data: { paidAmount: newPaid, status: newStatus },
     }),
   ]);
 
@@ -38,10 +39,7 @@ export async function recordPayment(
   return { success: true as const };
 }
 
-const HE_MONTHS = [
-  "ינו׳","פבר׳","מרץ","אפר׳","מאי","יונ׳",
-  "יול׳","אוג׳","ספט׳","אוק׳","נוב׳","דצמ׳",
-];
+import { HE_MONTHS } from "@/lib/utils";
 
 export async function getCompanyFinancials() {
   const twelveAgo = new Date();

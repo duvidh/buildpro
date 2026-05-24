@@ -14,6 +14,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { seedProcurement, createContractSimple } from "@/actions/procurement";
+import { fmtShekel } from "@/lib/utils";
 
 type ProjectContract = {
   id: string;
@@ -37,12 +38,6 @@ const SUPPLIER_TYPE_LABEL: Record<string, string> = {
   SUPPLIER:      "ספק",
   SUBCONTRACTOR: "קבלן משנה",
 };
-
-function fmtShekel(v: number) {
-  if (Math.abs(v) >= 1_000_000) return `₪${(v / 1_000_000).toFixed(1)}M`;
-  if (Math.abs(v) >= 1_000) return `₪${(v / 1_000).toFixed(0)}K`;
-  return `₪${v.toLocaleString("he-IL", { maximumFractionDigits: 0 })}`;
-}
 
 const EMPTY = { supplierName: "", supplierType: "SUBCONTRACTOR", description: "", value: "", retentionPercent: "0" };
 

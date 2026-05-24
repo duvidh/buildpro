@@ -70,7 +70,6 @@ export async function getProjectById(id: string) {
       },
       tasks: {
         orderBy: { createdAt: "desc" },
-        take: 30,
         include: {
           assignedTo: { select: { id: true, name: true } },
         },
@@ -170,6 +169,7 @@ export async function updateProject(id: string, raw: UpdateProjectInput) {
   });
   revalidatePath(`/projects/${id}`);
   revalidatePath("/projects");
+  revalidatePath("/clients");
   return { success: true as const };
 }
 

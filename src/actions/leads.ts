@@ -68,9 +68,13 @@ export async function deleteLead(id: string) {
 }
 
 export async function updateLeadStatus(id: string, status: LeadStatusValue) {
-  await db.lead.update({ where: { id }, data: { status } });
-  revalidatePath("/leads");
-  return { success: true as const };
+  try {
+    await db.lead.update({ where: { id }, data: { status } });
+    revalidatePath("/leads");
+    return { success: true as const };
+  } catch {
+    return { success: false as const, error: "לא ניתן לעדכן את סטטוס הליד." };
+  }
 }
 
 export async function getLeadsForSelect() {

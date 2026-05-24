@@ -253,6 +253,7 @@ function UsersTab({ initialUsers }: { initialUsers: User[] }) {
         </div>
         <Separator />
         <div className="rounded-lg border border-border overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40">
               <tr>
@@ -309,6 +310,7 @@ function UsersTab({ initialUsers }: { initialUsers: User[] }) {
               })}
             </tbody>
           </table>
+          </div>
         </div>
         <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-700">
           <strong>הערה:</strong> שינוי תפקיד ל״עובד שטח״ מגביל גישה למידע פיננסי ולסכומי חוזים.

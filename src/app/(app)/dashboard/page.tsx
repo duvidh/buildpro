@@ -19,17 +19,13 @@ import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { DashboardActions } from "@/components/dashboard/dashboard-actions";
 import { getDashboardData } from "@/actions/dashboard";
 import { getClients } from "@/actions/clients";
-import { MOCK_CURRENT_USER } from "@/lib/config/app-config";
+import { getSession } from "@/lib/session";
+import { fmtShekel } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function fmtMoney(v: number) {
-  if (v >= 1_000_000) return `₪${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `₪${Math.round(v / 1_000)}K`;
-  return v > 0 ? `₪${v.toLocaleString("he-IL")}` : "₪0";
-}
 
 function fmtDue(d: Date | null): { text: string; overdue: boolean } {
   if (!d) return { text: "—", overdue: false };
@@ -92,8 +88,9 @@ const PROJECT_STATUS_CONFIG: Record<string, { label: string; className: string }
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
-  const [{ kpis, projects, upcomingTasks, chartData, currentMonth, totalChartRevenue, avgMonthlyRevenue, recentPayments }, clients] =
-    await Promise.all([getDashboardData(), getClients()]);
+  const [{ kpis, projects, upcomingTasks, chartData, currentMonth, totalChartRevenue, avgMonthlyRevenue, recentPayments }, clients, session] =
+    await Promise.all([getDashboardData(), getClients(), getSession()]);
+  const currentUserName = session?.name ?? "משתמש";
 
   const clientOptions = clients.map((c) => ({ id: c.id, name: c.name, address: c.address ?? "" }));
 
@@ -142,7 +139,7 @@ export default async function DashboardPage() {
     },
     {
       label: "הכנסה חודשית",
-      value: fmtMoney(kpis.monthlyRevenue),
+      value: fmtShekel(kpis.monthlyRevenue),
       trend: {
         text:
           revenueChange !== null
@@ -164,7 +161,7 @@ export default async function DashboardPage() {
       {/* Quick Actions */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-foreground">ברוך הבא, {MOCK_CURRENT_USER.name}</h2>
+          <h2 className="text-xl font-bold text-foreground">ברוך הבא, {currentUserName}</h2>
           <p className="text-sm text-muted-foreground mt-0.5">{fmtDate()}</p>
         </div>
         <DashboardActions clientOptions={clientOptions} />
@@ -212,12 +209,12 @@ export default async function DashboardPage() {
                 הכנסות — 6 חודשים אחרונים
               </CardTitle>
               <p className="text-xs text-muted-foreground mt-0.5">
-                סך הכנסות: {fmtMoney(totalChartRevenue)} · ממוצע חודשי:{" "}
-                {fmtMoney(avgMonthlyRevenue)}
+                סך הכנסות: {fmtShekel(totalChartRevenue)} · ממוצע חודשי:{" "}
+                {fmtShekel(avgMonthlyRevenue)}
               </p>
             </div>
             <Badge variant="outline" className="text-xs font-normal">
-              {fmtMoney(kpis.monthlyRevenue)} {currentMonth}
+              {fmtShekel(kpis.monthlyRevenue)} {currentMonth}
             </Badge>
           </div>
         </CardHeader>
@@ -447,7 +444,7 @@ export default async function DashboardPage() {
                         />
                         {project.contractValue > 0 && (
                           <span className="text-[11px] text-muted-foreground shrink-0">
-                            {fmtMoney(project.contractValue)}
+                            {fmtShekel(project.contractValue)}
                           </span>
                         )}
                       </div>

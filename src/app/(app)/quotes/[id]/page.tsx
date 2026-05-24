@@ -1,8 +1,11 @@
+export const dynamic = "force-dynamic";
+
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { getQuoteById } from "@/actions/quotes";
 import { getClients } from "@/actions/clients";
@@ -59,17 +62,20 @@ export default async function QuoteDetailPage({
   const isLeadQuote = !quote.client && !!quote.lead;
 
   return (
-    <div className="flex flex-col gap-6 p-6 max-w-6xl mx-auto">
+    <div className="flex flex-col gap-6 max-w-5xl">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Link href="/quotes" className="hover:text-foreground transition-colors">
-          הצעות מחיר
-        </Link>
-        <ArrowRight className="h-3.5 w-3.5" />
-        <span className="text-foreground font-medium">
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" asChild className="text-muted-foreground -me-1">
+          <Link href="/quotes">
+            <ArrowRight className="h-4 w-4 me-1" />
+            הצעות מחיר
+          </Link>
+        </Button>
+        <span className="text-muted-foreground text-sm">/</span>
+        <span className="text-sm font-medium text-foreground">
           {quote.quoteNumber ?? "הצעה חדשה"}
         </span>
-      </nav>
+      </div>
 
       {/* Page title + badge */}
       <div className="flex items-start justify-between gap-4">

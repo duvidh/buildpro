@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Suspense } from "react";
 import { Users } from "lucide-react";
 import { getLeads } from "@/actions/leads";

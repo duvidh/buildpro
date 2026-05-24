@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -17,13 +19,10 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { getClientById } from "@/actions/clients";
 import { ClientTabs } from "@/components/clients/client-tabs";
+import { fmtShekel } from "@/lib/utils";
 
 function getInitials(name: string) {
   return name.trim().split(" ").slice(0, 2).map((w) => w[0]).join("");
-}
-
-function fmtCurrency(n: number) {
-  return `₪${n.toLocaleString("he-IL", { maximumFractionDigits: 0 })}`;
 }
 
 export default async function ClientDetailPage({
@@ -46,7 +45,7 @@ export default async function ClientDetailPage({
   const financialKpis = [
     {
       label: "ערך חוזים",
-      value: fmtCurrency(totalContractValue),
+      value: fmtShekel(totalContractValue),
       icon: TrendingUp,
       iconBg: "bg-blue-50",
       iconColor: "text-blue-600",
@@ -54,7 +53,7 @@ export default async function ClientDetailPage({
     },
     {
       label: "סה\"כ חויב",
-      value: fmtCurrency(totalInvoiced),
+      value: fmtShekel(totalInvoiced),
       icon: FileText,
       iconBg: "bg-violet-50",
       iconColor: "text-violet-600",
@@ -62,7 +61,7 @@ export default async function ClientDetailPage({
     },
     {
       label: "סה\"כ שולם",
-      value: fmtCurrency(totalPaid),
+      value: fmtShekel(totalPaid),
       icon: Wallet,
       iconBg: "bg-emerald-50",
       iconColor: "text-emerald-600",
@@ -70,7 +69,7 @@ export default async function ClientDetailPage({
     },
     {
       label: "יתרת חוב",
-      value: fmtCurrency(openBalance),
+      value: fmtShekel(openBalance),
       icon: AlertCircle,
       iconBg: openBalance > 0 ? "bg-orange-50" : "bg-emerald-50",
       iconColor: openBalance > 0 ? "text-orange-500" : "text-emerald-600",
@@ -178,10 +177,10 @@ export default async function ClientDetailPage({
       </Card>
 
       {/* Financial KPIs */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {financialKpis.map((kpi) => (
           <Card key={kpi.label} className="shadow-sm">
-            <CardContent className="p-4">
+            <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <p className="text-xs text-muted-foreground">{kpi.label}</p>

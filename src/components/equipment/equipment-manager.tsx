@@ -44,6 +44,7 @@ import {
   unassignEquipment,
   deleteEquipment,
 } from "@/actions/equipment";
+import { fmtShekel } from "@/lib/utils";
 
 type EquipmentItem = {
   id: string;
@@ -77,12 +78,6 @@ const STATUS_FILTERS = [
 ];
 
 const EMPTY = { name: "", code: "", value: "", purchaseDate: "", notes: "" };
-
-function fmtShekel(v: number) {
-  if (v >= 1_000_000) return `₪${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `₪${(v / 1_000).toFixed(0)}K`;
-  return `₪${v.toLocaleString("he-IL")}`;
-}
 
 export function EquipmentManager({
   initial,
@@ -297,6 +292,7 @@ export function EquipmentManager({
 
       {/* Table */}
       <div className="rounded-xl border border-border overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-muted/40">
             <tr>
@@ -393,6 +389,7 @@ export function EquipmentManager({
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Delete confirmation */}

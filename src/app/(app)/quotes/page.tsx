@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { QuotesContent } from "@/components/quotes/quotes-content";
 import { getQuotes } from "@/actions/quotes";
 import { getClients } from "@/actions/clients";

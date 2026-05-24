@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { ClipboardList } from "lucide-react";
 import { getAllDailyLogs } from "@/actions/field";
 import { getActiveProjects } from "@/actions/field";
@@ -10,7 +12,7 @@ export default async function DailyLogsPage() {
   ]);
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 shrink-0">
           <ClipboardList className="h-5 w-5 text-orange-600" />

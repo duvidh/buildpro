@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { getActiveProjects, getEmployees } from "@/actions/field";
 import { FieldPageClient } from "@/components/field/field-page-client";
 

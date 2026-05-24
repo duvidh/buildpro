@@ -47,3 +47,41 @@ export async function createWorkPackage(data: {
   revalidatePath(`/projects/${data.projectId}`);
   return { success: true as const };
 }
+
+export async function updateWorkPackage(
+  id: string,
+  data: {
+    name: string;
+    description?: string;
+    plannedCost?: number;
+    actualCost?: number;
+    completionPercent?: number;
+    startDate?: string;
+    endDate?: string;
+  }
+) {
+  const wp = await db.workPackage.update({
+    where: { id },
+    data: {
+      name: data.name,
+      description: data.description || null,
+      plannedCost: data.plannedCost ?? 0,
+      actualCost: data.actualCost ?? 0,
+      completionPercent: Math.min(100, Math.max(0, data.completionPercent ?? 0)),
+      startDate: data.startDate ? new Date(data.startDate) : null,
+      endDate: data.endDate ? new Date(data.endDate) : null,
+    },
+  });
+  revalidatePath(`/projects/${wp.projectId}`);
+  return { success: true as const };
+}
+
+export async function deleteWorkPackage(id: string) {
+  try {
+    const wp = await db.workPackage.delete({ where: { id } });
+    revalidatePath(`/projects/${wp.projectId}`);
+    return { success: true as const };
+  } catch {
+    return { success: false as const, error: "לא ניתן למחוק חבילת עבודה עם פריטי BOM משויכים." };
+  }
+}

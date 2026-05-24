@@ -23,7 +23,12 @@
       "Bash(npx prisma *)",
       "Bash(git remote *)",
       "Bash(git branch *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(Select-Object -Property FullName, PSIsContainer)",
+      "Bash(Format-Table -AutoSize)",
+      "Bash(cd /mnt/c/Users/User.DESKTOP-R26AVG6/Documents/buildpro && npm run build 2>&1 | tail -60)",
+      "Bash(python3 -c ' *)",
+      "Bash(git add *)"
     ]
   }
 }

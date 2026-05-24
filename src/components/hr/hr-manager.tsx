@@ -318,6 +318,7 @@ export function HRManager({ initial }: { initial: Employee[] }) {
 
       {/* Table */}
       <div className="rounded-xl border border-border overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-muted/40">
             <tr>
@@ -417,6 +418,7 @@ export function HRManager({ initial }: { initial: Employee[] }) {
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Edit dialog */}

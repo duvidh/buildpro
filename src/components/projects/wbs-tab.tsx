@@ -2,14 +2,26 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Sparkles, GitBranch } from "lucide-react";
+import { Plus, Sparkles, GitBranch, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { createWorkPackage, seedWorkPackages } from "@/actions/wbs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { createWorkPackage, updateWorkPackage, deleteWorkPackage, seedWorkPackages } from "@/actions/wbs";
+import { fmtShekel, fmtDate } from "@/lib/utils";
 
 type WorkPackageEntry = {
   id: string;
@@ -23,18 +35,29 @@ type WorkPackageEntry = {
   order: number;
 };
 
-function fmtShekel(v: number) {
-  if (Math.abs(v) >= 1_000_000) return `₪${(v / 1_000_000).toFixed(1)}M`;
-  if (Math.abs(v) >= 1_000) return `₪${(v / 1_000).toFixed(0)}K`;
-  return `₪${v.toLocaleString("he-IL", { maximumFractionDigits: 0 })}`;
-}
+const EMPTY_ADD = { name: "", description: "", plannedCost: "", startDate: "", endDate: "" };
 
-function fmt(date: Date | null) {
-  if (!date) return "—";
-  return new Intl.DateTimeFormat("he-IL").format(new Date(date));
-}
+type EditForm = {
+  name: string;
+  description: string;
+  plannedCost: string;
+  actualCost: string;
+  completionPercent: string;
+  startDate: string;
+  endDate: string;
+};
 
-const EMPTY = { name: "", description: "", plannedCost: "", startDate: "", endDate: "" };
+function toEditForm(wp: WorkPackageEntry): EditForm {
+  return {
+    name: wp.name,
+    description: wp.description ?? "",
+    plannedCost: wp.plannedCost > 0 ? String(wp.plannedCost) : "",
+    actualCost: wp.actualCost > 0 ? String(wp.actualCost) : "",
+    completionPercent: String(wp.completionPercent),
+    startDate: wp.startDate ? new Date(wp.startDate).toISOString().split("T")[0] : "",
+    endDate: wp.endDate ? new Date(wp.endDate).toISOString().split("T")[0] : "",
+  };
+}
 
 export function WBSTab({
   projectId,
@@ -44,8 +67,11 @@ export function WBSTab({
   workPackages: WorkPackageEntry[];
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(EMPTY);
+  const [addOpen, setAddOpen] = useState(false);
+  const [form, setForm] = useState(EMPTY_ADD);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editWp, setEditWp] = useState<WorkPackageEntry | null>(null);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleSeed() {
@@ -66,8 +92,40 @@ export function WBSTab({
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
       });
-      setOpen(false);
-      setForm(EMPTY);
+      setAddOpen(false);
+      setForm(EMPTY_ADD);
+      router.refresh();
+    });
+  }
+
+  function openEdit(wp: WorkPackageEntry) {
+    setEditWp(wp);
+    setEditForm(toEditForm(wp));
+    setEditOpen(true);
+  }
+
+  function handleUpdate() {
+    if (!editWp || !editForm || !editForm.name.trim()) return;
+    startTransition(async () => {
+      await updateWorkPackage(editWp.id, {
+        name: editForm.name,
+        description: editForm.description || undefined,
+        plannedCost: parseFloat(editForm.plannedCost) || 0,
+        actualCost: parseFloat(editForm.actualCost) || 0,
+        completionPercent: Math.min(100, Math.max(0, parseInt(editForm.completionPercent, 10) || 0)),
+        startDate: editForm.startDate || undefined,
+        endDate: editForm.endDate || undefined,
+      });
+      setEditOpen(false);
+      setEditWp(null);
+      setEditForm(null);
+      router.refresh();
+    });
+  }
+
+  function handleDelete(id: string) {
+    startTransition(async () => {
+      await deleteWorkPackage(id);
       router.refresh();
     });
   }
@@ -120,7 +178,7 @@ export function WBSTab({
           <GitBranch className="h-3.5 w-3.5" />
           חבילות עבודה ({workPackages.length})
         </h4>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
             <Button size="sm" variant="outline" className="h-7 text-xs">
               <Plus className="h-3.5 w-3.5 me-1" />
@@ -174,13 +232,88 @@ export function WBSTab({
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-1">
-                <Button variant="outline" onClick={() => setOpen(false)}>ביטול</Button>
+                <Button variant="outline" onClick={() => setAddOpen(false)}>ביטול</Button>
                 <Button onClick={handleAdd} disabled={isPending}>הוסף</Button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={(o) => { setEditOpen(o); if (!o) { setEditWp(null); setEditForm(null); } }}>
+        <DialogContent className="sm:max-w-lg" dir="rtl">
+          <DialogHeader><DialogTitle>עריכת חבילת עבודה</DialogTitle></DialogHeader>
+          {editForm && (
+            <div className="space-y-3 pt-2">
+              <div className="space-y-1">
+                <Label>שם החבילה *</Label>
+                <Input
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>תיאור</Label>
+                <Input
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>תקציב מתוכנן (₪)</Label>
+                  <Input
+                    type="number"
+                    value={editForm.plannedCost}
+                    onChange={(e) => setEditForm({ ...editForm, plannedCost: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>עלות בפועל (₪)</Label>
+                  <Input
+                    type="number"
+                    value={editForm.actualCost}
+                    onChange={(e) => setEditForm({ ...editForm, actualCost: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label>אחוז השלמה (0–100)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={editForm.completionPercent}
+                  onChange={(e) => setEditForm({ ...editForm, completionPercent: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>תאריך התחלה</Label>
+                  <Input
+                    type="date"
+                    value={editForm.startDate}
+                    onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>תאריך סיום</Label>
+                  <Input
+                    type="date"
+                    value={editForm.endDate}
+                    onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button variant="outline" onClick={() => setEditOpen(false)}>ביטול</Button>
+                <Button onClick={handleUpdate} disabled={isPending}>שמור</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Work package cards */}
       <div className="space-y-2">
@@ -189,7 +322,7 @@ export function WBSTab({
           const isOver = wpVariance > 0;
           const pct = Math.min(100, Math.max(0, wp.completionPercent));
           return (
-            <div key={wp.id} className="rounded-lg border border-border bg-muted/20 p-3 space-y-2.5">
+            <div key={wp.id} className="rounded-lg border border-border bg-muted/20 p-3 space-y-2.5 group">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
@@ -202,7 +335,50 @@ export function WBSTab({
                     )}
                   </div>
                 </div>
-                <span className="text-sm font-bold shrink-0">{pct.toFixed(0)}%</span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-sm font-bold">{pct.toFixed(0)}%</span>
+                  {/* Action buttons — visible on hover */}
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ms-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                      onClick={() => openEdit(wp)}
+                      title="ערוך"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                          title="מחק"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent dir="rtl">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>מחיקת חבילת עבודה</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            האם למחוק את &quot;{wp.name}&quot;? פעולה זו אינה הפיכה.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>ביטול</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive hover:bg-destructive/90"
+                            onClick={() => handleDelete(wp.id)}
+                          >
+                            מחק
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
               </div>
 
               <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -214,7 +390,7 @@ export function WBSTab({
 
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
                 {wp.startDate && (
-                  <span>{fmt(wp.startDate)} — {fmt(wp.endDate)}</span>
+                  <span>{fmtDate(wp.startDate)} — {fmtDate(wp.endDate)}</span>
                 )}
                 <span>
                   מתוכנן: <strong className="text-foreground">{fmtShekel(wp.plannedCost)}</strong>

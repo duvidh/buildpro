@@ -15,6 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { createQualityCheck, createNCR, seedQualityData } from "@/actions/quality";
+import { fmtDate } from "@/lib/utils";
 
 type QCCheck = {
   id: string;
@@ -53,10 +54,6 @@ const NCR_STATUS: Record<string, { label: string; cls: string }> = {
   IN_PROGRESS: { label: "בטיפול",   cls: "bg-orange-100 text-orange-700 border-orange-200" },
   CLOSED:      { label: "סגור",     cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
 };
-
-function fmt(date: Date) {
-  return new Intl.DateTimeFormat("he-IL").format(new Date(date));
-}
 
 const EMPTY_QC = { type: "", result: "PASS", inspector: "", notes: "" };
 const EMPTY_NCR = { description: "", severity: "MEDIUM", assignedTo: "" };
@@ -189,6 +186,7 @@ export function QCTab({
           </Dialog>
         </div>
         <div className="rounded-lg border border-border overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40">
               <tr>
@@ -208,7 +206,7 @@ export function QCTab({
                       {qc.notes && <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{qc.notes}</p>}
                     </td>
                     <td className="px-3 py-2.5 text-xs text-muted-foreground hidden sm:table-cell">{qc.inspector ?? "—"}</td>
-                    <td className="px-3 py-2.5 text-xs text-muted-foreground hidden md:table-cell">{fmt(qc.date)}</td>
+                    <td className="px-3 py-2.5 text-xs text-muted-foreground hidden md:table-cell">{fmtDate(qc.date)}</td>
                     <td className="px-3 py-2.5">
                       <div className="flex justify-center">
                         <Badge variant="outline" className={`text-[10px] px-1.5 py-0.5 ${res.cls}`}>{res.label}</Badge>
@@ -219,6 +217,7 @@ export function QCTab({
               })}
             </tbody>
           </table>
+          </div>
         </div>
       </section>
 
@@ -273,6 +272,7 @@ export function QCTab({
           <p className="text-xs text-muted-foreground py-3 px-1">אין דוחות NCR פתוחים.</p>
         ) : (
           <div className="rounded-lg border border-border overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/40">
                 <tr>
@@ -310,6 +310,7 @@ export function QCTab({
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </section>

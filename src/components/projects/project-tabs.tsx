@@ -48,6 +48,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { updateProjectSettings } from "@/actions/projects";
+import { fmtShekel, fmtDate } from "@/lib/utils";
 import { recordPayment } from "@/actions/finance";
 import { TasksKanban } from "@/components/projects/tasks-kanban";
 import { MilestonesTimeline } from "@/components/projects/milestones-timeline";
@@ -284,12 +285,6 @@ const CONTRACT_STATUS: Record<string, { label: string; cls: string }> = {
   TERMINATED: { label: "הופסק",  cls: "bg-red-100 text-red-700 border-red-200" },
 };
 
-function fmtShekel(v: number) {
-  if (Math.abs(v) >= 1_000_000) return `₪${(v / 1_000_000).toFixed(1)}M`;
-  if (Math.abs(v) >= 1_000) return `₪${(v / 1_000).toFixed(0)}K`;
-  return `₪${v.toLocaleString("he-IL", { maximumFractionDigits: 0 })}`;
-}
-
 const EXPENSE_CATEGORY_LABEL: Record<string, string> = {
   MATERIALS: "חומרי בניין",
   FUEL: "דלק",
@@ -298,11 +293,6 @@ const EXPENSE_CATEGORY_LABEL: Record<string, string> = {
   TRANSPORT: "תחבורה",
   OTHER: "אחר",
 };
-
-function fmt(date: Date | null) {
-  if (!date) return "—";
-  return new Intl.DateTimeFormat("he-IL").format(new Date(date));
-}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -363,7 +353,7 @@ function OverviewTab({
                     {TASK_STATUS[t.status]?.label ?? t.status}
                   </Badge>
                   {t.dueDate && (
-                    <span className="text-[11px] text-muted-foreground">{fmt(t.dueDate)}</span>
+                    <span className="text-[11px] text-muted-foreground">{fmtDate(t.dueDate)}</span>
                   )}
                 </div>
               </li>
@@ -379,7 +369,7 @@ function OverviewTab({
             {upcomingMilestones.map((m) => (
               <li key={m.id} className="flex items-center justify-between gap-3 py-2.5 px-1">
                 <p className="text-sm">{m.name}</p>
-                <span className="text-xs text-muted-foreground">{fmt(m.date)}</span>
+                <span className="text-xs text-muted-foreground">{fmtDate(m.date)}</span>
               </li>
             ))}
           </ul>
@@ -452,6 +442,7 @@ function FieldReportsTab({
           <p className="text-xs text-muted-foreground py-3 px-1">אין דיווחי שעות עדיין.</p>
         ) : (
           <div className="rounded-lg border border-border overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/40">
                 <tr>
@@ -465,7 +456,7 @@ function FieldReportsTab({
                 {timeEntries.map((e) => (
                   <tr key={e.id} className="hover:bg-muted/20">
                     <td className="px-3 py-2.5">{e.employee.name}</td>
-                    <td className="px-3 py-2.5 text-muted-foreground text-xs">{fmt(e.date)}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground text-xs">{fmtDate(e.date)}</td>
                     <td className="px-3 py-2.5 text-end tabular-nums">{e.hours}</td>
                     <td className="px-3 py-2.5 text-end tabular-nums text-xs text-muted-foreground">
                       ₪{e.totalCost.toLocaleString("he-IL", { maximumFractionDigits: 0 })}
@@ -474,6 +465,7 @@ function FieldReportsTab({
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </section>
@@ -495,6 +487,7 @@ function FieldReportsTab({
           <p className="text-xs text-muted-foreground py-3 px-1">אין הוצאות שטח עדיין.</p>
         ) : (
           <div className="rounded-lg border border-border overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/40">
                 <tr>
@@ -507,7 +500,7 @@ function FieldReportsTab({
               <tbody className="divide-y divide-border">
                 {expenses.map((e) => (
                   <tr key={e.id} className="hover:bg-muted/20">
-                    <td className="px-3 py-2.5 text-muted-foreground text-xs">{fmt(e.date)}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground text-xs">{fmtDate(e.date)}</td>
                     <td className="px-3 py-2.5 text-xs">{EXPENSE_CATEGORY_LABEL[e.category] ?? e.category}</td>
                     <td className="px-3 py-2.5 text-muted-foreground text-xs truncate max-w-[120px]">
                       {e.description ?? "—"}
@@ -519,6 +512,7 @@ function FieldReportsTab({
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </section>
@@ -539,7 +533,7 @@ function FieldReportsTab({
                 className="rounded-lg border border-border bg-muted/20 px-3 py-2.5 space-y-1"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{fmt(log.date)}</span>
+                  <span className="text-sm font-medium">{fmtDate(log.date)}</span>
                   {log.weatherConditions && (
                     <span className="text-xs text-muted-foreground">{log.weatherConditions}</span>
                   )}
@@ -833,6 +827,7 @@ function FinancialsTab({
             </div>
           </div>
           <div className="rounded-lg border border-border overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/40">
                 <tr>
@@ -852,7 +847,7 @@ function FinancialsTab({
                   return (
                     <tr key={inv.id} className="hover:bg-muted/20">
                       <td className="px-3 py-2.5 font-medium">{inv.invoiceNumber}</td>
-                      <td className="px-3 py-2.5 text-muted-foreground text-xs">{fmt(inv.date)}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground text-xs">{fmtDate(inv.date)}</td>
                       <td className="px-3 py-2.5">
                         <Badge variant="outline" className={`text-[10px] h-4 px-1.5 py-0 ${st.cls}`}>{st.label}</Badge>
                       </td>
@@ -871,6 +866,7 @@ function FinancialsTab({
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         </section>
       )}
@@ -883,6 +879,7 @@ function FinancialsTab({
         <section>
           <h4 className="text-sm font-semibold text-muted-foreground mb-2">חוזי קבלני משנה</h4>
           <div className="rounded-lg border border-border overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/40">
                 <tr>
@@ -914,6 +911,7 @@ function FinancialsTab({
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         </section>
       )}
@@ -947,6 +945,7 @@ function TeamEquipmentTab({
           <p className="text-xs text-muted-foreground py-3 px-1">לא שויכו חברי צוות לפרויקט זה.</p>
         ) : (
           <div className="rounded-lg border border-border overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/40">
                 <tr>
@@ -972,6 +971,7 @@ function TeamEquipmentTab({
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </section>
@@ -986,6 +986,7 @@ function TeamEquipmentTab({
           <p className="text-xs text-muted-foreground py-3 px-1">אין ציוד משויך לפרויקט זה כרגע.</p>
         ) : (
           <div className="rounded-lg border border-border overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/40">
                 <tr>
@@ -1019,12 +1020,13 @@ function TeamEquipmentTab({
                           </Badge>
                         </div>
                       </td>
-                      <td className="px-3 py-2.5 text-muted-foreground text-xs">{fmt(log.checkOutDate)}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground text-xs">{fmtDate(log.checkOutDate)}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </section>
@@ -1036,7 +1038,6 @@ function SettingsTab({
   settings,
   onToggle,
 }: {
-  projectId: string;
   settings: SettingsState;
   onToggle: (key: keyof SettingsState, value: boolean) => void;
 }) {
@@ -1220,7 +1221,7 @@ export function ProjectTabs({
       ))}
 
       <TabsContent value="settings" className="px-4 pt-4 pb-2">
-        <SettingsTab projectId={projectId} settings={settings} onToggle={toggleSetting} />
+        <SettingsTab settings={settings} onToggle={toggleSetting} />
       </TabsContent>
     </Tabs>
   );

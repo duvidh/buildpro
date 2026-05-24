@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import {
   TrendingUp,
   TrendingDown,
@@ -9,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getCompanyFinancials } from "@/actions/finance";
 import { FinanceChart } from "@/components/finance/finance-chart";
+import { fmtShekel } from "@/lib/utils";
 
 const PROJECT_STATUS: Record<string, { label: string; cls: string }> = {
   PLANNING:  { label: "תכנון",  cls: "bg-blue-100 text-blue-700 border-blue-200" },
@@ -17,14 +20,6 @@ const PROJECT_STATUS: Record<string, { label: string; cls: string }> = {
   COMPLETED: { label: "הושלם",  cls: "bg-slate-100 text-slate-600 border-slate-200" },
   CANCELLED: { label: "בוטל",   cls: "bg-red-100 text-red-600 border-red-200" },
 };
-
-function fmtShekel(v: number) {
-  if (Math.abs(v) >= 1_000_000)
-    return `₪${(v / 1_000_000).toFixed(1)}M`;
-  if (Math.abs(v) >= 1_000)
-    return `₪${(v / 1_000).toFixed(0)}K`;
-  return `₪${v.toFixed(0)}`;
-}
 
 function ProfitBadge({ margin }: { margin: number }) {
   const isPositive = margin >= 0;
@@ -88,7 +83,7 @@ export default async function FinancePage() {
   const hasData = data.monthlyData.some(m => m.revenue > 0 || m.cost > 0);
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">דאשבורד פיננסי</h1>
         <p className="text-sm text-muted-foreground mt-0.5">

@@ -1,10 +1,12 @@
+export const dynamic = "force-dynamic";
+
 import { Settings } from "lucide-react";
 import { getSystemSettings } from "@/actions/settings";
 import { getUsers, seedUsers } from "@/actions/users";
 import { SettingsTabs } from "@/components/settings/settings-tabs";
 
 export default async function SettingsPage() {
-  await seedUsers();
+  if (process.env.NODE_ENV !== "production") await seedUsers();
   const [systemSettings, users] = await Promise.all([
     getSystemSettings(),
     getUsers(),

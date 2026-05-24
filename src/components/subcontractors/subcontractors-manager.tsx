@@ -382,6 +382,7 @@ export function SubcontractorsManager({ initial }: Props) {
         </div>
       ) : (
         <div className="rounded-xl border border-border overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/40 border-b border-border">
@@ -470,6 +471,7 @@ export function SubcontractorsManager({ initial }: Props) {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

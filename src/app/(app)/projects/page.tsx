@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Suspense } from "react";
 import Link from "next/link";
 import { FolderKanban, MapPin, CalendarDays, TrendingUp, ExternalLink } from "lucide-react";
@@ -34,7 +36,7 @@ async function ProjectsContent() {
 
   if (projects.length === 0) {
     return (
-      <div className="rounded-3xl bg-white/90 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col items-center justify-center py-20 text-center px-4">
+      <div className="rounded-3xl bg-card border border-border shadow-sm flex flex-col items-center justify-center py-20 text-center px-4">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mb-4">
           <FolderKanban className="h-7 w-7 text-primary" />
         </div>

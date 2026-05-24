@@ -31,6 +31,7 @@ import {
   seedProjectMilestones,
 } from "@/actions/milestones";
 import { createMilestoneSchema, type CreateMilestoneInput } from "@/lib/schemas/milestone-schema";
+import { fmtDate } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,15 +52,6 @@ type MilestonesTimelineProps = {
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function fmt(date: Date | null) {
-  if (!date) return "—";
-  return new Intl.DateTimeFormat("he-IL", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(date));
-}
 
 function isOverdue(date: Date, completed: boolean) {
   if (completed) return false;
@@ -287,12 +279,12 @@ export function MilestonesTimeline({ projectId, milestones }: MilestonesTimeline
                             : "text-muted-foreground"
                         }`}
                       >
-                        {fmt(m.date)}
+                        {fmtDate(m.date)}
                         {overdue && " · באיחור"}
                       </span>
                       {m.completed && m.completedAt && (
                         <span className="text-xs text-emerald-600">
-                          הושלם {fmt(m.completedAt)}
+                          הושלם {fmtDate(m.completedAt)}
                         </span>
                       )}
                       {m.weight > 1 && (

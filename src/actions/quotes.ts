@@ -32,26 +32,35 @@ export async function getQuoteById(id: string) {
   });
 }
 
-async function generateQuoteNumber(): Promise<string> {
+async function generateQuoteNumber(tx: Parameters<Parameters<typeof db.$transaction>[0]>[0]): Promise<string> {
   const year = new Date().getFullYear();
-  const count = await db.quote.count({
-    where: { quoteNumber: { startsWith: `Q${year}-` } },
+  const prefix = `Q${year}-`;
+  // Use MAX on the numeric suffix instead of COUNT — survives deletions and is deterministic
+  const last = await tx.quote.findFirst({
+    where: { quoteNumber: { startsWith: prefix } },
+    orderBy: { quoteNumber: "desc" },
+    select: { quoteNumber: true },
   });
-  return `Q${year}-${String(count + 1).padStart(4, "0")}`;
+  const lastNum = last?.quoteNumber ? parseInt(last.quoteNumber.slice(prefix.length), 10) : 0;
+  return `${prefix}${String((isNaN(lastNum) ? 0 : lastNum) + 1).padStart(4, "0")}`;
 }
 
 export async function createQuote(data: CreateQuoteInput) {
-  const quoteNumber = await generateQuoteNumber();
-  const quote = await db.quote.create({
-    data: {
-      clientId: data.clientId || null,
-      leadId: data.leadId || null,
-      projectId: data.projectId || null,
-      quoteNumber,
-      date: new Date(),
-      status: "DRAFT",
-      taxPercent: 17,
-    },
+  // Generate number and create inside one transaction so concurrent calls
+  // hit the unique constraint rather than producing duplicate numbers.
+  const quote = await db.$transaction(async (tx) => {
+    const quoteNumber = await generateQuoteNumber(tx);
+    return tx.quote.create({
+      data: {
+        clientId: data.clientId || null,
+        leadId: data.leadId || null,
+        projectId: data.projectId || null,
+        quoteNumber,
+        date: new Date(),
+        status: "DRAFT",
+        taxPercent: 17,
+      },
+    });
   });
   revalidatePath("/quotes");
   return { success: true as const, quoteId: quote.id };
@@ -108,8 +117,14 @@ type ItemSaveData = {
 };
 
 export async function saveQuoteItems(quoteId: string, items: ItemSaveData[]) {
+  // Read the quote's taxPercent from DB instead of hardcoding
+  const quote = await db.quote.findUnique({
+    where: { id: quoteId },
+    select: { taxPercent: true },
+  });
+  const taxPercent = quote?.taxPercent ?? 17;
+
   const subtotal = Math.round(items.reduce((s, i) => s + i.linePrice, 0) * 100) / 100;
-  const taxPercent = 17;
   const taxAmount = Math.round(subtotal * (taxPercent / 100) * 100) / 100;
   const total = Math.round((subtotal + taxAmount) * 100) / 100;
 

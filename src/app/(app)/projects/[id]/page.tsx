@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -65,7 +67,7 @@ export default async function ProjectDetailPage({
   const settings = project.settings ?? defaultSettings;
 
   return (
-    <div className="w-full px-4 md:px-8 py-6 space-y-6">
+    <div className="space-y-6 max-w-5xl">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild className="text-muted-foreground -me-1">

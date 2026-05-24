@@ -1,11 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-
-const HE_MONTHS = [
-  "ינו׳","פבר׳","מרץ","אפר׳","מאי","יונ׳",
-  "יול׳","אוג׳","ספט׳","אוק׳","נוב׳","דצמ׳",
-];
+import { HE_MONTHS } from "@/lib/utils";
 
 export async function getDashboardData() {
   const now = new Date();

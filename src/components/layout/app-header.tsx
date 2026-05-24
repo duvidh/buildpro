@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useTransition } from "react";
 import {
   Bell,
   Menu,
@@ -29,7 +29,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AppSidebar } from "./app-sidebar";
-import { MOCK_CURRENT_USER } from "@/lib/config/app-config";
+import { logout } from "@/actions/auth";
+
+type SessionUser = { name: string; email: string; initials: string };
 
 const pageTitles: Record<string, string> = {
   "/dashboard":    "לוח בקרה",
@@ -57,11 +59,18 @@ function getPageTitle(pathname: string): string {
   return match ? pageTitles[match] : "BuildPro";
 }
 
-export function AppHeader() {
+export function AppHeader({
+  notificationCount = 0,
+  user,
+}: {
+  notificationCount?: number;
+  user: SessionUser;
+}) {
   const pathname = usePathname();
   const title = getPageTitle(pathname);
   const [searchValue, setSearchValue] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [, startTransition] = useTransition();
 
   const handleSearch = useCallback((value: string) => {
     setSearchValue(value);
@@ -71,17 +80,23 @@ export function AppHeader() {
     }, 250);
   }, []);
 
+  function handleLogout() {
+    startTransition(async () => {
+      await logout();
+    });
+  }
+
   return (
     <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-card px-4 sm:px-6">
       {/* Mobile sidebar trigger */}
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="shrink-0 md:hidden">
+          <Button variant="ghost" size="icon" className="shrink-0 md:hidden" aria-label="פתח תפריט">
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
         <SheetContent side="right" className="p-0 w-64">
-          <AppSidebar />
+          <AppSidebar user={user} />
         </SheetContent>
       </Sheet>
 
@@ -104,11 +119,13 @@ export function AppHeader() {
       <div className="flex-1" />
 
       {/* Notification bell */}
-      <Button variant="ghost" size="icon" className="relative shrink-0">
+      <Button variant="ghost" size="icon" className="relative shrink-0" aria-label={`${notificationCount} התראות`}>
         <Bell className="h-5 w-5" />
-        <Badge className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 flex items-center justify-center text-[10px] leading-none rounded-full">
-          3
-        </Badge>
+        {notificationCount > 0 && (
+          <Badge className="absolute -top-0.5 -start-0.5 h-4 min-w-4 px-1 flex items-center justify-center text-[10px] leading-none rounded-full">
+            {notificationCount > 99 ? "99+" : notificationCount}
+          </Badge>
+        )}
       </Button>
 
       {/* User dropdown */}
@@ -120,19 +137,19 @@ export function AppHeader() {
           >
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                {MOCK_CURRENT_USER.initials}
+                {user.initials}
               </AvatarFallback>
             </Avatar>
             <span className="hidden sm:block text-sm font-medium text-foreground">
-              {MOCK_CURRENT_USER.name}
+              {user.name}
             </span>
             <ChevronDown className="hidden sm:block h-3.5 w-3.5 text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
           <DropdownMenuLabel>
-            <p className="font-medium">{MOCK_CURRENT_USER.name}</p>
-            <p className="text-xs text-muted-foreground font-normal">{MOCK_CURRENT_USER.email}</p>
+            <p className="font-medium">{user.name}</p>
+            <p className="text-xs text-muted-foreground font-normal">{user.email}</p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
@@ -148,7 +165,10 @@ export function AppHeader() {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-destructive focus:text-destructive cursor-pointer">
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive cursor-pointer"
+            onClick={handleLogout}
+          >
             <LogOut className="h-4 w-4 me-2" />
             התנתקות
           </DropdownMenuItem>

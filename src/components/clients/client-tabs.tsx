@@ -23,6 +23,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { createQuote } from "@/actions/quotes";
+import { fmtDate } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -76,10 +77,6 @@ const INVOICE_STATUS: Record<string, { label: string; className: string }> = {
   CANCELLED:{ label: "בוטלה",  className: "bg-slate-100 text-slate-600 border-slate-200" },
 };
 
-function fmt(date: Date | null) {
-  if (!date) return "—";
-  return new Intl.DateTimeFormat("he-IL").format(new Date(date));
-}
 function fmtCurrency(n: number) {
   return `₪${n.toLocaleString("he-IL", { maximumFractionDigits: 0 })}`;
 }
@@ -137,7 +134,7 @@ function ProjectsTab({ projects, clientId }: { projects: Project[]; clientId: st
               {fmtCurrency(p.contractValue)}
             </span>
             <span className="text-[11px] text-muted-foreground shrink-0">
-              {fmt(p.startDate)} ← {fmt(p.endDate)}
+              {fmtDate(p.startDate)} ← {fmtDate(p.endDate)}
             </span>
           </div>
         </li>
@@ -184,8 +181,8 @@ function QuotesTab({
                   <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
                 </Link>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {fmt(q.date)}
-                  {q.validUntil && ` · בתוקף עד ${fmt(q.validUntil)}`}
+                  {fmtDate(q.date)}
+                  {q.validUntil && ` · בתוקף עד ${fmtDate(q.validUntil)}`}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -216,8 +213,8 @@ function InvoicesTab({ invoices }: { invoices: Invoice[] }) {
               חשבונית #{inv.invoiceNumber}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {fmt(inv.date)}
-              {inv.dueDate && ` · לתשלום עד ${fmt(inv.dueDate)}`}
+              {fmtDate(inv.date)}
+              {inv.dueDate && ` · לתשלום עד ${fmtDate(inv.dueDate)}`}
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">

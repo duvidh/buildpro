@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { UserRole } from "@/generated/prisma/client";
 
@@ -21,9 +22,11 @@ export async function getUsers() {
 }
 
 export async function getCurrentUser() {
-  const user = await db.user.findFirst({
-    where: { role: UserRole.ADMIN },
-    orderBy: { createdAt: "asc" },
+  const { getSession } = await import("@/lib/session");
+  const session = await getSession();
+  if (!session) return null;
+  return db.user.findUnique({
+    where: { id: session.userId },
     select: {
       id: true,
       name: true,
@@ -34,7 +37,6 @@ export async function getCurrentUser() {
       active: true,
     },
   });
-  return user;
 }
 
 export async function updateUserRole(id: string, role: UserRole) {
@@ -72,13 +74,22 @@ export async function seedUsers() {
   const count = await db.user.count();
   if (count > 0) return { success: true as const, skipped: true };
 
+  // Hash passwords with bcrypt (cost 10) — never store plain text
+  const [adminHash, uriHash, saritHash, davidHash, noaHash] = await Promise.all([
+    bcrypt.hash("Admin@123", 10),
+    bcrypt.hash("Uri@123", 10),
+    bcrypt.hash("Sarit@123", 10),
+    bcrypt.hash("David@123", 10),
+    bcrypt.hash("Noa@123", 10),
+  ]);
+
   await db.user.createMany({
     skipDuplicates: true,
     data: [
       {
         name: "מנהל מערכת",
         email: "admin@buildpro.co.il",
-        passwordHash: "mock_hash_admin",
+        passwordHash: adminHash,
         role: UserRole.ADMIN,
         phone: "03-1234567",
         active: true,
@@ -86,7 +97,7 @@ export async function seedUsers() {
       {
         name: "אורי בן-דוד",
         email: "uri@buildpro.co.il",
-        passwordHash: "mock_hash_uri",
+        passwordHash: uriHash,
         role: UserRole.PROJECT_MANAGER,
         phone: "050-9876543",
         active: true,
@@ -94,7 +105,7 @@ export async function seedUsers() {
       {
         name: "שרית כהן",
         email: "sarit@buildpro.co.il",
-        passwordHash: "mock_hash_sarit",
+        passwordHash: saritHash,
         role: UserRole.OFFICE_MANAGER,
         phone: "052-1122334",
         active: true,
@@ -102,7 +113,7 @@ export async function seedUsers() {
       {
         name: "דוד לוי",
         email: "david@buildpro.co.il",
-        passwordHash: "mock_hash_david",
+        passwordHash: davidHash,
         role: UserRole.FIELD_WORKER,
         phone: "054-6677889",
         active: true,
@@ -110,7 +121,7 @@ export async function seedUsers() {
       {
         name: "נועה אברהם",
         email: "noa@buildpro.co.il",
-        passwordHash: "mock_hash_noa",
+        passwordHash: noaHash,
         role: UserRole.PROJECT_MANAGER,
         phone: "053-4455667",
         active: true,

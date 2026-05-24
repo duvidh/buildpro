@@ -224,7 +224,7 @@ export function QuotesContent({ quotes, clients, leads }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -251,10 +251,10 @@ export function QuotesContent({ quotes, clients, leads }: Props) {
               <TableRow>
                 <TableHead>מספר הצעה</TableHead>
                 <TableHead>לקוח / ליד</TableHead>
-                <TableHead>תאריך</TableHead>
-                <TableHead>בתוקף עד</TableHead>
+                <TableHead className="hidden sm:table-cell">תאריך</TableHead>
+                <TableHead className="hidden md:table-cell">בתוקף עד</TableHead>
                 <TableHead>סטטוס</TableHead>
-                <TableHead className="text-center">פריטים</TableHead>
+                <TableHead className="hidden sm:table-cell text-center">פריטים</TableHead>
                 <TableHead className="text-start">סכום כולל</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
@@ -282,12 +282,12 @@ export function QuotesContent({ quotes, clients, leads }: Props) {
                         {entityName}
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{fmtDate(q.date)}</TableCell>
-                    <TableCell className="text-muted-foreground">{fmtDate(q.validUntil)}</TableCell>
+                    <TableCell className="text-muted-foreground hidden sm:table-cell">{fmtDate(q.date)}</TableCell>
+                    <TableCell className="text-muted-foreground hidden md:table-cell">{fmtDate(q.validUntil)}</TableCell>
                     <TableCell>
                       <StatusBadge status={q.status} />
                     </TableCell>
-                    <TableCell className="text-center text-muted-foreground">
+                    <TableCell className="text-center text-muted-foreground hidden sm:table-cell">
                       {q._count.items}
                     </TableCell>
                     <TableCell className="font-medium">

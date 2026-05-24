@@ -65,20 +65,22 @@ export async function assignEquipmentToProject(
 }
 
 export async function unassignEquipment(equipmentId: string) {
-  const activeLog = await db.equipmentLog.findFirst({
-    where: { equipmentId, checkInDate: null },
-  });
-
-  if (activeLog) {
-    await db.equipmentLog.update({
-      where: { id: activeLog.id },
-      data: { checkInDate: new Date() },
+  await db.$transaction(async (tx) => {
+    const activeLog = await tx.equipmentLog.findFirst({
+      where: { equipmentId, checkInDate: null },
     });
-  }
 
-  await db.equipment.update({
-    where: { id: equipmentId },
-    data: { status: EquipmentStatus.AVAILABLE, currentProjectId: null },
+    if (activeLog) {
+      await tx.equipmentLog.update({
+        where: { id: activeLog.id },
+        data: { checkInDate: new Date() },
+      });
+    }
+
+    await tx.equipment.update({
+      where: { id: equipmentId },
+      data: { status: EquipmentStatus.AVAILABLE, currentProjectId: null },
+    });
   });
 
   revalidatePath("/equipment");

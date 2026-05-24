@@ -186,6 +186,7 @@ export function RisksTab({
 
       {/* Table */}
       <div className="rounded-lg border border-border overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-muted/40">
             <tr>
@@ -241,6 +242,7 @@ export function RisksTab({
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

@@ -62,7 +62,7 @@ export default async function QuoteDetailPage({
   const isLeadQuote = !quote.client && !!quote.lead;
 
   return (
-    <div className="flex flex-col gap-6 max-w-5xl">
+    <div className="flex flex-col gap-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild className="text-muted-foreground -me-1">

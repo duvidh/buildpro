@@ -91,10 +91,10 @@ function CompanyTab({ initial }: { initial: Record<string, string> }) {
         <Separator />
         <div className="space-y-3">
           {fields.map(({ key, label, placeholder, type }) => (
-            <div key={key} className="grid grid-cols-3 items-center gap-4">
-              <Label className="text-end text-sm text-muted-foreground">{label}</Label>
+            <div key={key} className="grid grid-cols-1 gap-1.5 sm:grid-cols-3 sm:items-center sm:gap-4">
+              <Label className="text-sm text-muted-foreground sm:text-end">{label}</Label>
               <Input
-                className="col-span-2"
+                className="sm:col-span-2"
                 type={type ?? "text"}
                 value={form[key]}
                 onChange={(e) => setForm({ ...form, [key]: e.target.value })}
@@ -149,9 +149,9 @@ function CompanyTab({ initial }: { initial: Record<string, string> }) {
           { label: "מטבע",        value: "שקל ישראלי (₪ ILS)" },
           { label: "שפה",         value: "עברית (he-IL)" },
         ].map(({ label, value }) => (
-          <div key={label} className="grid grid-cols-3 items-center gap-4">
-            <p className="text-end text-xs text-muted-foreground">{label}</p>
-            <p className="col-span-2 text-sm">{value}</p>
+          <div key={label} className="flex items-center justify-between gap-4 py-0.5">
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="text-sm font-medium">{value}</p>
           </div>
         ))}
       </div>

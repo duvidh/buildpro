@@ -28,7 +28,9 @@
       "Bash(Format-Table -AutoSize)",
       "Bash(cd /mnt/c/Users/User.DESKTOP-R26AVG6/Documents/buildpro && npm run build 2>&1 | tail -60)",
       "Bash(python3 -c ' *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m 'fix: reduce border-radius from 1.25rem to 0.5rem for minimalist look *)",
+      "Bash(git commit -m 'fix: full-width layout for quotes/[id], projects/[id], settings pages + mobile form fix *)"
     ]
   }
 }

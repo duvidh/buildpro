@@ -67,7 +67,7 @@ export default async function ProjectDetailPage({
   const settings = project.settings ?? defaultSettings;
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild className="text-muted-foreground -me-1">

@@ -21,14 +21,17 @@ export async function createLead(raw: CreateLeadInput) {
     return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאת ולידציה" };
   }
 
-  const { budget, email, assignedEmployeeId, ...rest } = parsed.data;
+  const { budget, estimatedSize, email, assignedEmployeeId, constructionTypes, ...rest } = parsed.data;
   const budgetNum = budget ? parseFloat(budget.replace(/,/g, "")) : null;
+  const sizeNum = estimatedSize ? parseFloat(estimatedSize) : null;
 
   await db.lead.create({
     data: {
       ...rest,
       email: email || null,
       budget: budgetNum && !isNaN(budgetNum) ? budgetNum : null,
+      estimatedSize: sizeNum && !isNaN(sizeNum) ? sizeNum : null,
+      constructionTypes: constructionTypes ?? [],
       assignedEmployeeId: assignedEmployeeId || null,
     },
   });
@@ -42,14 +45,17 @@ export async function updateLead(id: string, raw: CreateLeadInput) {
   if (!parsed.success) {
     return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאת ולידציה" };
   }
-  const { budget, email, assignedEmployeeId, ...rest } = parsed.data;
+  const { budget, estimatedSize, email, assignedEmployeeId, constructionTypes, ...rest } = parsed.data;
   const budgetNum = budget ? parseFloat(budget.replace(/,/g, "")) : null;
+  const sizeNum = estimatedSize ? parseFloat(estimatedSize) : null;
   await db.lead.update({
     where: { id },
     data: {
       ...rest,
       email: email || null,
       budget: budgetNum && !isNaN(budgetNum) ? budgetNum : null,
+      estimatedSize: sizeNum && !isNaN(sizeNum) ? sizeNum : null,
+      constructionTypes: constructionTypes ?? [],
       assignedEmployeeId: assignedEmployeeId || null,
     },
   });

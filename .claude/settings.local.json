@@ -31,7 +31,8 @@
       "Bash(git add *)",
       "Bash(git commit -m 'fix: reduce border-radius from 1.25rem to 0.5rem for minimalist look *)",
       "Bash(git commit -m 'fix: full-width layout for quotes/[id], projects/[id], settings pages + mobile form fix *)",
-      "Bash(git commit -m 'feat: add WhatsApp direct link to leads phone column *)"
+      "Bash(git commit -m 'feat: add WhatsApp direct link to leads phone column *)",
+      "Bash(git commit -m 'feat: leads new-lead panel + city/construction-type/size fields *)"
     ]
   }
 }

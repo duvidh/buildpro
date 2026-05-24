@@ -190,6 +190,9 @@ model Lead {
   phone2          String?
   email           String?
   propertyAddress String?
+  city            String?
+  estimatedSize   Float?
+  constructionTypes String[]
   source          LeadSource  @default(OTHER)
   status          LeadStatus  @default(NEW)
   urgency         LeadUrgency @default(MEDIUM)

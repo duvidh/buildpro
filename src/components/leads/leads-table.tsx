@@ -59,8 +59,11 @@ import { LEAD_STATUS_VALUES } from "@/lib/constants/lead-enums";
 import { createLeadSchema, type CreateLeadInput } from "@/lib/schemas/lead-schema";
 import {
   LeadStatusBadge, LeadUrgencyBadge,
-  LEAD_SOURCE_LABELS, LEAD_URGENCY_CONFIG,
+  LEAD_SOURCE_LABELS,
 } from "./lead-status-badge";
+import {
+  MultiSelectCreatable, CreatableCitySelect, DEFAULT_CONSTRUCTION_TYPES,
+} from "./new-lead-dialog";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -73,6 +76,9 @@ type Lead = {
   phone2: string | null;
   email: string | null;
   propertyAddress: string | null;
+  city: string | null;
+  estimatedSize: number | null;
+  constructionTypes: string[];
   source: string;
   status: LeadStatusValue;
   urgency: string;
@@ -202,6 +208,9 @@ function EditLeadDialog({
 }) {
   const router = useRouter();
   const employeeOptions = employees.map((e) => ({ value: e.id, label: e.name }));
+  const [constructionTypes, setConstructionTypes] = useState<string[]>(lead.constructionTypes ?? []);
+  const [city, setCity] = useState(lead.city ?? "");
+
   const {
     register, handleSubmit, setValue, watch,
     formState: { errors, isSubmitting },
@@ -213,8 +222,10 @@ function EditLeadDialog({
       phone2: lead.phone2 ?? "",
       email: lead.email ?? "",
       propertyAddress: lead.propertyAddress ?? "",
+      city: lead.city ?? "",
+      estimatedSize: lead.estimatedSize !== null ? String(lead.estimatedSize) : "",
+      constructionTypes: lead.constructionTypes ?? [],
       source: lead.source as CreateLeadInput["source"],
-      urgency: lead.urgency as CreateLeadInput["urgency"],
       budget: lead.budget !== null ? String(lead.budget) : "",
       notes: lead.notes ?? "",
       assignedEmployeeId: lead.assignedEmployeeId ?? undefined,
@@ -223,7 +234,7 @@ function EditLeadDialog({
   const assignedEmployeeId = watch("assignedEmployeeId");
 
   async function onSubmit(data: CreateLeadInput) {
-    const res = await updateLead(lead.id, data);
+    const res = await updateLead(lead.id, { ...data, constructionTypes, city: city || undefined });
     if (res.success) {
       toast.success("ליד עודכן בהצלחה");
       onOpenChange(false);
@@ -277,40 +288,44 @@ function EditLeadDialog({
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>עיר</Label>
+                  <CreatableCitySelect value={city} onChange={setCity} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="el-size">גודל משוער (מ&quot;ר)</Label>
+                  <Input id="el-size" type="number" min={0} dir="ltr" {...register("estimatedSize")} />
+                </div>
+              </div>
+
               <div className="space-y-1.5">
                 <Label htmlFor="el-address">כתובת הנכס</Label>
                 <Input id="el-address" {...register("propertyAddress")} />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>מקור ליד</Label>
-                  <Select
-                    defaultValue={lead.source}
-                    onValueChange={(v) => setValue("source", v as CreateLeadInput["source"])}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(LEAD_SOURCE_LABELS).map(([v, label]) => (
-                        <SelectItem key={v} value={v}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>דחיפות</Label>
-                  <Select
-                    defaultValue={lead.urgency}
-                    onValueChange={(v) => setValue("urgency", v as CreateLeadInput["urgency"])}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(LEAD_URGENCY_CONFIG).map(([v, cfg]) => (
-                        <SelectItem key={v} value={v}>{cfg.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-1.5">
+                <Label>סוג בנייה</Label>
+                <MultiSelectCreatable
+                  options={DEFAULT_CONSTRUCTION_TYPES}
+                  selected={constructionTypes}
+                  onChange={setConstructionTypes}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>מקור ליד</Label>
+                <Select
+                  defaultValue={lead.source}
+                  onValueChange={(v) => setValue("source", v as CreateLeadInput["source"])}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(LEAD_SOURCE_LABELS).map(([v, label]) => (
+                      <SelectItem key={v} value={v}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {employeeOptions.length > 0 && (

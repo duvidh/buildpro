@@ -1,6 +1,12 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazily initialised — never constructed at module load time so the build
+// phase (which runs without env vars) doesn't throw "Missing API key".
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
 
 const FROM =
   process.env.RESEND_FROM_EMAIL ?? "BuildPro <noreply@buildpro.app>";
@@ -78,7 +84,7 @@ export async function sendInvitationEmail({
 </body>
 </html>`;
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to,
     subject: `You've been invited to BuildPro as ${roleEn}`,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import {
   Phone, Users, Mail, FileText,
   Plus, Send, Clock,
@@ -27,63 +28,19 @@ type Props = {
   initialEntries: CommEntry[];
 };
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+// ─── Type CSS config (labels come from t()) ───────────────────────────────────
 
-const TYPE_CONFIG: Record<
+const TYPE_CSS: Record<
   CommunicationType,
-  { label: string; Icon: React.ElementType; color: string; bg: string; ring: string }
+  { Icon: React.ElementType; color: string; bg: string; ring: string }
 > = {
-  NOTE: {
-    label: "הערה",
-    Icon: FileText,
-    color: "text-slate-600",
-    bg: "bg-slate-100",
-    ring: "ring-slate-200",
-  },
-  CALL: {
-    label: "שיחה",
-    Icon: Phone,
-    color: "text-emerald-600",
-    bg: "bg-emerald-100",
-    ring: "ring-emerald-200",
-  },
-  MEETING: {
-    label: "פגישה",
-    Icon: Users,
-    color: "text-blue-600",
-    bg: "bg-blue-100",
-    ring: "ring-blue-200",
-  },
-  EMAIL: {
-    label: "אימייל",
-    Icon: Mail,
-    color: "text-violet-600",
-    bg: "bg-violet-100",
-    ring: "ring-violet-200",
-  },
+  NOTE:    { Icon: FileText, color: "text-slate-600",  bg: "bg-slate-100",  ring: "ring-slate-200" },
+  CALL:    { Icon: Phone,    color: "text-emerald-600", bg: "bg-emerald-100", ring: "ring-emerald-200" },
+  MEETING: { Icon: Users,    color: "text-blue-600",   bg: "bg-blue-100",   ring: "ring-blue-200" },
+  EMAIL:   { Icon: Mail,     color: "text-violet-600", bg: "bg-violet-100", ring: "ring-violet-200" },
 };
 
 const TYPE_ORDER: CommunicationType[] = ["NOTE", "CALL", "MEETING", "EMAIL"];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins  = Math.floor(diff / 60_000);
-  const hours = Math.floor(diff / 3_600_000);
-  const days  = Math.floor(diff / 86_400_000);
-
-  if (mins  < 1)   return "עכשיו";
-  if (mins  < 60)  return `לפני ${mins} דקות`;
-  if (hours < 24)  return `לפני ${hours} שעות`;
-  if (days  < 7)   return `לפני ${days} ימים`;
-
-  return new Date(iso).toLocaleDateString("he-IL", {
-    day:   "2-digit",
-    month: "2-digit",
-    year:  "numeric",
-  });
-}
 
 // ─── Inline Log Form ──────────────────────────────────────────────────────────
 
@@ -94,10 +51,30 @@ function LogForm({
   entity: Props["entity"];
   onAdded: (entry: CommEntry) => void;
 }) {
-  const [type, setType]     = useState<CommunicationType>("NOTE");
+  const [type, setType]       = useState<CommunicationType>("NOTE");
   const [content, setContent] = useState("");
-  const [isPending, start]  = useTransition();
-  const textRef             = useRef<HTMLTextAreaElement>(null);
+  const [isPending, start]    = useTransition();
+  const textRef               = useRef<HTMLTextAreaElement>(null);
+  const t     = useTranslations("clients");
+  const locale = useLocale();
+  const dir    = locale === "he" ? "rtl" : "ltr";
+
+  const typeLabel = (tp: CommunicationType): string => {
+    const map: Record<CommunicationType, string> = {
+      NOTE:    t("activity.typeNote"),
+      CALL:    t("activity.typeCall"),
+      MEETING: t("activity.typeMeeting"),
+      EMAIL:   t("activity.typeEmail"),
+    };
+    return map[tp];
+  };
+
+  const placeholder = (): string => {
+    if (type === "CALL")    return t("activity.placeholderCall");
+    if (type === "MEETING") return t("activity.placeholderMeeting");
+    if (type === "EMAIL")   return t("activity.placeholderEmail");
+    return t("activity.placeholderNote");
+  };
 
   function handleSubmit() {
     if (!content.trim()) return;
@@ -111,7 +88,7 @@ function LogForm({
       });
 
       if (!res.success) {
-        toast.error((res as { error?: string }).error ?? "שגיאה");
+        toast.error((res as { error?: string }).error ?? t("activity.errorSave"));
         return;
       }
 
@@ -121,26 +98,26 @@ function LogForm({
         type,
         content:   content.trim(),
         createdAt: new Date().toISOString(),
-        author:    { id: "", name: "אתה" },
+        author:    { id: "", name: t("activity.you") },
       });
 
       setContent("");
-      toast.success("נרשם בהצלחה");
+      toast.success(t("activity.successSave"));
     });
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm p-4 space-y-3">
+    <div className="rounded-xl border border-border bg-card shadow-sm p-4 space-y-3" dir={dir}>
       {/* Type selector */}
       <div className="flex gap-1.5 flex-wrap">
-        {TYPE_ORDER.map((t) => {
-          const cfg = TYPE_CONFIG[t];
-          const active = type === t;
+        {TYPE_ORDER.map((tp) => {
+          const cfg    = TYPE_CSS[tp];
+          const active = type === tp;
           return (
             <button
-              key={t}
+              key={tp}
               type="button"
-              onClick={() => setType(t)}
+              onClick={() => setType(tp)}
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium",
                 "border transition-all",
@@ -150,7 +127,7 @@ function LogForm({
               )}
             >
               <cfg.Icon className="h-3 w-3" />
-              {cfg.label}
+              {typeLabel(tp)}
             </button>
           );
         })}
@@ -161,12 +138,7 @@ function LogForm({
         ref={textRef}
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder={
-          type === "CALL"    ? "סיכום השיחה, על מה דיברתם..." :
-          type === "MEETING" ? "על מה הוסכם, מה נדון..." :
-          type === "EMAIL"   ? "נושא ותוכן האימייל..." :
-                               "הערה כללית..."
-        }
+        placeholder={placeholder()}
         rows={3}
         className="resize-none text-sm"
         onKeyDown={(e) => {
@@ -177,7 +149,7 @@ function LogForm({
 
       {/* Submit row */}
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">Ctrl+Enter לשמירה</p>
+        <p className="text-xs text-muted-foreground">{t("activity.ctrlHint")}</p>
         <Button
           size="sm"
           className="h-8 gap-1.5 text-sm"
@@ -185,7 +157,7 @@ function LogForm({
           disabled={!content.trim() || isPending}
         >
           <Send className="h-3.5 w-3.5" />
-          {isPending ? "שומר..." : "שמור רשומה"}
+          {isPending ? t("activity.saving") : t("activity.saveBtn")}
         </Button>
       </div>
     </div>
@@ -195,7 +167,38 @@ function LogForm({
 // ─── Timeline Entry ───────────────────────────────────────────────────────────
 
 function TimelineEntry({ entry }: { entry: CommEntry }) {
-  const cfg = TYPE_CONFIG[entry.type];
+  const cfg        = TYPE_CSS[entry.type];
+  const t          = useTranslations("clients");
+  const locale     = useLocale();
+
+  function relativeTime(iso: string): string {
+    const diff  = Date.now() - new Date(iso).getTime();
+    const mins  = Math.floor(diff / 60_000);
+    const hours = Math.floor(diff / 3_600_000);
+    const days  = Math.floor(diff / 86_400_000);
+
+    if (mins  < 1)  return t("activity.relativeNow");
+    if (mins  < 60) return t("activity.relativeMinutes", { n: mins });
+    if (hours < 24) return t("activity.relativeHours",   { n: hours });
+    if (days  < 7)  return t("activity.relativeDays",    { n: days });
+
+    const intlLocale = locale === "he" ? "he-IL" : "en-US";
+    return new Date(iso).toLocaleDateString(intlLocale, {
+      day:   "2-digit",
+      month: "2-digit",
+      year:  "numeric",
+    });
+  }
+
+  const typeLabel = (): string => {
+    const map: Record<CommunicationType, string> = {
+      NOTE:    t("activity.typeNote"),
+      CALL:    t("activity.typeCall"),
+      MEETING: t("activity.typeMeeting"),
+      EMAIL:   t("activity.typeEmail"),
+    };
+    return map[entry.type];
+  };
 
   return (
     <div className="relative flex gap-3">
@@ -215,7 +218,7 @@ function TimelineEntry({ entry }: { entry: CommEntry }) {
             {entry.author.name}
           </span>
           <span className={cn("text-xs font-medium", cfg.color)}>
-            {cfg.label}
+            {typeLabel()}
           </span>
           <span className="text-xs text-muted-foreground ms-auto flex items-center gap-0.5">
             <Clock className="h-2.5 w-2.5" />
@@ -235,6 +238,9 @@ function TimelineEntry({ entry }: { entry: CommEntry }) {
 export function CommsClient({ entity, initialEntries }: Props) {
   const [entries, setEntries] = useState<CommEntry[]>(initialEntries);
   const [showForm, setShowForm] = useState(false);
+  const t      = useTranslations("clients");
+  const locale = useLocale();
+  const dir    = locale === "he" ? "rtl" : "ltr";
 
   function handleAdded(entry: CommEntry) {
     setEntries((prev) => [entry, ...prev]);
@@ -242,15 +248,15 @@ export function CommsClient({ entity, initialEntries }: Props) {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl" dir="rtl">
+    <div className="space-y-6 max-w-2xl" dir={dir}>
       {/* Header + quick-open */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-base font-semibold">יומן פעילות</h3>
+          <h3 className="text-base font-semibold">{t("activity.title")}</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
             {entries.length > 0
-              ? `${entries.length} רשומות`
-              : "טרם נרשמו אינטראקציות"}
+              ? t("activity.count", { n: entries.length })
+              : t("activity.noRecordsYet")}
           </p>
         </div>
         {!showForm && (
@@ -261,7 +267,7 @@ export function CommsClient({ entity, initialEntries }: Props) {
             onClick={() => setShowForm(true)}
           >
             <Plus className="h-3.5 w-3.5" />
-            רשום אינטראקציה
+            {t("activity.logBtn")}
           </Button>
         )}
       </div>
@@ -280,9 +286,9 @@ export function CommsClient({ entity, initialEntries }: Props) {
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/50 mb-3">
             <Phone className="h-7 w-7 text-muted-foreground/40" />
           </div>
-          <p className="text-sm font-medium text-muted-foreground">אין רשומות פעילות</p>
+          <p className="text-sm font-medium text-muted-foreground">{t("activity.noRecordsEmpty")}</p>
           <p className="text-xs text-muted-foreground mt-1">
-            לחץ &ldquo;רשום אינטראקציה&rdquo; כדי לתעד שיחה, פגישה או הערה
+            {t("activity.noRecordsEmptyHint")}
           </p>
         </div>
       ) : (

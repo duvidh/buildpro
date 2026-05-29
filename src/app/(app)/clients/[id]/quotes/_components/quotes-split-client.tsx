@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SplitViewLayout } from "@/components/layout/split-view-layout";
@@ -78,20 +79,15 @@ type Props = {
   catalogItems: CatalogItem[];
 };
 
-// ─── Status config ────────────────────────────────────────────────────────────
+// ─── Status CSS (labels come from t()) ───────────────────────────────────────
 
-const QUOTE_STATUS: Record<string, { label: string; className: string }> = {
-  DRAFT:    { label: "טיוטה",    className: "bg-slate-100 text-slate-600 border-slate-200" },
-  SENT:     { label: "נשלחה",    className: "bg-blue-100 text-blue-700 border-blue-200" },
-  ACCEPTED: { label: "אושרה",    className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  REJECTED: { label: "נדחתה",   className: "bg-red-100 text-red-700 border-red-200" },
-  EXPIRED:  { label: "פג תוקף", className: "bg-orange-100 text-orange-700 border-orange-200" },
+const QUOTE_STATUS_CLS: Record<string, string> = {
+  DRAFT:    "bg-slate-100 text-slate-600 border-slate-200",
+  SENT:     "bg-blue-100 text-blue-700 border-blue-200",
+  ACCEPTED: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  REJECTED: "bg-red-100 text-red-700 border-red-200",
+  EXPIRED:  "bg-orange-100 text-orange-700 border-orange-200",
 };
-
-function fmtDate(d: string | null) {
-  if (!d) return "";
-  return new Intl.DateTimeFormat("he-IL", { day: "2-digit", month: "2-digit", year: "2-digit" }).format(new Date(d));
-}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -106,6 +102,16 @@ export function QuotesSplitClient({
   const { fmtCompact } = useCurrency();
   const router   = useRouter();
   const pathname = usePathname();
+  const t        = useTranslations("clients");
+  const tQuotes  = useTranslations("quotes");
+  const locale   = useLocale();
+  const dir      = locale === "he" ? "rtl" : "ltr";
+
+  function fmtDate(d: string | null) {
+    if (!d) return "";
+    const intlLocale = locale === "he" ? "he-IL" : "en-US";
+    return new Intl.DateTimeFormat(intlLocale, { day: "2-digit", month: "2-digit", year: "2-digit" }).format(new Date(d));
+  }
 
   function selectQuote(id: string) {
     if (id === selectedQuoteId) {
@@ -125,7 +131,7 @@ export function QuotesSplitClient({
       {/* Header row */}
       <div className="flex items-center justify-between py-1">
         <h2 className="text-sm font-semibold text-muted-foreground">
-          {quotes.length} הצעות מחיר
+          {t("quotesList.count", { n: quotes.length })}
         </h2>
         <CreateQuoteButton clientId={clientId} />
       </div>
@@ -133,14 +139,15 @@ export function QuotesSplitClient({
       {quotes.length === 0 ? (
         <Card className="shadow-sm">
           <CardContent className="p-8 text-center text-muted-foreground text-sm">
-            אין הצעות מחיר ללקוח זה עדיין.
+            {t("quotesList.empty")}
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-2">
           {quotes.map((quote) => {
-            const statusCfg  = QUOTE_STATUS[quote.status] ?? QUOTE_STATUS.DRAFT;
-            const isSelected = quote.id === selectedQuoteId;
+            const statusCls   = QUOTE_STATUS_CLS[quote.status] ?? QUOTE_STATUS_CLS.DRAFT;
+            const statusLabel = tQuotes(`status.${quote.status as "DRAFT" | "SENT" | "ACCEPTED" | "REJECTED" | "EXPIRED"}`);
+            const isSelected  = quote.id === selectedQuoteId;
 
             return (
               <button
@@ -160,22 +167,22 @@ export function QuotesSplitClient({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <span className="text-sm font-semibold text-foreground">
-                          {quote.quoteNumber ?? "הצעה ללא מספר"}
+                          {quote.quoteNumber ?? t("quotesList.noNumber")}
                         </span>
-                        <Badge variant="outline" className={`text-xs ${statusCfg.className}`}>
-                          {statusCfg.label}
+                        <Badge variant="outline" className={`text-xs ${statusCls}`}>
+                          {statusLabel}
                         </Badge>
                         {isSelected && (
                           <span className="flex items-center gap-1 text-[11px] text-primary font-medium">
                             <FileEdit className="h-3 w-3" />
-                            עורך
+                            {t("quotesList.editing")}
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <span dir="ltr">{fmtDate(quote.date)}</span>
                         {quote.validUntil && (
-                          <span>בתוקף עד: <span dir="ltr">{fmtDate(quote.validUntil)}</span></span>
+                          <span>{t("quotesList.validUntil")} <span dir="ltr">{fmtDate(quote.validUntil)}</span></span>
                         )}
                       </div>
                     </div>
@@ -208,11 +215,13 @@ export function QuotesSplitClient({
   const selectedQuoteNum = quotes.find((q) => q.id === selectedQuoteId)?.quoteNumber;
 
   return (
-    <div className="max-w-5xl" dir="rtl">
+    <div className="max-w-5xl" dir={dir}>
       <SplitViewLayout
         master={master}
         detail={detail}
-        detailTitle={selectedQuoteNum ? `עורך הצעה — ${selectedQuoteNum}` : "עורך הצעה"}
+        detailTitle={selectedQuoteNum
+          ? t("quotesList.editorTitle", { number: selectedQuoteNum })
+          : t("quotesList.editorTitleNoNumber")}
         onClose={closeDetail}
         masterMaxHeight={selectedQuoteId ? "220px" : undefined}
       />

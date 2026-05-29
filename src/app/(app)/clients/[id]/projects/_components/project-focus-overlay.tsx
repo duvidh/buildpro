@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -93,6 +94,10 @@ export function ProjectFocusOverlay({
 }: Props) {
   const router   = useRouter();
   const pathname = usePathname();
+  const tProj    = useTranslations("projects");
+  const tClients = useTranslations("clients");
+  const locale   = useLocale();
+  const dir      = locale === "he" ? "rtl" : "ltr";
 
   const s = settings ?? DEFAULT_SETTINGS;
 
@@ -102,29 +107,29 @@ export function ProjectFocusOverlay({
 
   // ── Build tab list (mirrors ProjectTabsNav) ──────────────────────────────
   const coreTabs: TabDef[] = [
-    { id: "overview",  label: "סקירה",      icon: LayoutDashboard, count: null },
-    { id: "tasks",     label: "משימות",     icon: CheckSquare,     count: counts.tasks },
+    { id: "overview",  label: tProj("tabs.overview"),    icon: LayoutDashboard, count: null },
+    { id: "tasks",     label: tProj("tabs.tasks"),       icon: CheckSquare,     count: counts.tasks },
     ...(canViewFinancials
-      ? [{ id: "financials", label: "פיננסי", icon: Wallet, count: null } as TabDef]
+      ? [{ id: "financials", label: tProj("tabs.financials"), icon: Wallet, count: null } as TabDef]
       : []),
-    { id: "field",  label: "דיווחי שטח", icon: HardHat,    count: null },
-    { id: "team",   label: "צוות וציוד", icon: Users,      count: null },
-    { id: "prefab", label: "ייצור",      icon: Factory,    count: null },
-    { id: "files",  label: "קבצים",      icon: FolderOpen, count: counts.files },
+    { id: "field",  label: tProj("tabs.field"),  icon: HardHat,    count: null },
+    { id: "team",   label: tProj("tabs.team"),   icon: Users,      count: null },
+    { id: "prefab", label: tProj("tabs.prefab"), icon: Factory,    count: null },
+    { id: "files",  label: tProj("tabs.files"),  icon: FolderOpen, count: counts.files },
   ];
 
   const optionalTabs: TabDef[] = [
-    s.milestonesEnabled && { id: "milestones",  label: "אבני דרך", icon: Milestone,      count: counts.milestones },
-    s.wbsEnabled        && { id: "wbs",         label: "WBS",       icon: GitBranch,      count: counts.workPackages },
-    s.qcEnabled         && { id: "qc",          label: "איכות",     icon: ShieldCheck,    count: counts.qualityChecks + counts.ncrs },
-    s.risksEnabled      && { id: "risks",        label: "סיכונים",   icon: AlertTriangle,  count: counts.risks },
-    s.crEnabled         && { id: "cr",           label: "שינויים",   icon: GitPullRequest, count: counts.changeRequests },
-    s.procurementEnabled&& { id: "procurement",  label: "רכש",       icon: ShoppingCart,   count: counts.contracts },
-    s.ganttEnabled      && { id: "gantt",        label: "גאנט",      icon: CalendarRange,  count: null },
+    s.milestonesEnabled && { id: "milestones",   label: tProj("tabs.milestones"),   icon: Milestone,      count: counts.milestones },
+    s.wbsEnabled        && { id: "wbs",          label: tProj("tabs.wbs"),          icon: GitBranch,      count: counts.workPackages },
+    s.qcEnabled         && { id: "qc",           label: tProj("tabs.qc"),           icon: ShieldCheck,    count: counts.qualityChecks + counts.ncrs },
+    s.risksEnabled      && { id: "risks",        label: tProj("tabs.risks"),        icon: AlertTriangle,  count: counts.risks },
+    s.crEnabled         && { id: "cr",           label: tProj("tabs.cr"),           icon: GitPullRequest, count: counts.changeRequests },
+    s.procurementEnabled&& { id: "procurement",  label: tProj("tabs.procurement"),  icon: ShoppingCart,   count: counts.contracts },
+    s.ganttEnabled      && { id: "gantt",        label: tProj("tabs.gantt"),        icon: CalendarRange,  count: null },
   ].filter(Boolean) as TabDef[];
 
   const settingsTabs: TabDef[] = canViewSettings
-    ? [{ id: "settings", label: "הגדרות", icon: Settings2, count: null }]
+    ? [{ id: "settings", label: tProj("tabs.settings"), icon: Settings2, count: null }]
     : [];
 
   const allTabs = [...coreTabs, ...optionalTabs, ...settingsTabs];
@@ -142,7 +147,7 @@ export function ProjectFocusOverlay({
 
   return (
     // ── Inline container — fills parent flow, NOT fixed/absolute ──────────────
-    <div dir="rtl" className="flex flex-col animate-in fade-in-0 slide-in-from-top-2 duration-200">
+    <div dir={dir} className="flex flex-col animate-in fade-in-0 slide-in-from-top-2 duration-200">
 
       {/* ── Back bar + project name ───────────────────────────────────────── */}
       <div className="flex items-center justify-between gap-3 py-3 mb-1">
@@ -154,7 +159,7 @@ export function ProjectFocusOverlay({
           className="gap-2 text-muted-foreground hover:text-foreground -ms-1"
         >
           <ArrowRight className="h-4 w-4" />
-          <span>חזור לרשימת הפרויקטים</span>
+          <span>{tClients("projectsList.backToList")}</span>
         </Button>
 
         {/* Open full project page */}
@@ -166,7 +171,7 @@ export function ProjectFocusOverlay({
         >
           <Link href={`/projects/${projectId}`}>
             <ExternalLink className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">פתח בדף פרויקט</span>
+            <span className="hidden sm:inline">{tClients("projectsList.openProjectPage")}</span>
           </Link>
         </Button>
       </div>

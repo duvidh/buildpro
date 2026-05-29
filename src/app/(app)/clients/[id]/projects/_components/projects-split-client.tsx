@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import { Plus, MapPin, CalendarDays, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,14 +31,14 @@ type Props = {
   selectedProjectId: string | null;
 };
 
-// ─── Status config ────────────────────────────────────────────────────────────
+// ─── Status CSS (labels come from t()) ───────────────────────────────────────
 
-const PROJECT_STATUS: Record<string, { label: string; className: string }> = {
-  PLANNING:  { label: "תכנון",  className: "bg-blue-100 text-blue-700 border-blue-200" },
-  ACTIVE:    { label: "פעיל",   className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  ON_HOLD:   { label: "מושהה",  className: "bg-orange-100 text-orange-700 border-orange-200" },
-  COMPLETED: { label: "הושלם",  className: "bg-slate-100 text-slate-600 border-slate-200" },
-  CANCELLED: { label: "בוטל",   className: "bg-red-100 text-red-700 border-red-200" },
+const PROJECT_STATUS_CLS: Record<string, string> = {
+  PLANNING:  "bg-blue-100 text-blue-700 border-blue-200",
+  ACTIVE:    "bg-emerald-100 text-emerald-700 border-emerald-200",
+  ON_HOLD:   "bg-orange-100 text-orange-700 border-orange-200",
+  COMPLETED: "bg-slate-100 text-slate-600 border-slate-200",
+  CANCELLED: "bg-red-100 text-red-700 border-red-200",
 };
 
 function progressBarColor(pct: number): string {
@@ -56,6 +57,11 @@ export function ProjectsSplitClient({
   const { fmtCompact } = useCurrency();
   const router   = useRouter();
   const pathname = usePathname();
+  const t        = useTranslations("clients");
+  const tCommon  = useTranslations("common");
+  const tProj    = useTranslations("projects");
+  const locale   = useLocale();
+  const dir      = locale === "he" ? "rtl" : "ltr";
 
   function selectProject(id: string) {
     // Any click opens the focus overlay (no deselect — use the overlay's back button)
@@ -63,16 +69,16 @@ export function ProjectsSplitClient({
   }
 
   return (
-    <div className="space-y-2 pb-2 max-w-5xl" dir="rtl">
+    <div className="space-y-2 pb-2 max-w-5xl" dir={dir}>
       {/* Header row */}
       <div className="flex items-center justify-between py-1">
         <h2 className="text-sm font-semibold text-muted-foreground">
-          {projects.length} פרויקטים
+          {t("projectsList.count", { n: projects.length })}
         </h2>
         <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
           <Link href="/projects">
             <Plus className="h-3.5 w-3.5" />
-            פרויקט חדש
+            {tCommon("newProject")}
           </Link>
         </Button>
       </div>
@@ -80,13 +86,14 @@ export function ProjectsSplitClient({
       {projects.length === 0 ? (
         <Card className="shadow-sm">
           <CardContent className="p-8 text-center text-muted-foreground text-sm">
-            אין פרויקטים ללקוח זה עדיין.
+            {t("projectsList.empty")}
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-2">
           {projects.map((project) => {
-            const statusCfg  = PROJECT_STATUS[project.status] ?? PROJECT_STATUS.PLANNING;
+            const statusCls  = PROJECT_STATUS_CLS[project.status] ?? PROJECT_STATUS_CLS.PLANNING;
+            const statusLabel = tProj(`status.${project.status as "PLANNING" | "ACTIVE" | "ON_HOLD" | "COMPLETED" | "CANCELLED"}`);
             const pct        = project.progressPercent ?? 0;
             const isSelected = project.id === selectedProjectId;
 
@@ -111,8 +118,8 @@ export function ProjectsSplitClient({
                         <span className="text-sm font-semibold text-foreground truncate">
                           {project.name}
                         </span>
-                        <Badge variant="outline" className={`text-xs ${statusCfg.className}`}>
-                          {statusCfg.label}
+                        <Badge variant="outline" className={`text-xs ${statusCls}`}>
+                          {statusLabel}
                         </Badge>
                       </div>
 
@@ -141,7 +148,7 @@ export function ProjectsSplitClient({
 
                     <div className="text-end shrink-0 flex flex-col items-end gap-1">
                       <p className="text-sm font-bold text-foreground">{fmtCompact(project.contractValue)}</p>
-                      <p className="text-xs text-muted-foreground">ערך חוזה</p>
+                      <p className="text-xs text-muted-foreground">{t("projectsList.contractValue")}</p>
                       {/* Arrow hint */}
                       <ChevronRight className="h-4 w-4 text-muted-foreground/50 mt-1" />
                     </div>

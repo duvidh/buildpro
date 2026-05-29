@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createQuote } from "@/actions/quotes";
@@ -11,16 +12,17 @@ export function CreateQuoteButton({ clientId }: { clientId: string }) {
   const router   = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
+  const t = useTranslations("clients");
 
   function handleCreate() {
     startTransition(async () => {
       const res = await createQuote({ clientId });
       if (res.success) {
-        toast.success("הצעת מחיר נוצרה");
+        toast.success(t("quotesList.toastCreated"));
         // Open the new quote directly in the split-view — no page navigation
         router.push(`${pathname}?selectedQuoteId=${res.quoteId}`, { scroll: false });
       } else {
-        toast.error("שגיאה ביצירת הצעת מחיר");
+        toast.error(t("quotesList.toastError"));
       }
     });
   }
@@ -38,7 +40,7 @@ export function CreateQuoteButton({ clientId }: { clientId: string }) {
       ) : (
         <Plus className="h-3.5 w-3.5" />
       )}
-      צור הצעת מחיר
+      {t("quotesList.newQuote")}
     </Button>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { updateLead } from "@/actions/leads";
 import { LeadFormBody } from "@/components/leads/new-lead-dialog";
@@ -19,6 +20,7 @@ type Props = {
 
 export function LeadEditClient({ leadId, defaultValues, employees }: Props) {
   const router = useRouter();
+  const t = useTranslations("leads");
 
   async function handleSubmit(
     data: CreateLeadInput,
@@ -31,10 +33,10 @@ export function LeadEditClient({ leadId, defaultValues, employees }: Props) {
       city: city || undefined,
     });
     if (res.success) {
-      toast.success("פרטי הליד עודכנו");
+      toast.success(t("detail.toastUpdated"));
       router.refresh();
     } else {
-      toast.error(res.error ?? "שגיאה בשמירה");
+      toast.error(res.error ?? t("detail.toastError"));
     }
   }
 
@@ -44,7 +46,7 @@ export function LeadEditClient({ leadId, defaultValues, employees }: Props) {
       defaultValues={defaultValues}
       onSubmit={handleSubmit}
       onCancel={() => router.push("/leads")}
-      submitLabel="שמור שינויים"
+      submitLabel={t("detail.saveChanges")}
     />
   );
 }

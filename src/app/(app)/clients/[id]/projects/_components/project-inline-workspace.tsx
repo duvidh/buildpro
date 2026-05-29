@@ -2,6 +2,7 @@
 
 import { useCurrency } from "@/lib/currency-context";
 import { useState } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import {
   ExternalLink, CheckSquare, Flag, AlertCircle,
@@ -48,43 +49,27 @@ type Props = {
   milestones: Milestone[];
 };
 
-// ─── Constants ─────────────────────────────────────────────────────────────
+// ─── Status / priority CSS (labels come from t()) ───────────────────────────
 
-const STATUS_CFG: Record<string, { label: string; cls: string }> = {
-  PLANNING:  { label: "תכנון",  cls: "bg-blue-100 text-blue-700 border-blue-200" },
-  ACTIVE:    { label: "פעיל",   cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  ON_HOLD:   { label: "מושהה",  cls: "bg-orange-100 text-orange-700 border-orange-200" },
-  COMPLETED: { label: "הושלם",  cls: "bg-slate-100 text-slate-600 border-slate-200" },
-  CANCELLED: { label: "בוטל",   cls: "bg-red-100 text-red-700 border-red-200" },
+const STATUS_CLS: Record<string, string> = {
+  PLANNING:  "bg-blue-100 text-blue-700 border-blue-200",
+  ACTIVE:    "bg-emerald-100 text-emerald-700 border-emerald-200",
+  ON_HOLD:   "bg-orange-100 text-orange-700 border-orange-200",
+  COMPLETED: "bg-slate-100 text-slate-600 border-slate-200",
+  CANCELLED: "bg-red-100 text-red-700 border-red-200",
 };
 
-const PRIORITY_CFG: Record<string, { label: string; cls: string }> = {
-  URGENT: { label: "דחוף מאוד", cls: "text-red-600" },
-  HIGH:   { label: "דחוף",      cls: "text-red-500" },
-  MEDIUM: { label: "בינוני",    cls: "text-orange-500" },
-  LOW:    { label: "נמוך",      cls: "text-slate-400" },
+const PRIORITY_CLS: Record<string, string> = {
+  URGENT: "text-red-600",
+  HIGH:   "text-red-500",
+  MEDIUM: "text-orange-500",
+  LOW:    "text-slate-400",
 };
 
 function progressColor(pct: number) {
   if (pct >= 90) return "[&>div]:bg-emerald-500";
   if (pct >= 30) return "[&>div]:bg-primary";
   return "[&>div]:bg-orange-400";
-}
-
-function fmtDate(d: string | null) {
-  if (!d) return null;
-  return new Intl.DateTimeFormat("he-IL", { day: "2-digit", month: "2-digit", year: "2-digit" }).format(new Date(d));
-}
-
-function dueDays(dueDate: string | null): { label: string; overdue: boolean } | null {
-  if (!dueDate) return null;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const due   = new Date(dueDate); due.setHours(0, 0, 0, 0);
-  const diff  = Math.round((due.getTime() - today.getTime()) / 86_400_000);
-  if (diff < 0)  return { label: `${Math.abs(diff)}י׳ בפיגור`, overdue: true };
-  if (diff === 0) return { label: "היום", overdue: false };
-  if (diff === 1) return { label: "מחר", overdue: false };
-  return { label: `${diff} ימים`, overdue: false };
 }
 
 // ─── Tab Button ─────────────────────────────────────────────────────────────
@@ -119,30 +104,52 @@ function TabBtn({
 export function ProjectInlineWorkspace({ project, tasks, milestones }: Props) {
   const { fmtCompact } = useCurrency();
   const [tab, setTab] = useState<"tasks" | "milestones">("tasks");
+  const t       = useTranslations("clients");
+  const tProj   = useTranslations("projects");
+  const locale  = useLocale();
+  const dir     = locale === "he" ? "rtl" : "ltr";
 
-  const statusCfg = STATUS_CFG[project.status] ?? STATUS_CFG.PLANNING;
-  const pct       = project.progressPercent ?? 0;
+  const statusCls   = STATUS_CLS[project.status] ?? STATUS_CLS.PLANNING;
+  const statusLabel = tProj(`status.${project.status as "PLANNING" | "ACTIVE" | "ON_HOLD" | "COMPLETED" | "CANCELLED"}`);
+  const pct         = project.progressPercent ?? 0;
 
-  const openTasks     = tasks.filter((t) => t.status !== "DONE");
-  const doneTasks     = tasks.filter((t) => t.status === "DONE");
-  const pendingMiles  = milestones.filter((m) => !m.completed);
-  const doneMiles     = milestones.filter((m) => m.completed);
+  const openTasks    = tasks.filter((tk) => tk.status !== "DONE");
+  const doneTasks    = tasks.filter((tk) => tk.status === "DONE");
+  const pendingMiles = milestones.filter((m) => !m.completed);
+  const doneMiles    = milestones.filter((m) => m.completed);
+
+  function fmtDate(d: string | null) {
+    if (!d) return null;
+    const intlLocale = locale === "he" ? "he-IL" : "en-US";
+    return new Intl.DateTimeFormat(intlLocale, { day: "2-digit", month: "2-digit", year: "2-digit" }).format(new Date(d));
+  }
+
+  function dueDays(dueDate: string | null): { label: string; overdue: boolean } | null {
+    if (!dueDate) return null;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const due   = new Date(dueDate); due.setHours(0, 0, 0, 0);
+    const diff  = Math.round((due.getTime() - today.getTime()) / 86_400_000);
+    if (diff < 0)  return { label: t("projectsList.overdueLabel", { n: Math.abs(diff) }), overdue: true };
+    if (diff === 0) return { label: t("projectsList.dueTodayLabel"), overdue: false };
+    if (diff === 1) return { label: t("projectsList.dueTomorrowLabel"), overdue: false };
+    return { label: t("projectsList.dueDaysLabel", { n: diff }), overdue: false };
+  }
 
   return (
-    <div className="p-4 space-y-4" dir="rtl">
+    <div className="p-4 space-y-4" dir={dir}>
 
       {/* ── Project summary header ── */}
       <div className="flex items-start gap-4 flex-wrap">
         <div className="flex-1 min-w-0 space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-sm font-bold text-foreground">{project.name}</h3>
-            <Badge variant="outline" className={`text-xs ${statusCfg.cls}`}>
-              {statusCfg.label}
+            <Badge variant="outline" className={`text-xs ${statusCls}`}>
+              {statusLabel}
             </Badge>
           </div>
           <div className="flex items-center gap-2">
             <Progress value={pct} className={`h-1.5 w-32 ${progressColor(pct)}`} />
-            <span className="text-xs text-muted-foreground">{pct}% הושלם</span>
+            <span className="text-xs text-muted-foreground">{t("projectsList.completedPct", { n: pct })}</span>
             {project.contractValue > 0 && (
               <span className="text-xs text-muted-foreground">
                 · {fmtCompact(project.contractValue)}
@@ -162,7 +169,7 @@ export function ProjectInlineWorkspace({ project, tasks, milestones }: Props) {
         <Button asChild size="sm" variant="outline" className="h-7 gap-1 text-xs shrink-0">
           <Link href={`/projects/${project.id}`} target="_blank">
             <ExternalLink className="h-3 w-3" />
-            פתח פרויקט
+            {t("projectsList.openProject")}
           </Link>
         </Button>
       </div>
@@ -171,11 +178,11 @@ export function ProjectInlineWorkspace({ project, tasks, milestones }: Props) {
       <div className="flex border-b border-border/60 -mx-4 px-4">
         <TabBtn active={tab === "tasks"} onClick={() => setTab("tasks")}>
           <CheckSquare className="inline h-3 w-3 me-1 mb-0.5" />
-          משימות {openTasks.length > 0 && `(${openTasks.length})`}
+          {tProj("tabs.tasks")} {openTasks.length > 0 && `(${openTasks.length})`}
         </TabBtn>
         <TabBtn active={tab === "milestones"} onClick={() => setTab("milestones")}>
           <Flag className="inline h-3 w-3 me-1 mb-0.5" />
-          אבני דרך {pendingMiles.length > 0 && `(${pendingMiles.length})`}
+          {tProj("tabs.milestones")} {pendingMiles.length > 0 && `(${pendingMiles.length})`}
         </TabBtn>
       </div>
 
@@ -183,12 +190,13 @@ export function ProjectInlineWorkspace({ project, tasks, milestones }: Props) {
       {tab === "tasks" && (
         <div className="space-y-1">
           {tasks.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">אין משימות לפרויקט זה</p>
+            <p className="text-sm text-muted-foreground py-4 text-center">{t("projectsList.noTasks")}</p>
           ) : (
             <>
               {openTasks.map((task) => {
-                const prio = PRIORITY_CFG[task.priority] ?? PRIORITY_CFG.MEDIUM;
-                const due  = dueDays(task.dueDate);
+                const prioCls = PRIORITY_CLS[task.priority] ?? PRIORITY_CLS.MEDIUM;
+                const prioLabel = tProj(`tasks.priority.${task.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT"}`);
+                const due = dueDays(task.dueDate);
                 return (
                   <div
                     key={task.id}
@@ -198,7 +206,7 @@ export function ProjectInlineWorkspace({ project, tasks, milestones }: Props) {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{task.name}</p>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                        <span className={prio.cls}>{prio.label}</span>
+                        <span className={prioCls}>{prioLabel}</span>
                         {task.assignedTo && (
                           <span className="flex items-center gap-0.5">
                             <User className="h-2.5 w-2.5" />
@@ -224,7 +232,7 @@ export function ProjectInlineWorkspace({ project, tasks, milestones }: Props) {
               {doneTasks.length > 0 && (
                 <details className="mt-2">
                   <summary className="text-xs text-muted-foreground cursor-pointer px-3 py-1 hover:text-foreground">
-                    {doneTasks.length} משימות שהושלמו ▸
+                    {t("projectsList.completedTasks", { n: doneTasks.length })} ▸
                   </summary>
                   {doneTasks.map((task) => (
                     <div
@@ -246,7 +254,7 @@ export function ProjectInlineWorkspace({ project, tasks, milestones }: Props) {
       {tab === "milestones" && (
         <div className="space-y-1">
           {milestones.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">אין אבני דרך לפרויקט זה</p>
+            <p className="text-sm text-muted-foreground py-4 text-center">{t("projectsList.noMilestones")}</p>
           ) : (
             <>
               {pendingMiles.map((m) => {
@@ -272,7 +280,11 @@ export function ProjectInlineWorkspace({ project, tasks, milestones }: Props) {
                           ? "bg-amber-100 text-amber-700"
                           : "bg-muted text-muted-foreground",
                     )}>
-                      {past ? `${Math.abs(diff)}י׳ בפיגור` : diff === 0 ? "היום" : `${diff}י׳`}
+                      {past
+                        ? t("projectsList.overdueLabel", { n: Math.abs(diff) })
+                        : diff === 0
+                          ? t("projectsList.dueTodayLabel")
+                          : t("projectsList.dueDaysLabel", { n: diff })}
                     </span>
                   </div>
                 );
@@ -280,7 +292,7 @@ export function ProjectInlineWorkspace({ project, tasks, milestones }: Props) {
               {doneMiles.length > 0 && (
                 <details className="mt-2">
                   <summary className="text-xs text-muted-foreground cursor-pointer px-3 py-1 hover:text-foreground">
-                    {doneMiles.length} אבני דרך שהושלמו ▸
+                    {t("projectsList.completedMilestones", { n: doneMiles.length })} ▸
                   </summary>
                   {doneMiles.map((m) => (
                     <div key={m.id} className="flex items-center gap-3 rounded-lg px-3 py-1.5 opacity-50">

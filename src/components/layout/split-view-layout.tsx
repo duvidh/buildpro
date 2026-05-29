@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { ArrowRight, X, PanelBottomOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ interface SplitViewLayoutProps {
   detail: React.ReactNode | null;
   /** Label shown in the detail header bar */
   detailTitle?: string;
-  /** Called when the user clicks "סגור" / "חזור לרשימה" */
+  /** Called when the user clicks "close" / "back to list" */
   onClose: () => void;
   /** Height of master when detail is open (desktop only, default: 260px) */
   masterMaxHeight?: string;
@@ -21,7 +22,7 @@ interface SplitViewLayoutProps {
  * Master-Detail split-view layout.
  *
  * Mobile (<md):
- *   - Detail open  → full-screen overlay with "חזור לרשימה" top bar; master hidden.
+ *   - Detail open  → full-screen overlay with "Back to list" top bar; master hidden.
  *   - Detail closed → master fills available space.
  *
  * Desktop (md+):
@@ -35,6 +36,7 @@ export function SplitViewLayout({
   onClose,
   masterMaxHeight = "260px",
 }: SplitViewLayoutProps) {
+  const t = useTranslations("common");
   const isOpen = detail !== null;
 
   return (
@@ -56,7 +58,7 @@ export function SplitViewLayout({
               onClick={onClose}
             >
               <ArrowRight className="h-4 w-4" />
-              חזור לרשימה
+              {t("backToList")}
             </Button>
             {detailTitle && (
               <span className="text-sm font-semibold text-foreground truncate flex-1 text-start">
@@ -100,7 +102,7 @@ export function SplitViewLayout({
               <div className="flex items-center gap-2">
                 <PanelBottomOpen className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span className="text-xs font-semibold text-foreground">
-                  {detailTitle ?? "פרטים"}
+                  {detailTitle ?? t("details")}
                 </span>
               </div>
               <Button
@@ -110,7 +112,7 @@ export function SplitViewLayout({
                 onClick={onClose}
               >
                 <X className="h-3 w-3" />
-                סגור פאנל
+                {t("closePanel")}
               </Button>
             </div>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations, useLocale } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { useCurrency } from "@/lib/currency-context";
 import { QuoteHeaderForm } from "@/components/quotes/quote-header-form";
@@ -63,15 +64,7 @@ type Props = {
   clientName: string;
 };
 
-// ─── Status labels ────────────────────────────────────────────────────────────
-
-const STATUS_LABELS: Record<string, string> = {
-  DRAFT:    "טיוטה",
-  SENT:     "נשלחה",
-  ACCEPTED: "אושרה",
-  REJECTED: "נדחתה",
-  EXPIRED:  "פגת תוקף",
-};
+// ─── Status CSS (labels come from t()) ───────────────────────────────────────
 
 const STATUS_CLS: Record<string, string> = {
   DRAFT:    "bg-slate-100 text-slate-600 border-slate-200",
@@ -85,8 +78,13 @@ const STATUS_CLS: Record<string, string> = {
 
 export function QuoteInlineWorkspace({ quote, catalogItems, clientId, clientName }: Props) {
   const { fmtCompact } = useCurrency();
-  const statusLabel = STATUS_LABELS[quote.status] ?? quote.status;
-  const statusCls   = STATUS_CLS[quote.status]   ?? STATUS_CLS.DRAFT;
+  const t       = useTranslations("clients");
+  const tQuotes = useTranslations("quotes");
+  const locale  = useLocale();
+  const dir     = locale === "he" ? "rtl" : "ltr";
+
+  const statusLabel = tQuotes(`status.${quote.status as "DRAFT" | "SENT" | "ACCEPTED" | "REJECTED" | "EXPIRED"}`);
+  const statusCls   = STATUS_CLS[quote.status] ?? STATUS_CLS.DRAFT;
 
   function isoDate(d: string | null | undefined) {
     if (!d) return "";
@@ -94,12 +92,12 @@ export function QuoteInlineWorkspace({ quote, catalogItems, clientId, clientName
   }
 
   return (
-    <div className="p-4 space-y-5" dir="rtl">
+    <div className="p-4 space-y-5" dir={dir}>
       {/* ── Quote summary banner ── */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2.5">
           <span className="text-base font-bold text-foreground">
-            {quote.quoteNumber ?? "הצעת מחיר"}
+            {quote.quoteNumber ?? t("quotesList.quoteTitle")}
           </span>
           <Badge variant="outline" className={`text-xs ${statusCls}`}>
             {statusLabel}
@@ -108,7 +106,7 @@ export function QuoteInlineWorkspace({ quote, catalogItems, clientId, clientName
         <div className="text-end">
           <span className="text-lg font-bold text-primary">{fmtCompact(quote.total)}</span>
           <span className="text-xs text-muted-foreground ms-1.5">
-            (כולל מע״מ {quote.taxPercent}%)
+            ({t("quotesList.vatIncluded", { n: quote.taxPercent })})
           </span>
         </div>
       </div>
@@ -118,7 +116,7 @@ export function QuoteInlineWorkspace({ quote, catalogItems, clientId, clientName
       {/* ── Header form (auto-saves on change) ── */}
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          פרטי הצעה
+          {t("quotesList.quoteDetails")}
         </p>
         <QuoteHeaderForm
           quoteId={quote.id}
@@ -139,7 +137,7 @@ export function QuoteInlineWorkspace({ quote, catalogItems, clientId, clientName
       {/* ── BoQ Calculator ── */}
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          פריטים וחישוב
+          {t("quotesList.quoteItems")}
         </p>
         <QuoteCalculator
           quoteId={quote.id}

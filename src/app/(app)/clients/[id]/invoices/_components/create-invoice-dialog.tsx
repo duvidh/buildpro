@@ -1,6 +1,7 @@
 "use client";
 
 import { useCurrency } from "@/lib/currency-context";
+import { useTranslations, useLocale } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Loader2, ExternalLink } from "lucide-react";
@@ -36,11 +37,15 @@ export function CreateInvoiceDialog({
   projects: Project[];
 }) {
   const { fmtAmount } = useCurrency();
-  const router                  = useRouter();
-  const [open,    setOpen]      = useState(false);
-  const [form,    setForm]      = useState(EMPTY);
-  const [error,   setError]     = useState("");
-  const [isPending, startTx]    = useTransition();
+  const t      = useTranslations("clients");
+  const locale = useLocale();
+  const dir    = locale === "he" ? "rtl" : "ltr";
+
+  const router               = useRouter();
+  const [open,    setOpen]   = useState(false);
+  const [form,    setForm]   = useState(EMPTY);
+  const [error,   setError]  = useState("");
+  const [isPending, startTx] = useTransition();
 
   // Live preview
   const amountNum  = parseFloat(form.amount)    || 0;
@@ -59,9 +64,9 @@ export function CreateInvoiceDialog({
   }
 
   function handleSubmit() {
-    if (!form.projectId)       { setError("נא לבחור פרויקט");         return; }
-    if (!form.date)            { setError("נא להזין תאריך חשבונית"); return; }
-    if (!form.amount || amountNum <= 0) { setError("נא להזין סכום תקין"); return; }
+    if (!form.projectId)                         { setError(t("invoices.errorNoProject"));      return; }
+    if (!form.date)                              { setError(t("invoices.errorNoDate"));         return; }
+    if (!form.amount || amountNum <= 0)          { setError(t("invoices.errorInvalidAmount"));  return; }
 
     setError("");
     startTx(async () => {
@@ -78,7 +83,7 @@ export function CreateInvoiceDialog({
         setOpen(false);
         router.refresh();
       } else {
-        setError((res as { error?: string }).error ?? "שגיאה ביצירת חשבונית");
+        setError((res as { error?: string }).error ?? t("invoices.errorCreate"));
       }
     });
   }
@@ -88,35 +93,35 @@ export function CreateInvoiceDialog({
       <DialogTrigger asChild>
         <Button size="sm" className="gap-1.5">
           <Plus className="h-4 w-4" />
-          חשבונית חדשה
+          {t("invoices.newInvoice")}
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg" dir="rtl">
+      <DialogContent className="sm:max-w-lg" dir={dir}>
         <DialogHeader>
-          <DialogTitle>יצירת חשבונית חדשה</DialogTitle>
+          <DialogTitle>{t("invoices.createTitle")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 pt-1">
           {/* Project */}
           <div className="space-y-1.5">
-            <Label>פרויקט *</Label>
+            <Label>{t("invoices.projectLabel")}</Label>
             {projects.length === 0 ? (
               <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2.5 text-sm">
-                <p className="text-destructive font-medium mb-1">ללקוח זה אין פרויקטים עדיין</p>
-                <p className="text-xs text-muted-foreground mb-2">חשבונית חייבת להיות מקושרת לפרויקט. צור פרויקט קודם ואז חזור ליצור את החשבונית.</p>
+                <p className="text-destructive font-medium mb-1">{t("invoices.noProjectsError")}</p>
+                <p className="text-xs text-muted-foreground mb-2">{t("invoices.noProjectsHint")}</p>
                 <Link
                   href="/projects"
                   className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                   onClick={() => setOpen(false)}
                 >
                   <ExternalLink className="h-3 w-3" />
-                  עבור לפרויקטים ליצירת פרויקט חדש
+                  {t("invoices.goToProjects")}
                 </Link>
               </div>
             ) : (
               <Select value={form.projectId} onValueChange={(v) => setForm({ ...form, projectId: v })}>
-                <SelectTrigger><SelectValue placeholder="בחר פרויקט" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("invoices.projectPlaceholder")} /></SelectTrigger>
                 <SelectContent>
                   {projects.map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
@@ -126,9 +131,9 @@ export function CreateInvoiceDialog({
             )}
           </div>
 
-          {/* Date only (invoice number is auto-generated) */}
+          {/* Date */}
           <div className="space-y-1.5">
-            <Label>תאריך חשבונית *</Label>
+            <Label>{t("invoices.dateLabel")}</Label>
             <Input
               type="date"
               value={form.date}
@@ -138,7 +143,7 @@ export function CreateInvoiceDialog({
 
           {/* Due date */}
           <div className="space-y-1.5">
-            <Label>תאריך לתשלום</Label>
+            <Label>{t("invoices.dueDateInputLabel")}</Label>
             <Input
               type="date"
               value={form.dueDate}
@@ -149,7 +154,7 @@ export function CreateInvoiceDialog({
           {/* Amount + Tax */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>סכום לפני מע״מ *</Label>
+              <Label>{t("invoices.amountLabel")}</Label>
               <Input
                 type="number" min="0" step="100" dir="ltr"
                 placeholder="0.00"
@@ -158,7 +163,7 @@ export function CreateInvoiceDialog({
               />
             </div>
             <div className="space-y-1.5">
-              <Label>מע״מ (%)</Label>
+              <Label>{t("invoices.vatLabel")}</Label>
               <Input
                 type="number" min="0" max="30" step="1" dir="ltr"
                 value={form.taxPercent}
@@ -171,15 +176,15 @@ export function CreateInvoiceDialog({
           {amountNum > 0 && (
             <div className="rounded-lg bg-muted/40 border border-border px-4 py-3 text-xs space-y-1">
               <div className="flex justify-between text-muted-foreground">
-                <span>לפני מע״מ</span>
+                <span>{t("invoices.subtotalLabel")}</span>
                 <span className="tabular-nums">{fmtAmount(amountNum)}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
-                <span>מע״מ {taxPct}%</span>
+                <span>{t("invoices.vatLine", { n: taxPct })}</span>
                 <span className="tabular-nums">{fmtAmount(taxAmount)}</span>
               </div>
               <div className="flex justify-between font-semibold text-foreground border-t border-border pt-1 mt-1">
-                <span>סה״כ לתשלום</span>
+                <span>{t("invoices.totalLabel")}</span>
                 <span className="tabular-nums text-emerald-700">{fmtAmount(total)}</span>
               </div>
             </div>
@@ -187,9 +192,9 @@ export function CreateInvoiceDialog({
 
           {/* Notes */}
           <div className="space-y-1.5">
-            <Label>הערות</Label>
+            <Label>{t("invoices.notesLabel")}</Label>
             <Textarea
-              placeholder="הערות לחשבונית (אופציונלי)"
+              placeholder={t("invoices.notesPlaceholder")}
               rows={2}
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -200,11 +205,11 @@ export function CreateInvoiceDialog({
 
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="outline" size="sm" onClick={() => handleOpen(false)}>
-              ביטול
+              {t("invoices.cancel")}
             </Button>
             <Button onClick={handleSubmit} disabled={isPending || projects.length === 0}>
               {isPending && <Loader2 className="h-4 w-4 animate-spin me-1.5" />}
-              צור חשבונית
+              {t("invoices.create")}
             </Button>
           </div>
         </div>

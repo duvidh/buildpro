@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
+import { getTranslations, getLocale } from "next-intl/server";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,35 +11,43 @@ import { fmtDate } from "@/lib/utils";
 import { formatCurrencyCompact } from "@/lib/formatters";
 import { CreateInvoiceDialog } from "./_components/create-invoice-dialog";
 
-const INVOICE_STATUS: Record<string, { label: string; className: string }> = {
-  DRAFT:          { label: "טיוטה",        className: "bg-slate-100 text-slate-600 border-slate-200" },
-  SENT:           { label: "נשלחה",        className: "bg-blue-100 text-blue-700 border-blue-200" },
-  PARTIALLY_PAID: { label: "שולמה חלקית", className: "bg-orange-100 text-orange-700 border-orange-200" },
-  PAID:           { label: "שולמה",        className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  OVERDUE:        { label: "בפיגור",       className: "bg-red-100 text-red-700 border-red-200" },
-  CANCELLED:      { label: "בוטלה",        className: "bg-slate-100 text-slate-500 border-slate-200" },
-};
-
 export default async function ClientInvoicesPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [client, invoices, projects, currencyCode] = await Promise.all([
+  const [client, invoices, projects, currencyCode, t, locale] = await Promise.all([
     getClientHeader(id),
     getClientInvoices(id),
     getClientProjects(id),
     getCurrencyCode(),
+    getTranslations("clients"),
+    getLocale(),
   ]);
   if (!client) notFound();
 
   const fmt = (n: number) => formatCurrencyCompact(n, currencyCode);
 
+  function fmtInvoiceDate(d: Date | string | null) {
+    if (!d) return "";
+    const intlLocale = locale === "he" ? "he-IL" : "en-US";
+    return new Intl.DateTimeFormat(intlLocale, { day: "2-digit", month: "2-digit", year: "2-digit" }).format(new Date(d));
+  }
+
+  const INVOICE_STATUS: Record<string, { label: string; className: string }> = {
+    DRAFT:          { label: t("invoices.statusDraft"),        className: "bg-slate-100 text-slate-600 border-slate-200" },
+    SENT:           { label: t("invoices.statusSent"),         className: "bg-blue-100 text-blue-700 border-blue-200" },
+    PARTIALLY_PAID: { label: t("invoices.statusPartiallyPaid"),className: "bg-orange-100 text-orange-700 border-orange-200" },
+    PAID:           { label: t("invoices.statusPaid"),         className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+    OVERDUE:        { label: t("invoices.statusOverdue"),      className: "bg-red-100 text-red-700 border-red-200" },
+    CANCELLED:      { label: t("invoices.statusCancelled"),    className: "bg-slate-100 text-slate-500 border-slate-200" },
+  };
+
   const formattedInvoices = invoices.map((inv) => ({
     ...inv,
     dateStr:    fmtDate(inv.date),
-    dueDateStr: fmtDate(inv.dueDate),
+    dueDateStr: fmtInvoiceDate(inv.dueDate),
     balance:    inv.total - inv.paidAmount,
   }));
 
@@ -53,13 +62,13 @@ export default async function ClientInvoicesPage({
       {/* Header row */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <span>{invoices.length} חשבוניות</span>
+          <span>{t("invoices.count", { n: invoices.length })}</span>
           {totalInvoiced > 0 && (
             <>
-              <span>חויב: <strong className="text-foreground">{fmt(totalInvoiced)}</strong></span>
-              <span>שולם: <strong className="text-emerald-700">{fmt(totalPaid)}</strong></span>
+              <span>{t("invoices.billed")}: <strong className="text-foreground">{fmt(totalInvoiced)}</strong></span>
+              <span>{t("invoices.paid")}: <strong className="text-emerald-700">{fmt(totalPaid)}</strong></span>
               {totalOpen > 0 && (
-                <span>יתרה: <strong className="text-orange-600">{fmt(totalOpen)}</strong></span>
+                <span>{t("invoices.balance")}: <strong className="text-orange-600">{fmt(totalOpen)}</strong></span>
               )}
             </>
           )}
@@ -71,8 +80,8 @@ export default async function ClientInvoicesPage({
       {formattedInvoices.length === 0 ? (
         <Card className="shadow-sm">
           <CardContent className="p-10 text-center text-muted-foreground text-sm">
-            אין חשבוניות ללקוח זה עדיין.
-            <p className="text-xs mt-1">לחץ &ldquo;חשבונית חדשה&rdquo; כדי ליצור את הראשונה.</p>
+            {t("invoices.empty")}
+            <p className="text-xs mt-1">{t("invoices.emptyHint")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -93,7 +102,7 @@ export default async function ClientInvoicesPage({
                           href={`/invoices/${invoice.id}`}
                           className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
                         >
-                          {invoice.invoiceNumber ?? "חשבונית ללא מספר"}
+                          {invoice.invoiceNumber ?? t("invoices.noNumber")}
                         </Link>
                         <Badge variant="outline" className={`text-xs ${statusCfg.className}`}>
                           {statusCfg.label}
@@ -102,17 +111,17 @@ export default async function ClientInvoicesPage({
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <span dir="ltr">{invoice.dateStr}</span>
                         {invoice.dueDate && (
-                          <span>לתשלום: <span dir="ltr">{invoice.dueDateStr}</span></span>
+                          <span>{t("invoices.dueDateLabel")}: <span dir="ltr">{invoice.dueDateStr}</span></span>
                         )}
                       </div>
                     </div>
                     <div className="text-end shrink-0 space-y-0.5">
                       <p className="text-sm font-bold text-foreground">{fmt(invoice.total)}</p>
                       {invoice.paidAmount > 0 && (
-                        <p className="text-xs text-emerald-600">שולם: {fmt(invoice.paidAmount)}</p>
+                        <p className="text-xs text-emerald-600">{t("invoices.paidLabel")}: {fmt(invoice.paidAmount)}</p>
                       )}
                       {invoice.balance > 0 && (
-                        <p className="text-xs text-orange-500">יתרה: {fmt(invoice.balance)}</p>
+                        <p className="text-xs text-orange-500">{t("invoices.balanceLabel")}: {fmt(invoice.balance)}</p>
                       )}
                     </div>
                   </div>

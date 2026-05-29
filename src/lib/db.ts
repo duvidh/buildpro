@@ -1,8 +1,9 @@
 import { PrismaClient } from "@/generated/prisma/client";
 
 function createPrismaClient() {
-  // @ts-ignore
-  return new PrismaClient();
+  return new PrismaClient({
+    datasourceUrl: process.env.DATABASE_URL,
+  });
 }
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };

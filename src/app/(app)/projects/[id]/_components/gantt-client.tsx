@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import {
   CalendarRange, CalendarClock, Factory, ArrowRight,
   GitCommitHorizontal,
@@ -31,11 +32,11 @@ const BAR_TOP = 10;  // px offset from row top → bar starts here
 const BAR_H   = 28;  // px bar height (ROW_H - 2*BAR_TOP)
 const SIDEBAR_W = 248;
 
-const STATUS_BAR: Record<string, { bg: string; bar: string; text: string; border: string; label: string }> = {
-  TODO:        { bg: "bg-slate-100",   bar: "bg-slate-400",   text: "text-slate-600",   border: "border-slate-300",   label: "לביצוע" },
-  IN_PROGRESS: { bg: "bg-blue-100",    bar: "bg-blue-500",    text: "text-blue-700",    border: "border-blue-300",    label: "בביצוע" },
-  BLOCKED:     { bg: "bg-red-100",     bar: "bg-red-400",     text: "text-red-700",     border: "border-red-300",     label: "חסום" },
-  DONE:        { bg: "bg-emerald-100", bar: "bg-emerald-500", text: "text-emerald-700", border: "border-emerald-300", label: "הושלם" },
+const STATUS_BAR: Record<string, { bg: string; bar: string; text: string; border: string }> = {
+  TODO:        { bg: "bg-slate-100",   bar: "bg-slate-400",   text: "text-slate-600",   border: "border-slate-300" },
+  IN_PROGRESS: { bg: "bg-blue-100",    bar: "bg-blue-500",    text: "text-blue-700",    border: "border-blue-300" },
+  BLOCKED:     { bg: "bg-red-100",     bar: "bg-red-400",     text: "text-red-700",     border: "border-red-300" },
+  DONE:        { bg: "bg-emerald-100", bar: "bg-emerald-500", text: "text-emerald-700", border: "border-emerald-300" },
 };
 
 const PRIORITY_DOT: Record<string, string> = {
@@ -44,10 +45,6 @@ const PRIORITY_DOT: Record<string, string> = {
   HIGH:   "bg-orange-500",
   URGENT: "bg-red-500",
 };
-
-function fmtMonth(d: Date) {
-  return new Intl.DateTimeFormat("he-IL", { month: "short", year: "2-digit" }).format(d);
-}
 
 // ─── Timeline (deterministic — no new Date() here) ───────────────────────────
 //
@@ -162,6 +159,9 @@ function DependencyArrows({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function GanttClient({ tasks }: { tasks: GanttTask[] }) {
+  const t = useTranslations("projects");
+  const locale = useLocale();
+
   const barAreaRef = useRef<HTMLDivElement>(null);
 
   // barWidth starts at 0 — dependency SVG is suppressed until client measures it.
@@ -170,6 +170,21 @@ export function GanttClient({ tasks }: { tasks: GanttTask[] }) {
   // todayPct is null on SSR and during initial hydration to prevent mismatch.
   // It is set in useEffect (client-only, after timeline bounds are known).
   const [todayPct, setTodayPct] = useState<number | null>(null);
+
+  function fmtMonth(d: Date) {
+    const intlLocale = locale === "he" ? "he-IL" : "en-US";
+    return new Intl.DateTimeFormat(intlLocale, { month: "short", year: "2-digit" }).format(d);
+  }
+
+  const statusLabel = (status: string): string => {
+    const map: Record<string, string> = {
+      TODO:        t("gantt.statusTodo"),
+      IN_PROGRESS: t("gantt.statusInProgress"),
+      BLOCKED:     t("gantt.statusBlocked"),
+      DONE:        t("gantt.statusDone"),
+    };
+    return map[status] ?? status;
+  };
 
   // ── Stable derived data ──────────────────────────────────────────────────────
   const { scheduled, unscheduled } = useMemo(() => {
@@ -208,8 +223,8 @@ export function GanttClient({ tasks }: { tasks: GanttTask[] }) {
   }, [timeline]);
 
   // ── Counts ───────────────────────────────────────────────────────────────────
-  const prefabLinked    = scheduled.filter((t) => t.prefabElements.length > 0).length;
-  const dependencyCount = scheduled.filter((t) => t.dependsOnId).length;
+  const prefabLinked    = scheduled.filter((task) => task.prefabElements.length > 0).length;
+  const dependencyCount = scheduled.filter((task) => task.dependsOnId).length;
 
   // ── Early empty states (after all hooks) ─────────────────────────────────────
   if (tasks.length === 0) {
@@ -218,9 +233,9 @@ export function GanttClient({ tasks }: { tasks: GanttTask[] }) {
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mb-2">
           <CalendarRange className="h-7 w-7 text-primary" />
         </div>
-        <p className="text-base font-semibold text-foreground">אין משימות עדיין</p>
+        <p className="text-base font-semibold text-foreground">{t("gantt.emptyNoTasks")}</p>
         <p className="text-sm text-muted-foreground max-w-xs">
-          הוסף משימות בלשונית &quot;משימות&quot; וקבע תאריכי התחלה/סיום כדי לראות אותן כאן.
+          {t("gantt.emptyNoTasksDesc")}
         </p>
       </div>
     );
@@ -231,9 +246,9 @@ export function GanttClient({ tasks }: { tasks: GanttTask[] }) {
       <div className="space-y-5">
         <div className="flex flex-col items-center justify-center py-16 text-center gap-2">
           <CalendarClock className="h-10 w-10 text-muted-foreground/30" />
-          <p className="text-sm font-medium text-muted-foreground">אף משימה אינה מתוזמנת</p>
+          <p className="text-sm font-medium text-muted-foreground">{t("gantt.emptyNoScheduled")}</p>
           <p className="text-xs text-muted-foreground/70">
-            ערוך משימה ב&quot;קנבן&quot; והוסף תאריך התחלה ו/או יעד להציג אותה בגאנט.
+            {t("gantt.emptyNoScheduledDesc")}
           </p>
         </div>
         <UnscheduledList tasks={unscheduled} />
@@ -253,12 +268,12 @@ export function GanttClient({ tasks }: { tasks: GanttTask[] }) {
         <div>
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <CalendarRange className="h-5 w-5 text-primary" />
-            גאנט משימות
+            {t("gantt.taskGanttTitle")}
           </h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {scheduled.length} מתוזמנות
-            {prefabLinked    > 0 && ` · ${prefabLinked} מקושרות לפרפאב`}
-            {dependencyCount > 0 && ` · ${dependencyCount} תלויות`}
+            {t("gantt.scheduledCount", { n: scheduled.length })}
+            {prefabLinked    > 0 && ` · ${t("gantt.prefabLinkedCount", { n: prefabLinked })}`}
+            {dependencyCount > 0 && ` · ${t("gantt.dependencyCount", { n: dependencyCount })}`}
           </p>
         </div>
 
@@ -267,24 +282,24 @@ export function GanttClient({ tasks }: { tasks: GanttTask[] }) {
           {(["TODO","IN_PROGRESS","BLOCKED","DONE"] as const).map((s) => (
             <div key={s} className="flex items-center gap-1.5">
               <div className={`h-3 w-5 rounded-sm ${STATUS_BAR[s].bg} border ${STATUS_BAR[s].border}`} />
-              <span className="text-muted-foreground">{STATUS_BAR[s].label}</span>
+              <span className="text-muted-foreground">{statusLabel(s)}</span>
             </div>
           ))}
           {prefabLinked > 0 && (
             <div className="flex items-center gap-1.5">
               <Factory className="h-3.5 w-3.5 text-violet-500" />
-              <span className="text-muted-foreground">פרפאב</span>
+              <span className="text-muted-foreground">{t("gantt.legendPrefab")}</span>
             </div>
           )}
           {dependencyCount > 0 && (
             <div className="flex items-center gap-1.5">
               <GitCommitHorizontal className="h-3.5 w-3.5 text-indigo-400" />
-              <span className="text-muted-foreground">תלות</span>
+              <span className="text-muted-foreground">{t("gantt.legendDependency")}</span>
             </div>
           )}
           <div className="flex items-center gap-1.5">
             <div className="h-3 w-px bg-red-400" />
-            <span className="text-muted-foreground">היום</span>
+            <span className="text-muted-foreground">{t("gantt.legendToday")}</span>
           </div>
         </div>
       </div>
@@ -300,7 +315,7 @@ export function GanttClient({ tasks }: { tasks: GanttTask[] }) {
                 className="shrink-0 sticky left-0 z-40 bg-muted/40 border-e border-border px-4 py-2.5 text-xs font-semibold text-muted-foreground"
                 style={{ width: `${SIDEBAR_W}px` }}
               >
-                משימה
+                {t("gantt.colTask")}
               </div>
 
               <div className="flex-1 relative h-9 overflow-hidden">
@@ -346,12 +361,12 @@ export function GanttClient({ tasks }: { tasks: GanttTask[] }) {
                       {task.name}
                     </span>
                     {task.prefabElements.length > 0 && (
-                      <span title={`מקושר ל-${task.prefabElements.length} אלמנט(ים)`}>
+                      <span title={t("gantt.prefabLinkedTooltip", { n: task.prefabElements.length })}>
                         <Factory className="h-3 w-3 text-violet-500 shrink-0" />
                       </span>
                     )}
                     {task.dependsOnId && (
-                      <span title={`תלוי ב: ${task.dependsOn?.name ?? "—"}`}>
+                      <span title={t("gantt.dependsOnTooltip", { name: task.dependsOn?.name ?? "—" })}>
                         <ArrowRight className="h-3 w-3 text-indigo-400 shrink-0" />
                       </span>
                     )}
@@ -459,26 +474,39 @@ export function GanttClient({ tasks }: { tasks: GanttTask[] }) {
 // ─── Unscheduled section ──────────────────────────────────────────────────────
 
 function UnscheduledList({ tasks }: { tasks: GanttTask[] }) {
+  const t = useTranslations("projects");
+
   if (tasks.length === 0) return null;
+
+  const statusLabel = (status: string): string => {
+    const map: Record<string, string> = {
+      TODO:        t("gantt.statusTodo"),
+      IN_PROGRESS: t("gantt.statusInProgress"),
+      BLOCKED:     t("gantt.statusBlocked"),
+      DONE:        t("gantt.statusDone"),
+    };
+    return map[status] ?? status;
+  };
+
   return (
     <div>
       <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
         <CalendarClock className="h-3.5 w-3.5" />
-        {tasks.length} משימות ללא תזמון
+        {t("gantt.unscheduledCount", { n: tasks.length })}
       </p>
       <div className="flex flex-wrap gap-2">
-        {tasks.map((t) => {
-          const cfg = STATUS_BAR[t.status] ?? STATUS_BAR.TODO;
+        {tasks.map((task) => {
+          const cfg = STATUS_BAR[task.status] ?? STATUS_BAR.TODO;
           return (
             <div
-              key={t.id}
+              key={task.id}
               className={`flex items-center gap-2 rounded-lg border ${cfg.border} ${cfg.bg} px-3 py-1.5`}
             >
-              <div className={`h-1.5 w-1.5 rounded-full ${PRIORITY_DOT[t.priority] ?? "bg-slate-300"}`} />
-              <span className={`text-xs font-medium ${cfg.text} max-w-[180px] truncate`}>{t.name}</span>
-              {t.prefabElements.length > 0 && <Factory className="h-3 w-3 text-violet-500 shrink-0" />}
+              <div className={`h-1.5 w-1.5 rounded-full ${PRIORITY_DOT[task.priority] ?? "bg-slate-300"}`} />
+              <span className={`text-xs font-medium ${cfg.text} max-w-[180px] truncate`}>{task.name}</span>
+              {task.prefabElements.length > 0 && <Factory className="h-3 w-3 text-violet-500 shrink-0" />}
               <Badge variant="outline" className={`text-[9px] h-4 px-1 ${cfg.text} border-current/30`}>
-                {cfg.label}
+                {statusLabel(task.status)}
               </Badge>
             </div>
           );

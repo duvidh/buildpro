@@ -795,8 +795,30 @@
       "headerTitle": "גאנט פרויקט · {n} חבילות עבודה",
       "colWorkPackage": "חבילת עבודה",
       "legendActual": "התקדמות בפועל",
-      "legendPlanned": "תקופה מתוכננת"
-    }
+      "legendPlanned": "תקופה מתוכננת",
+      "taskGanttTitle": "גאנט משימות",
+      "scheduledCount": "{n} מתוזמנות",
+      "prefabLinkedCount": "{n} מקושרות לפרפאב",
+      "dependencyCount": "{n} תלויות",
+      "statusTodo": "לביצוע",
+      "statusInProgress": "בביצוע",
+      "statusBlocked": "חסום",
+      "statusDone": "הושלם",
+      "legendPrefab": "פרפאב",
+      "legendDependency": "תלות",
+      "legendToday": "היום",
+      "colTask": "משימה",
+      "emptyNoTasks": "אין משימות עדיין",
+      "emptyNoTasksDesc": "הוסף משימות בלשונית המשימות וקבע תאריכי התחלה/סיום כדי לראות אותן כאן.",
+      "emptyNoScheduled": "אף משימה אינה מתוזמנת",
+      "emptyNoScheduledDesc": "ערוך משימה בלשונית הקנבן והוסף תאריך התחלה ו/או יעד להציג אותה בגאנט.",
+      "unscheduledCount": "{n} משימות ללא תזמון",
+      "prefabLinkedTooltip": "מקושר ל-{n} אלמנטים",
+      "dependsOnTooltip": "תלוי ב: {name}"
+    },
+    "noPermissionFinance": "אין הרשאה לצפות בנתונים פיננסיים.",
+    "noAccessFinance": "אין גישה לנתונים פיננסיים.",
+    "noPermissionSettings": "אין הרשאה לצפות בהגדרות."
   },
   "field": {
     "title": "דיווחים מהשטח",

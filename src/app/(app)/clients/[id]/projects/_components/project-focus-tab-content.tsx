@@ -1,5 +1,6 @@
 // Server component — fetches data and renders the correct tab based on `tab`
 import { notFound, redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   getProjectTasks,
@@ -51,6 +52,7 @@ export async function ProjectFocusTabContent({
   if (!session) redirect("/login");
   const userRole  = session.role as UserRole;
   const isFieldWorker = userRole === "FIELD_WORKER";
+  const t = await getTranslations("projects");
 
   switch (tab) {
     // ── Overview ────────────────────────────────────────────────────────────
@@ -72,7 +74,7 @@ export async function ProjectFocusTabContent({
       if (isFieldWorker) {
         return (
           <div className="flex items-center justify-center py-16">
-            <p className="text-sm text-muted-foreground">אין הרשאה לצפות בנתונים פיננסיים.</p>
+            <p className="text-sm text-muted-foreground">{t("noPermissionFinance")}</p>
           </div>
         );
       }
@@ -83,7 +85,7 @@ export async function ProjectFocusTabContent({
       if (!tables || !summary) {
         return (
           <div className="flex items-center justify-center py-16">
-            <p className="text-sm text-muted-foreground">אין גישה לנתונים פיננסיים.</p>
+            <p className="text-sm text-muted-foreground">{t("noAccessFinance")}</p>
           </div>
         );
       }
@@ -185,7 +187,7 @@ export async function ProjectFocusTabContent({
       if (isFieldWorker) {
         return (
           <div className="flex items-center justify-center py-16">
-            <p className="text-sm text-muted-foreground">אין הרשאה לצפות בהגדרות.</p>
+            <p className="text-sm text-muted-foreground">{t("noPermissionSettings")}</p>
           </div>
         );
       }

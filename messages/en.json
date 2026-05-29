@@ -795,8 +795,30 @@
       "headerTitle": "Project Gantt · {n} work packages",
       "colWorkPackage": "Work Package",
       "legendActual": "Actual progress",
-      "legendPlanned": "Planned period"
-    }
+      "legendPlanned": "Planned period",
+      "taskGanttTitle": "Task Gantt",
+      "scheduledCount": "{n} scheduled",
+      "prefabLinkedCount": "{n} linked to prefab",
+      "dependencyCount": "{n} dependencies",
+      "statusTodo": "To Do",
+      "statusInProgress": "In Progress",
+      "statusBlocked": "Blocked",
+      "statusDone": "Done",
+      "legendPrefab": "Prefab",
+      "legendDependency": "Dependency",
+      "legendToday": "Today",
+      "colTask": "Task",
+      "emptyNoTasks": "No tasks yet",
+      "emptyNoTasksDesc": "Add tasks in the Tasks tab and set start/end dates to see them here.",
+      "emptyNoScheduled": "No tasks are scheduled",
+      "emptyNoScheduledDesc": "Edit a task in the Kanban tab and add a start and/or due date to show it on the Gantt.",
+      "unscheduledCount": "{n} unscheduled tasks",
+      "prefabLinkedTooltip": "Linked to {n} element(s)",
+      "dependsOnTooltip": "Depends on: {name}"
+    },
+    "noPermissionFinance": "No permission to view financial data.",
+    "noAccessFinance": "No access to financial data.",
+    "noPermissionSettings": "No permission to view settings."
   },
   "field": {
     "title": "Field Reports",

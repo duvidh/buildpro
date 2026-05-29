@@ -1,4 +1,16 @@
 {
+  "login": {
+    "pageTitle": "Sign In | BuildPro",
+    "tagline": "Construction Management",
+    "title": "Sign in",
+    "subtitle": "Enter your credentials to continue",
+    "emailLabel": "Email",
+    "emailPlaceholder": "admin@buildpro.co.il",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "••••••••",
+    "submit": "Sign In",
+    "demoHint": "Demo user: admin@buildpro.co.il | Password: Admin@123"
+  },
   "nav": {
     "groups": {
       "management": "Management",

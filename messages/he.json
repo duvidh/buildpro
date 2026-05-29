@@ -1,4 +1,16 @@
 {
+  "login": {
+    "pageTitle": "כניסה | BuildPro",
+    "tagline": "ניהול קבלנות",
+    "title": "כניסה למערכת",
+    "subtitle": "הכנס את פרטיך להמשך",
+    "emailLabel": "אימייל",
+    "emailPlaceholder": "admin@buildpro.co.il",
+    "passwordLabel": "סיסמה",
+    "passwordPlaceholder": "••••••••",
+    "submit": "כניסה",
+    "demoHint": "משתמש דמו: admin@buildpro.co.il | סיסמה: Admin@123"
+  },
   "nav": {
     "groups": {
       "management": "ניהול",

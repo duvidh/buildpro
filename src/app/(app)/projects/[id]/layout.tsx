@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getProjectHeader } from "@/actions/projects";
 import { getSession } from "@/lib/session";
 import type { UserRole } from "@/lib/auth-utils";
@@ -22,7 +22,8 @@ export default async function ProjectLayout({
   ]);
   if (!project) notFound();
 
-  const userRole = (session?.role ?? "FIELD_WORKER") as UserRole;
+  if (!session) redirect("/login");
+  const userRole = session.role as UserRole;
   const canDelete = userRole === "ADMIN" || userRole === "OFFICE_MANAGER";
 
   // Serialize dates before passing to client components

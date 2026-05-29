@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getCrmFiles } from "@/actions/files";
 import { getLeadById } from "@/actions/leads";
 import { getSession } from "@/lib/session";
@@ -23,7 +23,8 @@ export default async function LeadFilesPage({
 
   if (!lead) notFound();
 
-  const userRole = (session?.role ?? "FIELD_WORKER") as UserRole;
+  if (!session) redirect("/login");
+  const userRole = session.role as UserRole;
   const canDelete = DELETE_ROLES.includes(userRole);
 
   const files = JSON.parse(JSON.stringify(rawFiles));

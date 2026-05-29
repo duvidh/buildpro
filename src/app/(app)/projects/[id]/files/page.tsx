@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getProjectFiles } from "@/actions/files";
 import { getSession } from "@/lib/session";
 import type { UserRole } from "@/lib/auth-utils";
@@ -20,7 +20,8 @@ export default async function ProjectFilesPage({
   ]);
   if (!raw) notFound();
 
-  const userRole  = (session?.role ?? "FIELD_WORKER") as UserRole;
+  if (!session) redirect("/login");
+  const userRole  = session.role as UserRole;
   const canDelete = DELETE_ROLES.includes(userRole);
 
   const files = JSON.parse(JSON.stringify(raw));

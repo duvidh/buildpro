@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getClientHeader, getClientProjects } from "@/actions/clients";
 import { getProjectHeader } from "@/actions/projects";
 import { getSession } from "@/lib/session";
@@ -74,7 +74,8 @@ export default async function ClientProjectsPage({
     );
   }
 
-  const userRole = (session?.role ?? "FIELD_WORKER") as UserRole;
+  if (!session) redirect("/login");
+  const userRole = session.role as UserRole;
 
   return (
     // Inline workspace — ClientHeader + ClientTabsNav remain visible above

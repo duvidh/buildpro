@@ -1,5 +1,5 @@
 // Server component — fetches data and renders the correct tab based on `tab`
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import {
   getProjectTasks,
@@ -48,7 +48,8 @@ export async function ProjectFocusTabContent({
   tab: string;
 }) {
   const session   = await getSession();
-  const userRole  = (session?.role ?? "FIELD_WORKER") as UserRole;
+  if (!session) redirect("/login");
+  const userRole  = session.role as UserRole;
   const isFieldWorker = userRole === "FIELD_WORKER";
 
   switch (tab) {

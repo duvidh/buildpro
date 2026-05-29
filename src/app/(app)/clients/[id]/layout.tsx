@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getClientHeader } from "@/actions/clients";
 import { getSession } from "@/lib/session";
 import type { UserRole } from "@/lib/auth-utils";
@@ -23,7 +23,8 @@ export default async function ClientLayout({
   ]);
   if (!client) notFound();
 
-  const userRole = (session?.role ?? "FIELD_WORKER") as UserRole;
+  if (!session) redirect("/login");
+  const userRole = session.role as UserRole;
   const canDelete = DELETE_ROLES.includes(userRole);
 
   return (

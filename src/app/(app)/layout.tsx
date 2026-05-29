@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { getSystemSettings } from "@/actions/settings";
 import { getLocale } from "next-intl/server";
+import { redirect } from "next/navigation";
 import type { UserRole } from "@/lib/auth-utils";
 
 async function getNotificationCount(userId: string): Promise<number> {
@@ -31,15 +32,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     getLocale(),
   ]);
 
-  const notificationCount = session
-    ? await getNotificationCount(session.userId)
-    : 0;
+  // ── Hard auth gate ───────────────────────────────────────────────────────────
+  // redirect() is called OUTSIDE any try/catch so the NEXT_REDIRECT signal is
+  // never swallowed and always reaches the Next.js router.
+  if (!session) {
+    redirect("/login");
+  }
 
-  const userRole = (session?.role ?? "FIELD_WORKER") as UserRole;
+  const notificationCount = await getNotificationCount(session.userId);
 
-  const user = session
-    ? { name: session.name, email: session.email, initials: getInitials(session.name), role: userRole }
-    : { name: "משתמש", email: "", initials: "מ", role: "FIELD_WORKER" as UserRole };
+  const userRole = session.role as UserRole;
+
+  const user = {
+    name:     session.name,
+    email:    session.email,
+    initials: getInitials(session.name),
+    role:     userRole,
+  };
 
   const companyName       = settings["company_name"] || undefined;
   const defaultCurrency   = locale === "en" ? "USD" : "ILS";

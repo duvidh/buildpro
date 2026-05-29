@@ -69,12 +69,16 @@ export async function inviteUser(email: string, role: UserRole) {
   }
 
   revalidatePath("/settings");
-  return { success: true as const };
+  return { success: true as const, invitation };
 }
 
 export async function cancelInvitation(id: string) {
   await requireRole(ADMIN_ROLES);
-  await db.invitation.delete({ where: { id } });
+  try {
+    await db.invitation.delete({ where: { id } });
+  } catch {
+    // Record may have already been deleted — treat as success
+  }
   revalidatePath("/settings");
   return { success: true as const };
 }

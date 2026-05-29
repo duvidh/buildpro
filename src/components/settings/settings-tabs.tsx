@@ -65,8 +65,9 @@ type Invitation = {
   id: string;
   email: string;
   role: string;
-  expiresAt: Date;
-  createdAt: Date;
+  // Dates arrive as ISO strings after JSON.parse(JSON.stringify(...)) in the page
+  expiresAt: Date | string;
+  createdAt: Date | string;
   invitedBy: { name: string } | null;
 };
 
@@ -356,14 +357,14 @@ function UsersTab({
       setInviteMsg({ type: "ok", text: t("users.inviteSuccess" as Parameters<typeof t>[0]) });
       setInviteEmail("");
       setInviteRole("FIELD_WORKER");
-      // Optimistic: add to pending list (server will revalidate on next page load)
+      // Add with real DB id so cancel/resend work immediately without a refresh
       setInvitations((prev) => [
         {
-          id:        `pending-${Date.now()}`,
-          email:     inviteEmail,
-          role:      inviteRole,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          createdAt: new Date(),
+          id:        res.invitation.id,
+          email:     res.invitation.email,
+          role:      res.invitation.role,
+          expiresAt: res.invitation.expiresAt,
+          createdAt: res.invitation.createdAt,
           invitedBy: null,
         },
         ...prev,
@@ -505,7 +506,8 @@ function UsersTab({
                   </thead>
                   <tbody className="divide-y divide-border">
                     {invitations.map((inv) => {
-                      const expired = inv.expiresAt < now;
+                      const expiresDate = new Date(inv.expiresAt);
+                      const expired = expiresDate < now;
                       return (
                         <tr key={inv.id} className="hover:bg-muted/20 transition-colors">
                           <td className="px-4 py-3">
@@ -525,7 +527,7 @@ function UsersTab({
                             </Badge>
                           </td>
                           <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">
-                            {inv.expiresAt.toLocaleDateString()}
+                            {expiresDate.toLocaleDateString()}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <Badge

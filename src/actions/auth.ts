@@ -36,7 +36,12 @@ export async function login(
   } catch (error) {
     // A real DB / bcrypt / JWT error — log it and return a safe message.
     // Do NOT re-throw here; that would surface as "[object Object]" in prod.
-    console.error("[login] unexpected error:", error);
+    console.error(
+      "[login] unexpected error:",
+      error instanceof Error
+        ? error.message
+        : JSON.stringify(error, Object.getOwnPropertyNames(error))
+    );
     return { error: "שגיאת שרת, אנא נסה שוב מאוחר יותר" };
   }
 

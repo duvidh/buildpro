@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import {
   Check,
   Plus,
@@ -67,6 +68,7 @@ function NewMilestoneDialog({
   projectId: string;
   onCreated: () => void;
 }) {
+  const t = useTranslations("projects");
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -92,34 +94,34 @@ function NewMilestoneDialog({
       <DialogTrigger asChild>
         <Button size="sm" variant="outline" className="gap-1.5 h-8">
           <Plus className="h-3.5 w-3.5" />
-          אבן דרך חדשה
+          {t("milestones.newMilestone")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
-          <DialogTitle>אבן דרך חדשה</DialogTitle>
+          <DialogTitle>{t("milestones.newMilestone")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-1">
           <input type="hidden" {...register("projectId")} />
 
           <div className="space-y-1.5">
-            <Label htmlFor="ms-name">שם *</Label>
+            <Label htmlFor="ms-name">{t("milestones.nameLabel")}</Label>
             <Input
               id="ms-name"
               {...register("name")}
-              placeholder="יציקת יסודות, אישור מהנדס..."
+              placeholder={t("milestones.namePlaceholder")}
             />
             {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="ms-date">תאריך מתוכנן *</Label>
+              <Label htmlFor="ms-date">{t("milestones.plannedDateLabel")}</Label>
               <Input id="ms-date" type="date" {...register("date")} />
               {errors.date && <p className="text-xs text-destructive">{errors.date.message}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ms-weight">משקל</Label>
+              <Label htmlFor="ms-weight">{t("milestones.weightLabel")}</Label>
               <Input
                 id="ms-weight"
                 {...register("weight")}
@@ -130,22 +132,22 @@ function NewMilestoneDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="ms-notes">הערות</Label>
+            <Label htmlFor="ms-notes">{t("milestones.notesLabel")}</Label>
             <Textarea
               id="ms-notes"
               {...register("notes")}
-              placeholder="פרטים נוספים..."
+              placeholder={t("milestones.notesPlaceholder")}
               rows={2}
             />
           </div>
 
           <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              ביטול
+              {t("wbs.cancel")}
             </Button>
             <Button type="submit" disabled={isPending}>
               {isPending && <Loader2 className="h-4 w-4 animate-spin me-1.5" />}
-              הוסף
+              {t("wbs.add")}
             </Button>
           </div>
         </form>
@@ -155,6 +157,7 @@ function NewMilestoneDialog({
 }
 
 function SeedDemoButton({ projectId, onDone }: { projectId: string; onDone: () => void }) {
+  const t = useTranslations("projects");
   const [isPending, startTransition] = useTransition();
   return (
     <Button
@@ -170,7 +173,7 @@ function SeedDemoButton({ projectId, onDone }: { projectId: string; onDone: () =
       }
     >
       {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-violet-500" />}
-      הוסף נתוני דמו
+      {t("milestones.seedDemo")}
     </Button>
   );
 }
@@ -178,6 +181,7 @@ function SeedDemoButton({ projectId, onDone }: { projectId: string; onDone: () =
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function MilestonesTimeline({ projectId, milestones }: MilestonesTimelineProps) {
+  const t = useTranslations("projects");
   const router = useRouter();
   const [, startTransition] = useTransition();
 
@@ -204,7 +208,7 @@ export function MilestonesTimeline({ projectId, milestones }: MilestonesTimeline
   if (milestones.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-        <p className="text-muted-foreground text-sm">אין אבני דרך עדיין.</p>
+        <p className="text-muted-foreground text-sm">{t("milestones.empty")}</p>
         <div className="flex items-center gap-2">
           <NewMilestoneDialog projectId={projectId} onCreated={() => router.refresh()} />
           <SeedDemoButton projectId={projectId} onDone={() => router.refresh()} />
@@ -219,7 +223,7 @@ export function MilestonesTimeline({ projectId, milestones }: MilestonesTimeline
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground">
-            {doneCount} / {milestones.length} הושלמו
+            {doneCount} / {milestones.length} {t("milestones.completedSuffix")}
           </span>
           <div className="flex items-center gap-1.5">
             <div className="h-1.5 w-24 rounded-full bg-muted overflow-hidden">
@@ -280,16 +284,16 @@ export function MilestonesTimeline({ projectId, milestones }: MilestonesTimeline
                         }`}
                       >
                         {fmtDate(m.date)}
-                        {overdue && " · באיחור"}
+                        {overdue && ` · ${t("milestones.overdue")}`}
                       </span>
                       {m.completed && m.completedAt && (
                         <span className="text-xs text-emerald-600">
-                          הושלם {fmtDate(m.completedAt)}
+                          {t("milestones.completedOnPrefix")} {fmtDate(m.completedAt)}
                         </span>
                       )}
                       {m.weight > 1 && (
                         <Badge variant="outline" className="text-[10px] h-4 px-1.5 py-0">
-                          משקל {m.weight}
+                          {t("milestones.weightBadge", { n: m.weight })}
                         </Badge>
                       )}
                     </div>
@@ -306,7 +310,7 @@ export function MilestonesTimeline({ projectId, milestones }: MilestonesTimeline
                         size="icon"
                         className="h-6 w-6 text-muted-foreground hover:text-foreground"
                         onClick={() => handleToggle(m.id, false)}
-                        title="פתח מחדש"
+                        title={t("milestones.reopen")}
                       >
                         <RotateCcw className="h-3 w-3" />
                       </Button>
@@ -318,7 +322,7 @@ export function MilestonesTimeline({ projectId, milestones }: MilestonesTimeline
                         onClick={() => handleToggle(m.id, true)}
                       >
                         <Check className="h-3 w-3" />
-                        הושלם
+                        {t("milestones.markDone")}
                       </Button>
                     )}
                     <Button
@@ -326,7 +330,7 @@ export function MilestonesTimeline({ projectId, milestones }: MilestonesTimeline
                       size="icon"
                       className="h-6 w-6 text-muted-foreground hover:text-destructive"
                       onClick={() => handleDelete(m.id)}
-                      title="מחק"
+                      title={t("milestones.deleteMilestone")}
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>

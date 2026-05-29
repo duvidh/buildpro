@@ -3,6 +3,7 @@
 import { useCurrency } from "@/lib/currency-context";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import { Plus, Sparkles, GitBranch, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,10 @@ export function WBSTab({
   projectId: string;
   workPackages: WorkPackageEntry[];
 }) {
+  const t = useTranslations("projects");
+  const locale = useLocale();
+  const dir = locale === "he" ? "rtl" : "ltr";
+
   const { fmtCompact } = useCurrency();
   const router = useRouter();
   const [addOpen, setAddOpen] = useState(false);
@@ -144,36 +149,36 @@ export function WBSTab({
     return (
       <div className="flex flex-col items-center py-16 gap-3">
         <GitBranch className="h-10 w-10 text-muted-foreground/30" />
-        <p className="text-sm text-muted-foreground">אין מבנה פירוק עבודה עדיין.</p>
+        <p className="text-sm text-muted-foreground">{t("wbs.empty")}</p>
         <div className="flex gap-2">
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5">
                 <Plus className="h-3.5 w-3.5" />
-                חבילת עבודה חדשה
+                {t("wbs.newPackageBtn")}
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md" dir="rtl">
-              <DialogHeader><DialogTitle>הוספת חבילת עבודה</DialogTitle></DialogHeader>
+            <DialogContent className="sm:max-w-md" dir={dir}>
+              <DialogHeader><DialogTitle>{t("wbs.addDialogTitle")}</DialogTitle></DialogHeader>
               <div className="space-y-3 pt-2">
                 <div className="space-y-1">
-                  <Label>שם *</Label>
+                  <Label>{t("wbs.nameLabel")}</Label>
                   <Input
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="למשל: תכנון, יסודות, גמר..."
+                    placeholder={t("wbs.namePlaceholder")}
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>תיאור</Label>
+                  <Label>{t("wbs.descLabel")}</Label>
                   <Input
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    placeholder="תיאור קצר (אופציונלי)"
+                    placeholder={t("wbs.descPlaceholder")}
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>תקציב מתוכנן</Label>
+                  <Label>{t("wbs.plannedBudgetLabel")}</Label>
                   <Input
                     type="number" min="0" step="1000" dir="ltr"
                     value={form.plannedCost}
@@ -183,24 +188,24 @@ export function WBSTab({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label>תאריך התחלה</Label>
+                    <Label>{t("wbs.startDateLabel")}</Label>
                     <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
                   </div>
                   <div className="space-y-1">
-                    <Label>תאריך סיום</Label>
+                    <Label>{t("wbs.endDateLabel")}</Label>
                     <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
                   </div>
                 </div>
                 <div className="flex justify-end gap-2 pt-1">
-                  <Button variant="outline" size="sm" onClick={() => setAddOpen(false)}>ביטול</Button>
-                  <Button onClick={handleAdd} disabled={isPending}>הוסף</Button>
+                  <Button variant="outline" size="sm" onClick={() => setAddOpen(false)}>{t("wbs.cancel")}</Button>
+                  <Button onClick={handleAdd} disabled={isPending}>{t("wbs.add")}</Button>
                 </div>
               </div>
             </DialogContent>
           </Dialog>
           <Button variant="outline" size="sm" onClick={handleSeed} disabled={isPending}>
             <Sparkles className="h-3.5 w-3.5 me-1.5" />
-            {isPending ? "טוען..." : "נתוני דמו"}
+            {isPending ? t("wbs.loading") : t("wbs.demoData")}
           </Button>
         </div>
       </div>
@@ -212,11 +217,11 @@ export function WBSTab({
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: "חבילות עבודה",   value: workPackages.length,            color: "text-foreground" },
-          { label: "השלמה כוללת",    value: `${overallCompletion}%`,         color: overallCompletion >= 80 ? "text-emerald-600" : "text-foreground" },
-          { label: "תקציב מתוכנן",  value: fmtCompact(totalPlanned),         color: "text-foreground" },
+          { label: t("wbs.statPackages"),      value: workPackages.length,            color: "text-foreground" },
+          { label: t("wbs.statCompletion"),     value: `${overallCompletion}%`,         color: overallCompletion >= 80 ? "text-emerald-600" : "text-foreground" },
+          { label: t("wbs.statPlannedBudget"),  value: fmtCompact(totalPlanned),         color: "text-foreground" },
           {
-            label: "סטייה מתקציב",
+            label: t("wbs.statVariance"),
             value: variance === 0 ? fmtCompact(0) : `${variance > 0 ? "+" : ""}${fmtCompact(variance)}`,
             color: variance > 0 ? "text-red-600" : variance < 0 ? "text-emerald-600" : "text-foreground",
           },
@@ -232,36 +237,36 @@ export function WBSTab({
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
           <GitBranch className="h-3.5 w-3.5" />
-          חבילות עבודה ({workPackages.length})
+          {t("wbs.sectionTitle")} ({workPackages.length})
         </h4>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
             <Button size="sm" variant="outline" className="h-7 text-xs">
               <Plus className="h-3.5 w-3.5 me-1" />
-              חבילה חדשה
+              {t("wbs.newPackageBtnShort")}
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md" dir="rtl">
-            <DialogHeader><DialogTitle>חבילת עבודה חדשה</DialogTitle></DialogHeader>
+          <DialogContent className="sm:max-w-md" dir={dir}>
+            <DialogHeader><DialogTitle>{t("wbs.addDialogTitle2")}</DialogTitle></DialogHeader>
             <div className="space-y-3 pt-2">
               <div className="space-y-1">
-                <Label>שם החבילה *</Label>
+                <Label>{t("wbs.nameLabelFull")}</Label>
                 <Input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="עבודות שלד"
+                  placeholder={t("wbs.namePlaceholder2")}
                 />
               </div>
               <div className="space-y-1">
-                <Label>תיאור</Label>
+                <Label>{t("wbs.descLabel")}</Label>
                 <Input
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="תיאור קצר..."
+                  placeholder={t("wbs.descPlaceholder2")}
                 />
               </div>
               <div className="space-y-1">
-                <Label>תקציב מתוכנן</Label>
+                <Label>{t("wbs.plannedBudgetLabel")}</Label>
                 <Input
                   type="number"
                   value={form.plannedCost}
@@ -271,7 +276,7 @@ export function WBSTab({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label>תאריך התחלה</Label>
+                  <Label>{t("wbs.startDateLabel")}</Label>
                   <Input
                     type="date"
                     value={form.startDate}
@@ -279,7 +284,7 @@ export function WBSTab({
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>תאריך סיום</Label>
+                  <Label>{t("wbs.endDateLabel")}</Label>
                   <Input
                     type="date"
                     value={form.endDate}
@@ -288,8 +293,8 @@ export function WBSTab({
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-1">
-                <Button variant="outline" onClick={() => setAddOpen(false)}>ביטול</Button>
-                <Button onClick={handleAdd} disabled={isPending}>הוסף</Button>
+                <Button variant="outline" onClick={() => setAddOpen(false)}>{t("wbs.cancel")}</Button>
+                <Button onClick={handleAdd} disabled={isPending}>{t("wbs.add")}</Button>
               </div>
             </div>
           </DialogContent>
@@ -298,19 +303,19 @@ export function WBSTab({
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={(o) => { setEditOpen(o); if (!o) { setEditWp(null); setEditForm(null); } }}>
-        <DialogContent className="sm:max-w-lg" dir="rtl">
-          <DialogHeader><DialogTitle>עריכת חבילת עבודה</DialogTitle></DialogHeader>
+        <DialogContent className="sm:max-w-lg" dir={dir}>
+          <DialogHeader><DialogTitle>{t("wbs.editDialogTitle")}</DialogTitle></DialogHeader>
           {editForm && (
             <div className="space-y-3 pt-2">
               <div className="space-y-1">
-                <Label>שם החבילה *</Label>
+                <Label>{t("wbs.nameLabelFull")}</Label>
                 <Input
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                 />
               </div>
               <div className="space-y-1">
-                <Label>תיאור</Label>
+                <Label>{t("wbs.descLabel")}</Label>
                 <Input
                   value={editForm.description}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
@@ -318,7 +323,7 @@ export function WBSTab({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label>תקציב מתוכנן</Label>
+                  <Label>{t("wbs.plannedBudgetLabel")}</Label>
                   <Input
                     type="number"
                     value={editForm.plannedCost}
@@ -326,7 +331,7 @@ export function WBSTab({
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>עלות בפועל</Label>
+                  <Label>{t("wbs.actualCostLabel")}</Label>
                   <Input
                     type="number"
                     value={editForm.actualCost}
@@ -335,7 +340,7 @@ export function WBSTab({
                 </div>
               </div>
               <div className="space-y-1">
-                <Label>אחוז השלמה (0–100)</Label>
+                <Label>{t("wbs.completionLabel")}</Label>
                 <Input
                   type="number"
                   min={0}
@@ -346,7 +351,7 @@ export function WBSTab({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label>תאריך התחלה</Label>
+                  <Label>{t("wbs.startDateLabel")}</Label>
                   <Input
                     type="date"
                     value={editForm.startDate}
@@ -354,7 +359,7 @@ export function WBSTab({
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>תאריך סיום</Label>
+                  <Label>{t("wbs.endDateLabel")}</Label>
                   <Input
                     type="date"
                     value={editForm.endDate}
@@ -363,8 +368,8 @@ export function WBSTab({
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-1">
-                <Button variant="outline" onClick={() => setEditOpen(false)}>ביטול</Button>
-                <Button onClick={handleUpdate} disabled={isPending}>שמור</Button>
+                <Button variant="outline" onClick={() => setEditOpen(false)}>{t("wbs.cancel")}</Button>
+                <Button onClick={handleUpdate} disabled={isPending}>{t("wbs.save")}</Button>
               </div>
             </div>
           )}
@@ -400,7 +405,7 @@ export function WBSTab({
                       size="icon"
                       className="h-6 w-6 text-muted-foreground hover:text-foreground"
                       onClick={() => openEdit(wp)}
-                      title="ערוך"
+                      title={t("wbs.editTitle")}
                     >
                       <Pencil className="h-3 w-3" />
                     </Button>
@@ -410,25 +415,25 @@ export function WBSTab({
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                          title="מחק"
+                          title={t("wbs.deleteTitle")}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </AlertDialogTrigger>
-                      <AlertDialogContent dir="rtl">
+                      <AlertDialogContent dir={dir}>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>מחיקת חבילת עבודה</AlertDialogTitle>
+                          <AlertDialogTitle>{t("wbs.deleteDialogTitle")}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            האם למחוק את &quot;{wp.name}&quot;? פעולה זו אינה הפיכה.
+                            {t("wbs.deleteDialogDesc", { name: wp.name })}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>ביטול</AlertDialogCancel>
+                          <AlertDialogCancel>{t("wbs.cancel")}</AlertDialogCancel>
                           <AlertDialogAction
                             className="bg-destructive hover:bg-destructive/90"
                             onClick={() => handleDelete(wp.id)}
                           >
-                            מחק
+                            {t("wbs.deleteTitle")}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -449,11 +454,11 @@ export function WBSTab({
                   <span>{fmtDate(wp.startDate)} — {fmtDate(wp.endDate)}</span>
                 )}
                 <span>
-                  מתוכנן: <strong className="text-foreground">{fmtCompact(wp.plannedCost)}</strong>
+                  {t("wbs.plannedLabel")}: <strong className="text-foreground">{fmtCompact(wp.plannedCost)}</strong>
                 </span>
                 {wp.actualCost > 0 && (
                   <span>
-                    בפועל:{" "}
+                    {t("wbs.actualLabel")}:{" "}
                     <strong className={isOver ? "text-red-600" : "text-emerald-600"}>
                       {fmtCompact(wp.actualCost)}
                     </strong>

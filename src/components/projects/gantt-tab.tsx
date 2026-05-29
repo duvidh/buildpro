@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations, useLocale } from "next-intl";
 import { CalendarRange } from "lucide-react";
 
 type WorkPackageEntry = {
@@ -24,11 +25,15 @@ const BAR_STYLES = [
   { bg: "bg-indigo-100", fill: "bg-indigo-500", border: "border-indigo-300" },
 ];
 
-function fmtMonth(date: Date) {
-  return new Intl.DateTimeFormat("he-IL", { month: "short", year: "2-digit" }).format(new Date(date));
-}
-
 export function GanttTab({ workPackages }: { workPackages: WorkPackageEntry[] }) {
+  const t = useTranslations("projects");
+  const locale = useLocale();
+
+  function fmtMonth(date: Date) {
+    const intlLocale = locale === "he" ? "he-IL" : "en-US";
+    return new Intl.DateTimeFormat(intlLocale, { month: "short", year: "2-digit" }).format(new Date(date));
+  }
+
   const wps = workPackages.filter((wp) => wp.startDate && wp.endDate);
 
   if (wps.length === 0) {
@@ -37,8 +42,8 @@ export function GanttTab({ workPackages }: { workPackages: WorkPackageEntry[] })
         <CalendarRange className="h-10 w-10 text-muted-foreground/30" />
         <p className="text-sm text-muted-foreground">
           {workPackages.length === 0
-            ? "הוסף חבילות עבודה בלשונית WBS כדי לראות את הגאנט."
-            : "חבילות העבודה חסרות תאריכי התחלה/סיום."}
+            ? t("gantt.emptyNoPackages")
+            : t("gantt.emptyNoDates")}
         </p>
       </div>
     );
@@ -71,7 +76,7 @@ export function GanttTab({ workPackages }: { workPackages: WorkPackageEntry[] })
       <div className="flex items-center gap-1.5">
         <CalendarRange className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-sm font-semibold text-muted-foreground">
-          גאנט פרויקט · {wps.length} חבילות עבודה
+          {t("gantt.headerTitle", { n: wps.length })}
         </span>
       </div>
 
@@ -80,7 +85,7 @@ export function GanttTab({ workPackages }: { workPackages: WorkPackageEntry[] })
           {/* Month header row */}
           <div className="flex border-b border-border bg-muted/40">
             <div className="w-44 shrink-0 px-3 py-2 text-xs font-medium text-muted-foreground border-e border-border">
-              חבילת עבודה
+              {t("gantt.colWorkPackage")}
             </div>
             <div className="relative flex-1 h-8">
               {months.map((month, i) => {
@@ -151,11 +156,11 @@ export function GanttTab({ workPackages }: { workPackages: WorkPackageEntry[] })
       <div className="flex flex-wrap gap-4 text-xs text-muted-foreground px-1">
         <div className="flex items-center gap-1.5">
           <div className="h-3 w-6 rounded-sm bg-blue-500 opacity-80" />
-          <span>התקדמות בפועל</span>
+          <span>{t("gantt.legendActual")}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="h-3 w-6 rounded-sm bg-blue-100 border border-blue-300" />
-          <span>תקופה מתוכננת</span>
+          <span>{t("gantt.legendPlanned")}</span>
         </div>
       </div>
     </div>

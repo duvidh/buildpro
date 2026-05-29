@@ -1,11 +1,24 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-if (!process.env.JWT_SECRET) {
-  throw new Error("JWT_SECRET environment variable is not set. Set it to a long random string.");
-}
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 const COOKIE_NAME = "bp_session";
+
+/**
+ * Returns the encoded JWT secret.
+ * Called lazily — only when a JWT operation is actually needed — so the
+ * module can be imported without crashing during the Vercel cold-start phase
+ * even if JWT_SECRET has not been set yet in the environment.
+ */
+function getSecret(): Uint8Array {
+  const s = process.env.JWT_SECRET;
+  if (!s) {
+    throw new Error(
+      "JWT_SECRET is not configured. " +
+        "Add it to your Vercel environment variables (Settings → Environment Variables)."
+    );
+  }
+  return new TextEncoder().encode(s);
+}
 
 export type SessionUser = {
   userId: string;
@@ -19,12 +32,12 @@ export async function signToken(payload: SessionUser): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(SECRET);
+    .sign(getSecret());
 }
 
 export async function verifyToken(token: string): Promise<SessionUser | null> {
   try {
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getSecret());
     return payload as unknown as SessionUser;
   } catch {
     return null;

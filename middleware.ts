@@ -1,22 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-if (!process.env.JWT_SECRET) {
-  throw new Error("JWT_SECRET environment variable is not set. Set it to a long random string.");
-}
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
-
-// Paths that don't require authentication
+// Paths that never require authentication
 const PUBLIC_PATHS = ["/login"];
-
-// Paths Next.js uses internally — always allow
-const ALWAYS_ALLOW = ["/_next", "/favicon.ico"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Let static assets pass through
-  if (ALWAYS_ALLOW.some((p) => pathname.startsWith(p))) {
+  // ── Fast-path: static files that slip past the matcher ──────────────────────
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/icons") ||
+    pathname === "/favicon.ico" ||
+    pathname === "/sw.js" ||
+    pathname === "/manifest.json" ||
+    /\/workbox-[^/]+\.js$/.test(pathname)
+  ) {
     return NextResponse.next();
   }
 
@@ -24,13 +23,28 @@ export async function middleware(req: NextRequest) {
     (p) => pathname === p || pathname.startsWith(p + "/")
   );
 
-  const token = req.cookies.get("bp_session")?.value;
+  // ── JWT_SECRET check ─────────────────────────────────────────────────────────
+  // Resolved inside the function (not at module level) so a missing env var
+  // does NOT crash the middleware module during the Vercel cold-start import.
+  const rawSecret = process.env.JWT_SECRET;
+  if (!rawSecret) {
+    console.error(
+      "[middleware] JWT_SECRET is not set — cannot verify sessions. " +
+        "Add it to Vercel → Settings → Environment Variables."
+    );
+    // Fail open for public routes; send everything else to login
+    if (isPublic) return NextResponse.next();
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
 
-  // Verify JWT without hitting the DB (stateless check)
+  const secret = new TextEncoder().encode(rawSecret);
+  const token  = req.cookies.get("bp_session")?.value;
+
+  // Verify JWT without hitting the DB (stateless edge check)
   let isAuthenticated = false;
   if (token) {
     try {
-      await jwtVerify(token, SECRET);
+      await jwtVerify(token, secret);
       isAuthenticated = true;
     } catch {
       isAuthenticated = false;
@@ -55,12 +69,14 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match every path EXCEPT:
-     *   - _next/static  (Next.js static files)
-     *   - _next/image   (Next.js image optimisation)
-     *   - favicon.ico
-     *   - files with extensions (images, fonts, etc.)
+     * Run on every path EXCEPT:
+     *   _next/static  – compiled assets
+     *   _next/image   – image optimisation
+     *   favicon.ico
+     *   sw.js         – PWA service worker
+     *   workbox-*.js  – Workbox runtime bundles
+     *   common static extensions (images, fonts, icons …)
      */
-    "/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|sw\\.js|workbox-.*\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
   ],
 };

@@ -33,21 +33,22 @@ export async function login(
       name: user.name,
       email: user.email,
     });
-
-    redirect("/dashboard");
   } catch (error) {
-    // Next.js redirect() works by throwing a special internal error.
-    // Re-throwing here ensures it is never swallowed by this catch block
-    // and mistakenly surfaced as "[object Object]" in the form state.
-    throw error;
+    // A real DB / bcrypt / JWT error — log it and return a safe message.
+    // Do NOT re-throw here; that would surface as "[object Object]" in prod.
+    console.error("[login] unexpected error:", error);
+    return { error: "שגיאת שרת, אנא נסה שוב מאוחר יותר" };
   }
+
+  // ⚠️  redirect() MUST be called OUTSIDE the try/catch.
+  // next/navigation's redirect() signals Next.js by throwing a special
+  // internal error object.  If that throw is caught and not re-thrown it
+  // gets serialised as "[object Object]" and the navigation never happens.
+  redirect("/dashboard");
 }
 
 export async function logout() {
-  try {
-    await deleteSession();
-    redirect("/login");
-  } catch (error) {
-    throw error;
-  }
+  await deleteSession();
+  // Same rule: redirect() outside any try/catch.
+  redirect("/login");
 }

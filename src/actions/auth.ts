@@ -16,27 +16,38 @@ export async function login(
     return { error: "נא למלא אימייל וסיסמה" };
   }
 
-  const user = await db.user.findUnique({ where: { email } });
-  if (!user || !user.active) {
-    return { error: "אימייל או סיסמה שגויים" };
+  try {
+    const user = await db.user.findUnique({ where: { email } });
+    if (!user || !user.active) {
+      return { error: "אימייל או סיסמה שגויים" };
+    }
+
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) {
+      return { error: "אימייל או סיסמה שגויים" };
+    }
+
+    await createSession({
+      userId: user.id,
+      role: user.role,
+      name: user.name,
+      email: user.email,
+    });
+
+    redirect("/dashboard");
+  } catch (error) {
+    // Next.js redirect() works by throwing a special internal error.
+    // Re-throwing here ensures it is never swallowed by this catch block
+    // and mistakenly surfaced as "[object Object]" in the form state.
+    throw error;
   }
-
-  const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) {
-    return { error: "אימייל או סיסמה שגויים" };
-  }
-
-  await createSession({
-    userId: user.id,
-    role: user.role,
-    name: user.name,
-    email: user.email,
-  });
-
-  redirect("/dashboard");
 }
 
 export async function logout() {
-  await deleteSession();
-  redirect("/login");
+  try {
+    await deleteSession();
+    redirect("/login");
+  } catch (error) {
+    throw error;
+  }
 }

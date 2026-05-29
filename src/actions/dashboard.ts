@@ -1,10 +1,40 @@
-"use server";
-
 import { db } from "@/lib/db";
 import { HE_MONTHS } from "@/lib/utils";
 
+// ─── Empty-data fallback ──────────────────────────────────────────────────────
+
+function buildEmptyData(now: Date) {
+  return {
+    kpis: {
+      activeLeads: 0,
+      newLeads: 0,
+      activeProjects: 0,
+      atRiskProjects: 0,
+      openTasks: 0,
+      overdueTasks: 0,
+      monthlyRevenue: 0,
+      prevMonthRevenue: 0,
+    },
+    projects: [] as never[],
+    upcomingTasks: [] as never[],
+    chartData: Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      return { month: HE_MONTHS[d.getMonth()], revenue: 0 };
+    }),
+    currentMonth: HE_MONTHS[now.getMonth()],
+    totalChartRevenue: 0,
+    avgMonthlyRevenue: 0,
+    recentPayments: [] as never[],
+    upcomingMilestones: [] as never[],
+    invoicesDue: [] as never[],
+    recentActivity: [] as never[],
+  };
+}
+
 export async function getDashboardData() {
   const now = new Date();
+
+  try {
   const monthStart    = new Date(now.getFullYear(), now.getMonth(), 1);
   const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const sixMonthsAgo  = new Date(now.getFullYear(), now.getMonth() - 5, 1);
@@ -151,4 +181,20 @@ export async function getDashboardData() {
     invoicesDue,
     recentActivity,
   };
+  } catch (err) {
+    // Rethrow Next.js internal signals (redirect, notFound, etc.) — never swallow them.
+    if (
+      err != null &&
+      typeof err === "object" &&
+      "digest" in err &&
+      typeof (err as { digest: unknown }).digest === "string" &&
+      ((err as { digest: string }).digest.startsWith("NEXT_REDIRECT") ||
+        (err as { digest: string }).digest.startsWith("NEXT_NOT_FOUND") ||
+        (err as { digest: string }).digest.startsWith("NEXT_HTTP_ERROR"))
+    ) {
+      throw err;
+    }
+    console.error("[getDashboardData] DB query failed — rendering empty dashboard:", err);
+    return buildEmptyData(now);
+  }
 }

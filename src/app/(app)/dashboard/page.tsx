@@ -17,12 +17,16 @@ export default async function DashboardPage() {
   // Load user's saved dashboard layout (if any)
   let savedLayout: WidgetLayoutItem[] | null = null;
   if (session?.userId) {
-    const user = await db.user.findUnique({
-      where: { id: session.userId },
-      select: { dashboardLayout: true },
-    });
-    if (user?.dashboardLayout) {
-      savedLayout = user.dashboardLayout as WidgetLayoutItem[];
+    try {
+      const user = await db.user.findUnique({
+        where: { id: session.userId },
+        select: { dashboardLayout: true },
+      });
+      if (user?.dashboardLayout) {
+        savedLayout = user.dashboardLayout as WidgetLayoutItem[];
+      }
+    } catch {
+      // Non-fatal: fall back to the default layout
     }
   }
 

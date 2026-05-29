@@ -14,6 +14,12 @@ import {
   Check,
   BadgePercent,
   FileText,
+  UserPlus,
+  Clock,
+  X,
+  RefreshCw,
+  Loader2,
+  Mail,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -30,8 +36,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { saveAllSettings } from "@/actions/settings";
 import { updateUserRole, toggleUserActive } from "@/actions/users";
+import { inviteUser, cancelInvitation, resendInvitation } from "@/actions/invitations";
 import { SUPPORTED_CURRENCIES } from "@/lib/formatters";
 import { useCurrency } from "@/lib/currency-context";
 
@@ -45,6 +59,15 @@ type User = {
   phone: string | null;
   active: boolean;
   createdAt: Date;
+};
+
+type Invitation = {
+  id: string;
+  email: string;
+  role: string;
+  expiresAt: Date;
+  createdAt: Date;
+  invitedBy: { name: string } | null;
 };
 
 // ─── Role badge class map (className only — labels from translations) ─────────
@@ -276,10 +299,26 @@ function PreferencesTab() {
 
 // ─── Users Tab ────────────────────────────────────────────────────────────────
 
-function UsersTab({ initialUsers }: { initialUsers: User[] }) {
+function UsersTab({
+  initialUsers,
+  initialInvitations,
+  canInvite,
+}: {
+  initialUsers: User[];
+  initialInvitations: Invitation[];
+  canInvite: boolean;
+}) {
   const t = useTranslations("settings");
-  const [users, setUsers]   = useState(initialUsers);
-  const [, startTransition] = useTransition();
+  const [users, setUsers]               = useState(initialUsers);
+  const [invitations, setInvitations]   = useState(initialInvitations);
+  const [, startTransition]             = useTransition();
+
+  // ── Invite dialog state ───────────────────────────────────────────────────
+  const [dialogOpen,   setDialogOpen]   = useState(false);
+  const [inviteEmail,  setInviteEmail]  = useState("");
+  const [inviteRole,   setInviteRole]   = useState<typeof ROLE_VALUES[number]>("FIELD_WORKER");
+  const [inviting,     setInviting]     = useState(false);
+  const [inviteMsg,    setInviteMsg]    = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   const tRole = (r: string) => {
     try { return t(`roles.${r}` as Parameters<typeof t>[0]); } catch { return r; }
@@ -299,12 +338,68 @@ function UsersTab({ initialUsers }: { initialUsers: User[] }) {
     });
   }
 
+  // ── Invite submit ──────────────────────────────────────────────────────────
+  async function handleInvite(e: React.FormEvent) {
+    e.preventDefault();
+    setInviting(true);
+    setInviteMsg(null);
+    const res = await inviteUser(inviteEmail, inviteRole as Parameters<typeof inviteUser>[1]);
+    setInviting(false);
+    if ("error" in res) {
+      setInviteMsg({
+        type: "err",
+        text: res.error === "user_exists"
+          ? t("users.inviteErrorExists" as Parameters<typeof t>[0])
+          : t("users.inviteErrorGeneric" as Parameters<typeof t>[0]),
+      });
+    } else {
+      setInviteMsg({ type: "ok", text: t("users.inviteSuccess" as Parameters<typeof t>[0]) });
+      setInviteEmail("");
+      setInviteRole("FIELD_WORKER");
+      // Optimistic: add to pending list (server will revalidate on next page load)
+      setInvitations((prev) => [
+        {
+          id:        `pending-${Date.now()}`,
+          email:     inviteEmail,
+          role:      inviteRole,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          createdAt: new Date(),
+          invitedBy: null,
+        },
+        ...prev,
+      ]);
+      setTimeout(() => { setDialogOpen(false); setInviteMsg(null); }, 1500);
+    }
+  }
+
+  // ── Cancel invitation ──────────────────────────────────────────────────────
+  function handleCancel(id: string) {
+    setInvitations((prev) => prev.filter((inv) => inv.id !== id));
+    startTransition(async () => { await cancelInvitation(id); });
+  }
+
+  // ── Resend invitation ─────────────────────────────────────────────────────
+  function handleResend(id: string) {
+    startTransition(async () => { await resendInvitation(id); });
+  }
+
+  const now = new Date();
+
   return (
     <div className="space-y-4">
+      {/* ── Active users ────────────────────────────────────────────────── */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-        <div>
-          <h3 className="text-sm font-semibold">{t("users.title")}</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">{t("users.subtitle")}</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-semibold">{t("users.title")}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">{t("users.subtitle")}</p>
+          </div>
+          {canInvite && (
+            <Button size="sm" onClick={() => { setDialogOpen(true); setInviteMsg(null); }}>
+              <UserPlus className="h-4 w-4 me-1.5" />
+              {t("users.inviteBtn" as Parameters<typeof t>[0])}
+            </Button>
+          )}
         </div>
         <Separator />
         <div className="rounded-lg border border-border overflow-hidden">
@@ -371,6 +466,177 @@ function UsersTab({ initialUsers }: { initialUsers: User[] }) {
           <strong>{t("noteLabel")}:</strong>{" "}{t("users.note")}
         </div>
       </div>
+
+      {/* ── Pending invitations ──────────────────────────────────────────── */}
+      {canInvite && (
+        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold">{t("users.pendingTitle" as Parameters<typeof t>[0])}</h3>
+            {invitations.length > 0 && (
+              <Badge variant="outline" className="text-[10px] ms-1">{invitations.length}</Badge>
+            )}
+          </div>
+          <Separator />
+          {invitations.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              {t("users.noPending" as Parameters<typeof t>[0])}
+            </p>
+          ) : (
+            <div className="rounded-lg border border-border overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/40">
+                    <tr>
+                      <th className="text-start font-medium text-muted-foreground px-4 py-3 text-xs">
+                        {t("users.pendingColEmail" as Parameters<typeof t>[0])}
+                      </th>
+                      <th className="text-start font-medium text-muted-foreground px-4 py-3 text-xs hidden sm:table-cell">
+                        {t("users.pendingColRole" as Parameters<typeof t>[0])}
+                      </th>
+                      <th className="text-start font-medium text-muted-foreground px-4 py-3 text-xs hidden md:table-cell">
+                        {t("users.pendingColExpires" as Parameters<typeof t>[0])}
+                      </th>
+                      <th className="text-center font-medium text-muted-foreground px-4 py-3 text-xs">
+                        {t("users.pendingColStatus" as Parameters<typeof t>[0])}
+                      </th>
+                      <th className="px-4 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {invitations.map((inv) => {
+                      const expired = inv.expiresAt < now;
+                      return (
+                        <tr key={inv.id} className="hover:bg-muted/20 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                                <Mail className="h-3.5 w-3.5" />
+                              </div>
+                              <span className="text-sm">{inv.email}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 hidden sm:table-cell">
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] px-1.5 py-0 ${ROLE_BADGE_CLS[inv.role] ?? ""}`}
+                            >
+                              {tRole(inv.role)}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">
+                            {inv.expiresAt.toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <Badge
+                              variant="outline"
+                              className={expired
+                                ? "text-[10px] bg-red-50 text-red-600 border-red-200"
+                                : "text-[10px] bg-amber-50 text-amber-600 border-amber-200"}
+                            >
+                              {expired
+                                ? t("users.statusExpired" as Parameters<typeof t>[0])
+                                : t("users.statusPending" as Parameters<typeof t>[0])}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-1">
+                              {!expired && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => handleResend(inv.id)}
+                                >
+                                  <RefreshCw className="h-3 w-3 me-1" />
+                                  {t("users.actionResend" as Parameters<typeof t>[0])}
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                                onClick={() => handleCancel(inv.id)}
+                              >
+                                <X className="h-3 w-3 me-1" />
+                                {t("users.actionCancel" as Parameters<typeof t>[0])}
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Invite dialog ──────────────────────────────────────────────── */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("users.inviteDialogTitle" as Parameters<typeof t>[0])}</DialogTitle>
+            <DialogDescription>{t("users.inviteDialogSubtitle" as Parameters<typeof t>[0])}</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleInvite} className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="invite-email">
+                {t("users.inviteEmailLabel" as Parameters<typeof t>[0])}
+              </Label>
+              <Input
+                id="invite-email"
+                type="email"
+                required
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder={t("users.inviteEmailPlaceholder" as Parameters<typeof t>[0])}
+                dir="ltr"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("users.inviteRoleLabel" as Parameters<typeof t>[0])}</Label>
+              <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as typeof inviteRole)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_VALUES.map((rv) => (
+                    <SelectItem key={rv} value={rv}>
+                      {tRole(rv)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {inviteMsg && (
+              <p className={`rounded-lg px-3 py-2 text-sm border ${
+                inviteMsg.type === "ok"
+                  ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                  : "bg-red-50 border-red-200 text-red-600"
+              }`}>
+                {inviteMsg.text}
+              </p>
+            )}
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                {t("users.actionCancel" as Parameters<typeof t>[0])}
+              </Button>
+              <Button type="submit" disabled={inviting}>
+                {inviting ? (
+                  <><Loader2 className="h-4 w-4 me-1.5 animate-spin" />{t("users.inviteSending" as Parameters<typeof t>[0])}</>
+                ) : (
+                  <><UserPlus className="h-4 w-4 me-1.5" />{t("users.inviteSend" as Parameters<typeof t>[0])}</>
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -714,9 +980,13 @@ const TAB_VALUES: TabValue[] = ["company", "financials", "documents", "preferenc
 export function SettingsTabs({
   systemSettings,
   users,
+  invitations,
+  canInvite,
 }: {
   systemSettings: Record<string, string>;
   users: User[];
+  invitations: Invitation[];
+  canInvite: boolean;
 }) {
   const t      = useTranslations("settings");
   const locale = useLocale();
@@ -743,7 +1013,7 @@ export function SettingsTabs({
       <TabsContent value="financials"  className="pt-5"><FinancialsTab  initial={systemSettings} /></TabsContent>
       <TabsContent value="documents"   className="pt-5"><DocumentsTab   initial={systemSettings} /></TabsContent>
       <TabsContent value="preferences" className="pt-5"><PreferencesTab /></TabsContent>
-      <TabsContent value="users"       className="pt-5"><UsersTab       initialUsers={users} /></TabsContent>
+      <TabsContent value="users"       className="pt-5"><UsersTab       initialUsers={users} initialInvitations={invitations} canInvite={canInvite} /></TabsContent>
       <TabsContent value="appearance"  className="pt-5"><AppearanceTab  /></TabsContent>
     </Tabs>
   );

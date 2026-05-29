@@ -67,7 +67,8 @@
       "Bash(dir /s /b \"C:\\\\Users\\\\User.DESKTOP-R26AVG6\\\\Documents\\\\buildpro\\\\src\\\\app\\\\\\(app\\)\\\\clients\")",
       "Bash(mkdir -p \"/mnt/c/Users/User.DESKTOP-R26AVG6/Documents/buildpro/src/hooks\")",
       "Bash(npx eslint *)",
-      "Bash(xargs grep -l \"useCurrency\\(\\)\")"
+      "Bash(xargs grep -l \"useCurrency\\(\\)\")",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

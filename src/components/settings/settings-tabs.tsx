@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
+import { useTheme } from "next-themes";
+import { useTranslations, useLocale } from "next-intl";
 import {
   Building2,
   BellRing,
@@ -8,6 +10,10 @@ import {
   ShieldCheck,
   Save,
   CheckCircle,
+  Palette,
+  Check,
+  BadgePercent,
+  FileText,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -25,6 +32,10 @@ import {
 } from "@/components/ui/select";
 import { saveAllSettings } from "@/actions/settings";
 import { updateUserRole, toggleUserActive } from "@/actions/users";
+import { SUPPORTED_CURRENCIES } from "@/lib/formatters";
+import { useCurrency } from "@/lib/currency-context";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type User = {
   id: string;
@@ -36,32 +47,78 @@ type User = {
   createdAt: Date;
 };
 
-const ROLE_OPTIONS = [
-  { value: "ADMIN",           label: "מנהל מערכת" },
-  { value: "OFFICE_MANAGER",  label: "מנהל משרד" },
-  { value: "PROJECT_MANAGER", label: "מנהל פרויקט" },
-  { value: "FIELD_WORKER",    label: "עובד שטח" },
+// ─── Role badge class map (className only — labels from translations) ─────────
+
+const ROLE_BADGE_CLS: Record<string, string> = {
+  ADMIN:           "bg-red-100 text-red-700 border-red-200",
+  OFFICE_MANAGER:  "bg-violet-100 text-violet-700 border-violet-200",
+  PROJECT_MANAGER: "bg-blue-100 text-blue-700 border-blue-200",
+  FIELD_WORKER:    "bg-emerald-100 text-emerald-700 border-emerald-200",
+};
+
+const ROLE_VALUES = ["ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER", "FIELD_WORKER"] as const;
+
+const COMPANY_FIELD_KEYS = [
+  { key: "company_name"    as const, type: "text"  as const },
+  { key: "company_phone"   as const, type: "text"  as const },
+  { key: "company_email"   as const, type: "email" as const },
+  { key: "company_address" as const, type: "text"  as const },
+  { key: "company_vat"     as const, type: "text"  as const },
 ];
 
-const ROLE_BADGE: Record<string, { label: string; cls: string }> = {
-  ADMIN:           { label: "מנהל מערכת",  cls: "bg-red-100 text-red-700 border-red-200" },
-  OFFICE_MANAGER:  { label: "מנהל משרד",   cls: "bg-violet-100 text-violet-700 border-violet-200" },
-  PROJECT_MANAGER: { label: "מנהל פרויקט", cls: "bg-blue-100 text-blue-700 border-blue-200" },
-  FIELD_WORKER:    { label: "עובד שטח",    cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+const TOGGLE_KEYS = [
+  "notif_tasks",
+  "notif_invoices",
+  "notif_leads",
+  "notif_daily",
+  "notif_safety",
+  "compact_view",
+] as const;
+
+type ToggleKey = typeof TOGGLE_KEYS[number];
+
+// Currency values are driven by SUPPORTED_CURRENCIES from @/lib/formatters
+
+// ─── Theme definitions (no label — computed from translations) ─────────────────
+
+type ThemeDef = {
+  value: string;
+  primary: string;
+  bg: string;
+  sidebar: string;
+  isDark?: boolean;
 };
+
+const THEMES: ThemeDef[] = [
+  { value: "light",        primary: "#6366f1", bg: "#f8f8f8",  sidebar: "#1e1f3b" },
+  { value: "dark",         primary: "#818cf8", bg: "#252525",  sidebar: "#111118", isDark: true },
+  { value: "teal",         primary: "#2dd4bf", bg: "#0d1a1a",  sidebar: "#061010", isDark: true },
+  { value: "theme-slate",  primary: "#64748b", bg: "#f5f7f9",  sidebar: "#1a2030" },
+  { value: "theme-indigo", primary: "#6366f1", bg: "#f2f2fe",  sidebar: "#1a1a40" },
+  { value: "theme-blue",   primary: "#3b82f6", bg: "#eff6ff",  sidebar: "#0f1f40" },
+  { value: "theme-green",  primary: "#22c55e", bg: "#f0fdf4",  sidebar: "#0c2010" },
+  { value: "theme-purple", primary: "#a855f7", bg: "#faf5ff",  sidebar: "#1a0c30" },
+  { value: "theme-rose",   primary: "#f43f5e", bg: "#fff1f2",  sidebar: "#2a0818" },
+  { value: "theme-orange", primary: "#f97316", bg: "#fff7ed",  sidebar: "#2a1008" },
+  { value: "theme-amber",  primary: "#f59e0b", bg: "#fffbeb",  sidebar: "#2a1a00" },
+];
 
 // ─── Company Tab ──────────────────────────────────────────────────────────────
 
 function CompanyTab({ initial }: { initial: Record<string, string> }) {
+  const t      = useTranslations("settings");
+  const locale = useLocale();
+  const { currencyCode } = useCurrency();
+
   const [form, setForm] = useState({
-    company_name:    initial.company_name    ?? "BuildPro בניה ופיתוח בע״מ",
+    company_name:    initial.company_name    ?? t("company.placeholders.company_name"),
     company_phone:   initial.company_phone   ?? "",
     company_email:   initial.company_email   ?? "",
     company_address: initial.company_address ?? "",
     company_vat:     initial.company_vat     ?? "",
   });
-  const [saved, setSaved] = useState(false);
-  const [, startTransition] = useTransition();
+  const [saved, setSaved]           = useState(false);
+  const [, startTransition]         = useTransition();
 
   function handleSave() {
     startTransition(async () => {
@@ -71,34 +128,43 @@ function CompanyTab({ initial }: { initial: Record<string, string> }) {
     });
   }
 
-  const fields: { key: keyof typeof form; label: string; placeholder: string; type?: string }[] = [
-    { key: "company_name",    label: "שם החברה",       placeholder: "BuildPro בניה ופיתוח בע״מ" },
-    { key: "company_phone",   label: "טלפון",           placeholder: "03-1234567" },
-    { key: "company_email",   label: "דוא״ל",           placeholder: "office@company.co.il", type: "email" },
-    { key: "company_address", label: "כתובת",           placeholder: "רחוב הרצל 1, תל אביב" },
-    { key: "company_vat",     label: "מספר ח.פ / ע.מ", placeholder: "123456789" },
+  // ── Dynamic System Info values ────────────────────────────────────────────
+  const activeCurrency = SUPPORTED_CURRENCIES.find((c) => c.code === currencyCode);
+  const currencyValueStr = activeCurrency
+    ? `${locale === "he" ? activeCurrency.nameHe : activeCurrency.nameEn} (${activeCurrency.symbol} ${activeCurrency.code})`
+    : currencyCode;
+  const langValueStr = locale === "en"
+    ? t("company.systemInfo.langValueEn" as Parameters<typeof t>[0])
+    : t("company.systemInfo.langValue"   as Parameters<typeof t>[0]);
+
+  const systemInfoRows = [
+    { label: t("company.systemInfo.version"),  value: t("company.systemInfo.versionValue") },
+    { label: t("company.systemInfo.db"),       value: t("company.systemInfo.dbValue")      },
+    { label: t("company.systemInfo.currency"), value: currencyValueStr                     },
+    { label: t("company.systemInfo.lang"),     value: langValueStr                         },
   ];
 
   return (
     <div className="space-y-5">
+      {/* Company details */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-4">
         <div>
-          <h3 className="text-sm font-semibold">פרטי החברה</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            פרטים אלו יופיעו בהצעות המחיר, חשבוניות ומסמכים.
-          </p>
+          <h3 className="text-sm font-semibold">{t("company.title")}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("company.subtitle")}</p>
         </div>
         <Separator />
         <div className="space-y-3">
-          {fields.map(({ key, label, placeholder, type }) => (
+          {COMPANY_FIELD_KEYS.map(({ key, type }) => (
             <div key={key} className="grid grid-cols-1 gap-1.5 sm:grid-cols-3 sm:items-center sm:gap-4">
-              <Label className="text-sm text-muted-foreground sm:text-end">{label}</Label>
+              <Label className="text-sm text-muted-foreground sm:text-end">
+                {t(`company.fields.${key}` as Parameters<typeof t>[0])}
+              </Label>
               <Input
                 className="sm:col-span-2"
-                type={type ?? "text"}
+                type={type}
                 value={form[key]}
                 onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                placeholder={placeholder}
+                placeholder={t(`company.placeholders.${key}` as Parameters<typeof t>[0])}
               />
             </div>
           ))}
@@ -107,48 +173,41 @@ function CompanyTab({ initial }: { initial: Record<string, string> }) {
           {saved && (
             <span className="flex items-center gap-1.5 text-sm text-emerald-600">
               <CheckCircle className="h-4 w-4" />
-              ההגדרות נשמרו
+              {t("company.saved")}
             </span>
           )}
           <Button onClick={handleSave}>
             <Save className="h-4 w-4 me-1.5" />
-            שמור
+            {t("company.save")}
           </Button>
         </div>
       </div>
 
-      {/* Logo upload (mock) */}
+      {/* Logo */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-4">
         <div>
-          <h3 className="text-sm font-semibold">לוגו החברה</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            הלוגו יופיע בהצעות המחיר ובמסמכים הרשמיים.
-          </p>
+          <h3 className="text-sm font-semibold">{t("company.logo.title")}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("company.logo.subtitle")}</p>
         </div>
         <Separator />
         <div className="flex items-center gap-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/30 text-muted-foreground text-xs text-center p-1">
-            לוגו
+            {t("company.logo.placeholder")}
           </div>
           <div className="space-y-1.5">
             <Button variant="outline" size="sm" className="text-xs">
-              העלאת לוגו
+              {t("company.logo.upload")}
             </Button>
-            <p className="text-[11px] text-muted-foreground">PNG, JPG עד 2MB</p>
+            <p className="text-[11px] text-muted-foreground">{t("company.logo.hint")}</p>
           </div>
         </div>
       </div>
 
       {/* System info */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-3">
-        <h3 className="text-sm font-semibold">מידע מערכת</h3>
+        <h3 className="text-sm font-semibold">{t("company.systemInfo.title")}</h3>
         <Separator />
-        {[
-          { label: "גרסת מערכת", value: "BuildPro v1.0" },
-          { label: "מסד נתונים", value: "SQLite (פיתוח)" },
-          { label: "מטבע",        value: "שקל ישראלי (₪ ILS)" },
-          { label: "שפה",         value: "עברית (he-IL)" },
-        ].map(({ label, value }) => (
+        {systemInfoRows.map(({ label, value }) => (
           <div key={label} className="flex items-center justify-between gap-4 py-0.5">
             <p className="text-xs text-muted-foreground">{label}</p>
             <p className="text-sm font-medium">{value}</p>
@@ -162,40 +221,35 @@ function CompanyTab({ initial }: { initial: Record<string, string> }) {
 // ─── Preferences Tab ──────────────────────────────────────────────────────────
 
 function PreferencesTab() {
-  const [prefs, setPrefs] = useState({
-    notif_tasks: true,
+  const t = useTranslations("settings");
+
+  const [prefs, setPrefs] = useState<Record<ToggleKey, boolean>>({
+    notif_tasks:    true,
     notif_invoices: true,
-    notif_leads: false,
-    notif_daily: true,
-    notif_safety: true,
-    compact_view: false,
+    notif_leads:    false,
+    notif_daily:    true,
+    notif_safety:   true,
+    compact_view:   false,
   });
   const [saved, setSaved] = useState(false);
-
-  const toggles: { key: keyof typeof prefs; label: string; description: string }[] = [
-    { key: "notif_tasks",    label: "התראות משימות",         description: "קבל התראה כשמשימה מוקצית אליך או משנה סטטוס" },
-    { key: "notif_invoices", label: "התראות חשבוניות",       description: "קבל התראה על חשבוניות שמועד הפירעון שלהן מתקרב" },
-    { key: "notif_leads",    label: "התראות לידים חדשים",    description: "קבל התראה כשנכנס ליד חדש" },
-    { key: "notif_daily",    label: "תזכורת יומן עבודה",     description: "תזכורת יומית להגשת יומן עבודה (בוקר)" },
-    { key: "notif_safety",   label: "אירועי בטיחות דחופים",  description: "התראה מיידית על כל דיווח בטיחות" },
-    { key: "compact_view",   label: "תצוגה קומפקטית",        description: "הצג טבלאות עם שורות צפופות יותר" },
-  ];
 
   return (
     <div className="rounded-xl border border-border bg-card p-5 space-y-4">
       <div>
-        <h3 className="text-sm font-semibold">העדפות התראות וממשק</h3>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          הגדרות אלו חלות על החשבון האישי שלך.
-        </p>
+        <h3 className="text-sm font-semibold">{t("preferences.title")}</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">{t("preferences.subtitle")}</p>
       </div>
       <Separator />
       <div className="divide-y divide-border">
-        {toggles.map(({ key, label, description }) => (
+        {TOGGLE_KEYS.map((key) => (
           <div key={key} className="flex items-center justify-between py-3 px-1">
             <div>
-              <p className="text-sm font-medium">{label}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+              <p className="text-sm font-medium">
+                {t(`preferences.toggles.${key}.label` as Parameters<typeof t>[0])}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {t(`preferences.toggles.${key}.description` as Parameters<typeof t>[0])}
+              </p>
             </div>
             <Switch
               checked={prefs[key]}
@@ -208,14 +262,12 @@ function PreferencesTab() {
         {saved && (
           <span className="flex items-center gap-1.5 text-sm text-emerald-600">
             <CheckCircle className="h-4 w-4" />
-            ההעדפות נשמרו
+            {t("preferences.saved")}
           </span>
         )}
-        <Button
-          onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 3000); }}
-        >
+        <Button onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 3000); }}>
           <Save className="h-4 w-4 me-1.5" />
-          שמור העדפות
+          {t("preferences.save")}
         </Button>
       </div>
     </div>
@@ -225,8 +277,13 @@ function PreferencesTab() {
 // ─── Users Tab ────────────────────────────────────────────────────────────────
 
 function UsersTab({ initialUsers }: { initialUsers: User[] }) {
-  const [users, setUsers] = useState(initialUsers);
+  const t = useTranslations("settings");
+  const [users, setUsers]   = useState(initialUsers);
   const [, startTransition] = useTransition();
+
+  const tRole = (r: string) => {
+    try { return t(`roles.${r}` as Parameters<typeof t>[0]); } catch { return r; }
+  };
 
   function handleRoleChange(id: string, role: string) {
     setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
@@ -246,27 +303,23 @@ function UsersTab({ initialUsers }: { initialUsers: User[] }) {
     <div className="space-y-4">
       <div className="rounded-xl border border-border bg-card p-5 space-y-4">
         <div>
-          <h3 className="text-sm font-semibold">משתמשי המערכת</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            הקצאת תפקידים ושליטה בגישה. שינוי תפקיד נכנס לתוקף מיידית.
-          </p>
+          <h3 className="text-sm font-semibold">{t("users.title")}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("users.subtitle")}</p>
         </div>
         <Separator />
         <div className="rounded-lg border border-border overflow-hidden">
           <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40">
-              <tr>
-                <th className="text-start font-medium text-muted-foreground px-4 py-3 text-xs">משתמש</th>
-                <th className="text-start font-medium text-muted-foreground px-4 py-3 text-xs hidden sm:table-cell">דוא״ל</th>
-                <th className="text-start font-medium text-muted-foreground px-4 py-3 text-xs">תפקיד</th>
-                <th className="text-center font-medium text-muted-foreground px-4 py-3 text-xs">פעיל</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {users.map((u) => {
-                const badge = ROLE_BADGE[u.role] ?? { label: u.role, cls: "" };
-                return (
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40">
+                <tr>
+                  <th className="text-start font-medium text-muted-foreground px-4 py-3 text-xs">{t("users.colUser")}</th>
+                  <th className="text-start font-medium text-muted-foreground px-4 py-3 text-xs hidden sm:table-cell">{t("users.colEmail")}</th>
+                  <th className="text-start font-medium text-muted-foreground px-4 py-3 text-xs">{t("users.colRole")}</th>
+                  <th className="text-center font-medium text-muted-foreground px-4 py-3 text-xs">{t("users.colActive")}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {users.map((u) => (
                   <tr key={u.id} className={`hover:bg-muted/20 transition-colors ${!u.active ? "opacity-50" : ""}`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -275,9 +328,12 @@ function UsersTab({ initialUsers }: { initialUsers: User[] }) {
                         </div>
                         <div>
                           <p className="font-medium leading-none">{u.name}</p>
-                          <Badge variant="outline" className={`text-[10px] mt-0.5 px-1.5 py-0 ${badge.cls}`}>
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] mt-0.5 px-1.5 py-0 ${ROLE_BADGE_CLS[u.role] ?? ""}`}
+                          >
                             <ShieldCheck className="h-2.5 w-2.5 me-0.5" />
-                            {badge.label}
+                            {tRole(u.role)}
                           </Badge>
                         </div>
                       </div>
@@ -285,13 +341,13 @@ function UsersTab({ initialUsers }: { initialUsers: User[] }) {
                     <td className="px-4 py-3 text-muted-foreground text-xs hidden sm:table-cell">{u.email}</td>
                     <td className="px-4 py-3">
                       <Select value={u.role} onValueChange={(v) => handleRoleChange(u.id, v)}>
-                        <SelectTrigger className="h-7 w-[140px] text-xs">
+                        <SelectTrigger className="h-7 w-[160px] text-xs">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {ROLE_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                              {opt.label}
+                          {ROLE_VALUES.map((rv) => (
+                            <SelectItem key={rv} value={rv} className="text-xs">
+                              {tRole(rv)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -306,15 +362,334 @@ function UsersTab({ initialUsers }: { initialUsers: User[] }) {
                       </div>
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
         <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-700">
-          <strong>הערה:</strong> שינוי תפקיד ל״עובד שטח״ מגביל גישה למידע פיננסי ולסכומי חוזים.
-          ADMIN הוא התפקיד היחיד עם גישה מלאה לדוחות רווח/הפסד.
+          <strong>{t("noteLabel")}:</strong>{" "}{t("users.note")}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Financials Tab ───────────────────────────────────────────────────────────
+
+function FinancialsTab({ initial }: { initial: Record<string, string> }) {
+  const t = useTranslations("settings");
+
+  const [vatRate,     setVatRate]     = useState(initial.vat_rate ?? "17");
+  const [currency,   setCurrency]    = useState(
+    initial.company_currency || initial.default_currency || "ILS"
+  );
+  const [measurement, setMeasurement] = useState(
+    initial.company_measurement_system || "AUTO"
+  );
+  const [saved,    setSaved]    = useState(false);
+  const [, startTransition]     = useTransition();
+
+  function handleSave() {
+    startTransition(async () => {
+      await saveAllSettings({
+        vat_rate: vatRate,
+        company_currency: currency,
+        company_measurement_system: measurement,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    });
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold">{t("financials.title")}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("financials.subtitle")}</p>
+        </div>
+        <Separator />
+
+        {/* VAT rate */}
+        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3 sm:items-center sm:gap-4">
+          <Label className="text-sm text-muted-foreground sm:text-end">{t("financials.vatLabel")}</Label>
+          <div className="sm:col-span-2 flex items-center gap-2">
+            <Input
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              value={vatRate}
+              onChange={(e) => setVatRate(e.target.value)}
+              className="w-28"
+              dir="ltr"
+            />
+            <span className="text-sm text-muted-foreground">%</span>
+            <span className="text-xs text-muted-foreground">{t("financials.vatDefault")}</span>
+          </div>
+        </div>
+
+        {/* System Currency — 10 options */}
+        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3 sm:items-center sm:gap-4">
+          <Label className="text-sm text-muted-foreground sm:text-end">{t("financials.currencyLabel")}</Label>
+          <div className="sm:col-span-2">
+            <Select value={currency} onValueChange={setCurrency}>
+              <SelectTrigger className="w-64">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SUPPORTED_CURRENCIES.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>
+                    {c.symbol}&nbsp;&nbsp;{c.code} — {c.nameEn}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Measurement System */}
+        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3 sm:items-center sm:gap-4">
+          <Label className="text-sm text-muted-foreground sm:text-end">{t("financials.measurementLabel")}</Label>
+          <div className="sm:col-span-2">
+            <Select value={measurement} onValueChange={setMeasurement}>
+              <SelectTrigger className="w-64">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(["AUTO", "METRIC", "IMPERIAL"] as const).map((opt) => (
+                  <SelectItem key={opt} value={opt}>
+                    {t(`financials.measurementOptions.${opt}` as Parameters<typeof t>[0])}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex justify-end items-center gap-3 pt-1">
+          {saved && (
+            <span className="flex items-center gap-1.5 text-sm text-emerald-600">
+              <CheckCircle className="h-4 w-4" />
+              {t("financials.saved")}
+            </span>
+          )}
+          <Button onClick={handleSave}>
+            <Save className="h-4 w-4 me-1.5" />
+            {t("financials.save")}
+          </Button>
+        </div>
+      </div>
+
+      <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-xs text-blue-700">
+        <strong>{t("noteLabel")}:</strong>{" "}{t("financials.note")}
+      </div>
+    </div>
+  );
+}
+
+// ─── Documents Tab ────────────────────────────────────────────────────────────
+
+function DocumentsTab({ initial }: { initial: Record<string, string> }) {
+  const t = useTranslations("settings");
+
+  const [quoteFooter,   setQuoteFooter]   = useState(initial.quote_footer   ?? "");
+  const [invoiceFooter, setInvoiceFooter] = useState(initial.invoice_footer ?? "");
+  const [saved,         setSaved]         = useState(false);
+  const [, startTransition]               = useTransition();
+
+  function handleSave() {
+    startTransition(async () => {
+      await saveAllSettings({ quote_footer: quoteFooter, invoice_footer: invoiceFooter });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    });
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-xl border border-border bg-card p-5 space-y-5">
+        <div>
+          <h3 className="text-sm font-semibold">{t("documents.title")}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("documents.subtitle")}</p>
+        </div>
+        <Separator />
+
+        {/* Quote footer */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">{t("documents.quoteFooterLabel")}</Label>
+          <p className="text-xs text-muted-foreground">{t("documents.quoteFooterHint")}</p>
+          <Textarea
+            value={quoteFooter}
+            onChange={(e) => setQuoteFooter(e.target.value)}
+            placeholder={t("documents.quoteFooterPlaceholder")}
+            rows={5}
+            className="text-sm resize-none"
+          />
+          <p className="text-xs text-muted-foreground text-end">
+            {t("documents.charCount", { count: quoteFooter.length })}
+          </p>
+        </div>
+
+        <Separator />
+
+        {/* Invoice footer */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">{t("documents.invoiceFooterLabel")}</Label>
+          <p className="text-xs text-muted-foreground">{t("documents.invoiceFooterHint")}</p>
+          <Textarea
+            value={invoiceFooter}
+            onChange={(e) => setInvoiceFooter(e.target.value)}
+            placeholder={t("documents.invoiceFooterPlaceholder")}
+            rows={5}
+            className="text-sm resize-none"
+          />
+          <p className="text-xs text-muted-foreground text-end">
+            {t("documents.charCount", { count: invoiceFooter.length })}
+          </p>
+        </div>
+
+        <div className="flex justify-end items-center gap-3 pt-1">
+          {saved && (
+            <span className="flex items-center gap-1.5 text-sm text-emerald-600">
+              <CheckCircle className="h-4 w-4" />
+              {t("documents.saved")}
+            </span>
+          )}
+          <Button onClick={handleSave}>
+            <Save className="h-4 w-4 me-1.5" />
+            {t("documents.save")}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Appearance Tab ───────────────────────────────────────────────────────────
+
+function ThemePreview({
+  themeData,
+  label,
+  isActive,
+}: {
+  themeData: ThemeDef;
+  label: string;
+  isActive: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => undefined}
+      className={[
+        "relative flex flex-col gap-2 rounded-xl border-2 p-2.5 text-start transition-all duration-150",
+        isActive
+          ? "border-primary ring-2 ring-primary/25 shadow-md"
+          : "border-border hover:border-primary/40 hover:shadow-sm",
+      ].join(" ")}
+    >
+      {/* Mini UI preview */}
+      <div
+        className="w-full h-12 rounded-lg overflow-hidden relative shrink-0"
+        style={{ background: themeData.bg }}
+      >
+        <div className="absolute inset-y-0 end-0 w-5" style={{ background: themeData.sidebar }} />
+        <div className="absolute top-2 start-2 space-y-1.5">
+          <div className="h-1.5 w-10 rounded-full opacity-70" style={{ background: themeData.primary }} />
+          <div className="h-1 w-14 rounded-full opacity-30" style={{ background: themeData.isDark ? "#fff" : "#000" }} />
+          <div className="h-1 w-10 rounded-full opacity-20" style={{ background: themeData.isDark ? "#fff" : "#000" }} />
+        </div>
+        <div className="absolute bottom-2 end-7 h-3 w-3 rounded-full shadow-sm" style={{ background: themeData.primary }} />
+      </div>
+
+      {/* Label row */}
+      <div className="flex items-center gap-1.5 px-0.5">
+        <div className="h-2.5 w-2.5 rounded-full shrink-0 shadow-sm" style={{ background: themeData.primary }} />
+        <span className="text-[11px] font-medium text-foreground leading-none truncate">{label}</span>
+      </div>
+
+      {isActive && (
+        <div className="absolute top-1.5 start-1.5 h-4 w-4 rounded-full bg-primary flex items-center justify-center shadow-sm">
+          <Check className="h-2.5 w-2.5 text-primary-foreground" />
+        </div>
+      )}
+    </button>
+  );
+}
+
+function AppearanceTab() {
+  const t                        = useTranslations("settings");
+  const { theme, setTheme }      = useTheme();
+  const [mounted, setMounted]    = useState(false);
+  const [noAnimations, setNoAnimations] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+    try {
+      setNoAnimations(localStorage.getItem("buildpro-no-animations") === "1");
+    } catch {
+      setNoAnimations(false);
+    }
+  }, []);
+
+  function toggleAnimations(val: boolean) {
+    setNoAnimations(val);
+    try {
+      if (val) localStorage.setItem("buildpro-no-animations", "1");
+      else     localStorage.removeItem("buildpro-no-animations");
+    } catch { /* ignore */ }
+    window.dispatchEvent(new StorageEvent("storage", { key: "buildpro-no-animations" }));
+  }
+
+  const themeLabel = (value: string) => {
+    const key = value.replace(/^theme-/, "");
+    try { return t(`appearance.themes.${key}` as Parameters<typeof t>[0]); } catch { return key; }
+  };
+
+  if (!mounted) return null;
+
+  return (
+    <div className="space-y-5">
+      {/* Theme selector */}
+      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold">{t("appearance.title")}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("appearance.subtitle")}</p>
+        </div>
+        <Separator />
+        <div
+          className="grid gap-2.5"
+          style={{ gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))" }}
+        >
+          {THEMES.map((td) => (
+            <div key={td.value} onClick={() => setTheme(td.value)}>
+              <ThemePreview themeData={td} label={themeLabel(td.value)} isActive={theme === td.value} />
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground text-center pt-1">
+          {t("appearance.activeTheme")}{" "}
+          <strong className="text-foreground">
+            {THEMES.find((td) => td.value === theme) ? themeLabel(theme ?? "") : theme}
+          </strong>
+        </p>
+      </div>
+
+      {/* Animation toggle */}
+      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold">{t("appearance.animations.title")}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("appearance.animations.subtitle")}</p>
+        </div>
+        <Separator />
+        <div className="flex items-center justify-between py-1">
+          <div>
+            <p className="text-sm font-medium">{t("appearance.animations.label")}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t("appearance.animations.description")}</p>
+          </div>
+          <Switch checked={noAnimations} onCheckedChange={toggleAnimations} />
         </div>
       </div>
     </div>
@@ -323,6 +698,19 @@ function UsersTab({ initialUsers }: { initialUsers: User[] }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+const TAB_ICONS = {
+  company:     Building2,
+  financials:  BadgePercent,
+  documents:   FileText,
+  preferences: BellRing,
+  users:       Users,
+  appearance:  Palette,
+} as const;
+
+type TabValue = keyof typeof TAB_ICONS;
+
+const TAB_VALUES: TabValue[] = ["company", "financials", "documents", "preferences", "users", "appearance"];
+
 export function SettingsTabs({
   systemSettings,
   users,
@@ -330,36 +718,33 @@ export function SettingsTabs({
   systemSettings: Record<string, string>;
   users: User[];
 }) {
+  const t      = useTranslations("settings");
+  const locale = useLocale();
+
   return (
-    <Tabs defaultValue="company" dir="rtl">
-      <TabsList className="w-full justify-start border-b border-border rounded-none bg-transparent p-0 h-auto gap-0">
-        {[
-          { value: "company",     icon: Building2,  label: "פרטי חברה" },
-          { value: "preferences", icon: BellRing,   label: "הגדרות אישיות" },
-          { value: "users",       icon: Users,       label: "משתמשים והרשאות" },
-        ].map(({ value, icon: Icon, label }) => (
-          <TabsTrigger
-            key={value}
-            value={value}
-            className="relative rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-5 py-2.5 text-sm font-medium text-muted-foreground data-[state=active]:text-foreground shrink-0"
-          >
-            <Icon className="h-4 w-4 me-1.5" />
-            {label}
-          </TabsTrigger>
-        ))}
+    <Tabs defaultValue="company" dir={locale === "he" ? "rtl" : "ltr"}>
+      <TabsList className="w-full justify-start border-b border-border rounded-none bg-transparent p-0 h-auto gap-0 overflow-x-auto scrollbar-none">
+        {TAB_VALUES.map((value) => {
+          const Icon = TAB_ICONS[value];
+          return (
+            <TabsTrigger
+              key={value}
+              value={value}
+              className="relative rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-5 py-2.5 text-sm font-medium text-muted-foreground data-[state=active]:text-foreground shrink-0"
+            >
+              <Icon className="h-4 w-4 me-1.5" />
+              {t(`tabs.${value}` as Parameters<typeof t>[0])}
+            </TabsTrigger>
+          );
+        })}
       </TabsList>
 
-      <TabsContent value="company" className="pt-5">
-        <CompanyTab initial={systemSettings} />
-      </TabsContent>
-
-      <TabsContent value="preferences" className="pt-5">
-        <PreferencesTab />
-      </TabsContent>
-
-      <TabsContent value="users" className="pt-5">
-        <UsersTab initialUsers={users} />
-      </TabsContent>
+      <TabsContent value="company"     className="pt-5"><CompanyTab     initial={systemSettings} /></TabsContent>
+      <TabsContent value="financials"  className="pt-5"><FinancialsTab  initial={systemSettings} /></TabsContent>
+      <TabsContent value="documents"   className="pt-5"><DocumentsTab   initial={systemSettings} /></TabsContent>
+      <TabsContent value="preferences" className="pt-5"><PreferencesTab /></TabsContent>
+      <TabsContent value="users"       className="pt-5"><UsersTab       initialUsers={users} /></TabsContent>
+      <TabsContent value="appearance"  className="pt-5"><AppearanceTab  /></TabsContent>
     </Tabs>
   );
 }

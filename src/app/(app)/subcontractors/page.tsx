@@ -1,11 +1,15 @@
 export const dynamic = "force-dynamic";
 
 import { Building2 } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { getSubcontractors } from "@/actions/subcontractors";
 import { SubcontractorsManager } from "@/components/subcontractors/subcontractors-manager";
 
 export default async function SubcontractorsPage() {
-  const suppliers = await getSubcontractors();
+  const [suppliers, t] = await Promise.all([
+    getSubcontractors(),
+    getTranslations("subcontractors"),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -14,10 +18,8 @@ export default async function SubcontractorsPage() {
           <Building2 className="h-5 w-5 text-violet-600" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">ספקים וקבלני משנה</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            ניהול ספקים, קבלני משנה ודירוגיהם
-          </p>
+          <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{t("subtitle")}</p>
         </div>
       </div>
 

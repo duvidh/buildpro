@@ -1,11 +1,16 @@
 export const dynamic = "force-dynamic";
 
 import { Settings } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { getSystemSettings } from "@/actions/settings";
 import { getUsers, seedUsers } from "@/actions/users";
 import { SettingsTabs } from "@/components/settings/settings-tabs";
 
 export default async function SettingsPage() {
+  const [t] = await Promise.all([
+    getTranslations("settings"),
+  ]);
+
   if (process.env.NODE_ENV !== "production") await seedUsers();
   const [systemSettings, users] = await Promise.all([
     getSystemSettings(),
@@ -19,10 +24,8 @@ export default async function SettingsPage() {
           <Settings className="h-5 w-5 text-slate-600" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">הגדרות מערכת</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            פרטי חברה, העדפות אישיות וניהול משתמשים
-          </p>
+          <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{t("subtitle")}</p>
         </div>
       </div>
 

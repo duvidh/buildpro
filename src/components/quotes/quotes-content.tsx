@@ -1,7 +1,9 @@
 "use client";
 
+import { useCurrency } from "@/lib/currency-context";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import {
   Plus,
@@ -55,66 +57,47 @@ type Quote = {
 };
 
 type Client = { id: string; name: string };
-type Lead = { id: string; name: string };
+type Lead   = { id: string; name: string };
 
 type Props = {
-  quotes: Quote[];
+  quotes:  Quote[];
   clients: Client[];
-  leads: Lead[];
+  leads:   Lead[];
 };
 
-// ─── Status badge ─────────────────────────────────────────────────────────────
-
-const STATUS_LABELS: Record<string, string> = {
-  DRAFT: "טיוטה",
-  SENT: "נשלחה",
-  ACCEPTED: "אושרה",
-  REJECTED: "נדחתה",
-  EXPIRED: "פגת תוקף",
-};
+// ─── Status config (variant only — labels from translations) ──────────────────
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
-  DRAFT: "secondary",
-  SENT: "outline",
+  DRAFT:    "secondary",
+  SENT:     "outline",
   ACCEPTED: "default",
   REJECTED: "destructive",
-  EXPIRED: "secondary",
+  EXPIRED:  "secondary",
 };
-
-function StatusBadge({ status }: { status: string }) {
-  return (
-    <Badge variant={STATUS_VARIANT[status] ?? "secondary"}>
-      {STATUS_LABELS[status] ?? status}
-    </Badge>
-  );
-}
 
 // ─── New quote dialog ─────────────────────────────────────────────────────────
 
 function NewQuoteDialog({ clients, leads }: { clients: Client[]; leads: Lead[] }) {
+  const t      = useTranslations("quotes");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [mode, setMode] = useState<"client" | "lead">("client");
   const [clientId, setClientId] = useState("");
-  const [leadId, setLeadId] = useState("");
-  const [error, setError] = useState("");
+  const [leadId,   setLeadId]   = useState("");
+  const [error,    setError]    = useState("");
 
   const clientOptions = clients.map((c) => ({ value: c.id, label: c.name }));
-  const leadOptions = leads.map((l) => ({ value: l.id, label: l.name }));
+  const leadOptions   = leads.map((l)   => ({ value: l.id, label: l.name }));
 
   function handleOpen(val: boolean) {
     setOpen(val);
-    if (!val) {
-      setClientId("");
-      setLeadId("");
-      setError("");
-    }
+    if (!val) { setClientId(""); setLeadId(""); setError(""); }
   }
 
   function submit() {
-    if (mode === "client" && !clientId) { setError("בחר לקוח"); return; }
-    if (mode === "lead" && !leadId) { setError("בחר ליד"); return; }
+    if (mode === "client" && !clientId) { setError(t("dialog.errorSelectClient")); return; }
+    if (mode === "lead"   && !leadId)   { setError(t("dialog.errorSelectLead"));   return; }
     setError("");
     startTransition(async () => {
       const res = await createQuote(mode === "client" ? { clientId } : { leadId });
@@ -130,12 +113,12 @@ function NewQuoteDialog({ clients, leads }: { clients: Client[]; leads: Lead[] }
       <DialogTrigger asChild>
         <Button className="gap-2">
           <Plus className="h-4 w-4" />
-          הצעת מחיר חדשה
+          {t("newQuote")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>הצעת מחיר חדשה</DialogTitle>
+          <DialogTitle>{t("dialog.title")}</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-4 mt-2">
           {/* Mode toggle */}
@@ -150,7 +133,7 @@ function NewQuoteDialog({ clients, leads }: { clients: Client[]; leads: Lead[] }
               }`}
             >
               <User className="h-3.5 w-3.5" />
-              לקוח
+              {t("dialog.modeClient")}
             </button>
             <button
               type="button"
@@ -162,7 +145,7 @@ function NewQuoteDialog({ clients, leads }: { clients: Client[]; leads: Lead[] }
               }`}
             >
               <Users className="h-3.5 w-3.5" />
-              ליד
+              {t("dialog.modeLead")}
             </button>
           </div>
 
@@ -170,26 +153,26 @@ function NewQuoteDialog({ clients, leads }: { clients: Client[]; leads: Lead[] }
           <div className="flex flex-col gap-1.5">
             {mode === "client" ? (
               <>
-                <Label>לקוח *</Label>
+                <Label>{t("dialog.clientLabel")}</Label>
                 <Combobox
                   options={clientOptions}
                   value={clientId}
                   onValueChange={(v) => { setClientId(v); setError(""); }}
-                  placeholder="בחר לקוח..."
-                  searchPlaceholder="חיפוש לקוח..."
-                  emptyText="לא נמצאו לקוחות"
+                  placeholder={t("dialog.clientPlaceholder")}
+                  searchPlaceholder={t("dialog.clientSearch")}
+                  emptyText={t("dialog.noClients")}
                 />
               </>
             ) : (
               <>
-                <Label>ליד *</Label>
+                <Label>{t("dialog.leadLabel")}</Label>
                 <Combobox
                   options={leadOptions}
                   value={leadId}
                   onValueChange={(v) => { setLeadId(v); setError(""); }}
-                  placeholder="בחר ליד..."
-                  searchPlaceholder="חיפוש ליד..."
-                  emptyText="לא נמצאו לידים"
+                  placeholder={t("dialog.leadPlaceholder")}
+                  searchPlaceholder={t("dialog.leadSearch")}
+                  emptyText={t("dialog.noLeads")}
                 />
               </>
             )}
@@ -197,7 +180,7 @@ function NewQuoteDialog({ clients, leads }: { clients: Client[]; leads: Lead[] }
           </div>
 
           <Button onClick={submit} disabled={isPending} className="self-end">
-            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "צור הצעה"}
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("dialog.create")}
           </Button>
         </div>
       </DialogContent>
@@ -208,8 +191,17 @@ function NewQuoteDialog({ clients, leads }: { clients: Client[]; leads: Lead[] }
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export function QuotesContent({ quotes, clients, leads }: Props) {
+  const { fmtCompact } = useCurrency();
+  const t      = useTranslations("quotes");
+  const locale = useLocale();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+
+  const dateLocale = locale === "he" ? "he-IL" : "en-US";
+
+  const tStatus = (s: string) => {
+    try { return t(`status.${s}` as Parameters<typeof t>[0]); } catch { return s; }
+  };
 
   function handleDelete(id: string) {
     startTransition(async () => {
@@ -220,7 +212,7 @@ export function QuotesContent({ quotes, clients, leads }: Props) {
 
   function fmtDate(d: Date | string | null) {
     if (!d) return "—";
-    return new Date(d).toLocaleDateString("he-IL");
+    return new Date(d).toLocaleDateString(dateLocale);
   }
 
   return (
@@ -228,8 +220,8 @@ export function QuotesContent({ quotes, clients, leads }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">הצעות מחיר</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{quotes.length} הצעות</p>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{t("subtitle", { count: quotes.length })}</p>
         </div>
         <NewQuoteDialog clients={clients} leads={leads} />
       </div>
@@ -238,7 +230,7 @@ export function QuotesContent({ quotes, clients, leads }: Props) {
       {quotes.length === 0 && (
         <div className="flex flex-col items-center gap-4 py-16 text-center text-muted-foreground">
           <FileText className="h-12 w-12 opacity-30" />
-          <p className="text-sm">אין הצעות מחיר עדיין</p>
+          <p className="text-sm">{t("empty")}</p>
           <NewQuoteDialog clients={clients} leads={leads} />
         </div>
       )}
@@ -249,20 +241,20 @@ export function QuotesContent({ quotes, clients, leads }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>מספר הצעה</TableHead>
-                <TableHead>לקוח / ליד</TableHead>
-                <TableHead className="hidden sm:table-cell">תאריך</TableHead>
-                <TableHead className="hidden md:table-cell">בתוקף עד</TableHead>
-                <TableHead>סטטוס</TableHead>
-                <TableHead className="hidden sm:table-cell text-center">פריטים</TableHead>
-                <TableHead className="text-start">סכום כולל</TableHead>
+                <TableHead>{t("table.number")}</TableHead>
+                <TableHead>{t("table.client")}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t("table.date")}</TableHead>
+                <TableHead className="hidden md:table-cell">{t("table.validUntil")}</TableHead>
+                <TableHead>{t("table.status")}</TableHead>
+                <TableHead className="hidden sm:table-cell text-center">{t("table.items")}</TableHead>
+                <TableHead className="text-start">{t("table.total")}</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {quotes.map((q) => {
                 const entityName = q.client?.name ?? q.lead?.name ?? "—";
-                const isLead = !q.client && !!q.lead;
+                const isLead     = !q.client && !!q.lead;
                 return (
                   <TableRow
                     key={q.id}
@@ -276,7 +268,7 @@ export function QuotesContent({ quotes, clients, leads }: Props) {
                       <div className="flex items-center gap-1.5">
                         {isLead && (
                           <Badge variant="outline" className="text-[10px] h-4 px-1.5 py-0 bg-amber-50 text-amber-700 border-amber-200">
-                            ליד
+                            {t("lead")}
                           </Badge>
                         )}
                         {entityName}
@@ -285,14 +277,16 @@ export function QuotesContent({ quotes, clients, leads }: Props) {
                     <TableCell className="text-muted-foreground hidden sm:table-cell">{fmtDate(q.date)}</TableCell>
                     <TableCell className="text-muted-foreground hidden md:table-cell">{fmtDate(q.validUntil)}</TableCell>
                     <TableCell>
-                      <StatusBadge status={q.status} />
+                      <Badge variant={STATUS_VARIANT[q.status] ?? "secondary"}>
+                        {tStatus(q.status)}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-center text-muted-foreground hidden sm:table-cell">
                       {q._count.items}
                     </TableCell>
                     <TableCell className="font-medium">
                       {q.total > 0
-                        ? `₪${q.total.toLocaleString("he-IL", { maximumFractionDigits: 0 })}`
+                        ? fmtCompact(q.total)
                         : "—"}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
@@ -306,7 +300,7 @@ export function QuotesContent({ quotes, clients, leads }: Props) {
                           <DropdownMenuItem asChild>
                             <Link href={`/quotes/${q.id}`}>
                               <ChevronRight className="h-4 w-4 ms-1" />
-                              פתח הצעה
+                              {t("actions.open")}
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem
@@ -315,7 +309,7 @@ export function QuotesContent({ quotes, clients, leads }: Props) {
                             disabled={isPending}
                           >
                             <Trash2 className="h-4 w-4 ms-1" />
-                            מחק
+                            {t("actions.delete")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

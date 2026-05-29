@@ -1,9 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? "buildpro-super-secret-jwt-key-change-me-in-production-2026"
-);
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is not set. Set it to a long random string.");
+}
+const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 // Paths that don't require authentication
 const PUBLIC_PATHS = ["/login"];

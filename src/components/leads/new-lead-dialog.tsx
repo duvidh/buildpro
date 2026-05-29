@@ -1,19 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Loader2, ChevronDown, Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -33,12 +28,24 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { createLead } from "@/actions/leads";
-import { createLeadSchema, type CreateLeadInput } from "@/lib/schemas/lead-schema";
-import { LEAD_SOURCE_LABELS } from "./lead-status-badge";
+import { useMeasurement } from "@/lib/measurement-context";
+import { buildLeadSchema, type CreateLeadInput } from "@/lib/schemas/lead-schema";
+import { LEAD_SOURCE_VALUES } from "@/lib/constants/lead-enums";
 
 type EmployeeOption = { id: string; name: string };
 
-// ─── Demo data ────────────────────────────────────────────────────────────────
+// ─── Static city list (Hebrew city names, locale-independent) ─────────────────
+
+export const DEFAULT_CITIES = [
+  "תל אביב", "ירושלים", "חיפה", "ראשון לציון", "פתח תקווה",
+  "אשדוד", "נתניה", "באר שבע", "בני ברק", "רמת גן",
+  "הרצליה", "רעננה", "כפר סבא", "מודיעין", "אשקלון",
+  "רחובות", "בת ים", "בית שמש", "הוד השרון", "חולון",
+  "אילת", "טבריה", "נצרת", "עכו", "נהריה", "קריית שמונה",
+  "לוד", "רמלה", "יהוד", "גבעתיים",
+];
+
+// ─── Default construction types (stored as-is in DB, locale-independent) ──────
 
 export const DEFAULT_CONSTRUCTION_TYPES = [
   "בנייה חדשה",
@@ -54,29 +61,25 @@ export const DEFAULT_CONSTRUCTION_TYPES = [
   "תשתיות",
 ];
 
-export const DEFAULT_CITIES = [
-  "תל אביב", "ירושלים", "חיפה", "ראשון לציון", "פתח תקווה",
-  "אשדוד", "נתניה", "באר שבע", "בני ברק", "רמת גן",
-  "הרצליה", "רעננה", "כפר סבא", "מודיעין", "אשקלון",
-  "רחובות", "בת ים", "בית שמש", "הוד השרון", "חולון",
-  "אילת", "טבריה", "נצרת", "עכו", "נהריה", "קריית שמונה",
-  "לוד", "רמלה", "יהוד", "גבעתיים",
-];
-
 // ─── Multi-select construction types ─────────────────────────────────────────
 
 export function MultiSelectCreatable({
   options,
   selected,
   onChange,
-  placeholder = "בחר סוגי בנייה...",
+  placeholder,
+  addPlaceholder,
 }: {
-  options: string[];
-  selected: string[];
-  onChange: (v: string[]) => void;
-  placeholder?: string;
+  options:        string[];
+  selected:       string[];
+  onChange:       (v: string[]) => void;
+  placeholder?:   string;
+  addPlaceholder?: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const locale = useLocale();
+  const dir    = locale === "he" ? "rtl" : "ltr";
+
+  const [open, setOpen]             = useState(false);
   const [allOptions, setAllOptions] = useState(options);
   const [customInput, setCustomInput] = useState("");
 
@@ -97,7 +100,7 @@ export function MultiSelectCreatable({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="flex min-h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex min-h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
         >
           {selected.length === 0 ? (
             <span className="text-muted-foreground">{placeholder}</span>
@@ -120,7 +123,7 @@ export function MultiSelectCreatable({
           <ChevronDown className="h-4 w-4 opacity-50 shrink-0 ms-2" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-2" dir="rtl" align="start">
+      <PopoverContent className="w-72 p-2" dir={dir} align="start">
         <div className="max-h-52 overflow-y-auto space-y-0.5">
           {allOptions.map((opt) => (
             <div
@@ -140,7 +143,7 @@ export function MultiSelectCreatable({
           <Input
             value={customInput}
             onChange={(e) => setCustomInput(e.target.value)}
-            placeholder="הוסף סוג בנייה..."
+            placeholder={addPlaceholder}
             className="h-8 text-sm flex-1"
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } }}
           />
@@ -166,15 +169,19 @@ export function CreatableCitySelect({
   value,
   onChange,
 }: {
-  value: string;
+  value:    string;
   onChange: (v: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const t      = useTranslations("leads.form");
+  const locale = useLocale();
+  const dir    = locale === "he" ? "rtl" : "ltr";
+
+  const [open, setOpen]   = useState(false);
   const [cities, setCities] = useState(DEFAULT_CITIES);
   const [search, setSearch] = useState("");
 
   const filtered = cities.filter((c) => c.includes(search));
-  const canAdd = search.trim() && !cities.includes(search.trim());
+  const canAdd   = search.trim() && !cities.includes(search.trim());
 
   function select(city: string) {
     onChange(city);
@@ -197,16 +204,16 @@ export function CreatableCitySelect({
           className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
         >
           <span className={value ? "text-foreground" : "text-muted-foreground"}>
-            {value || "בחר עיר..."}
+            {value || t("placeholders.selectCity")}
           </span>
           <ChevronDown className="h-4 w-4 opacity-50" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-2" dir="rtl" align="start">
+      <PopoverContent className="w-64 p-2" dir={dir} align="start">
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="חפש עיר..."
+          placeholder={t("placeholders.searchCity")}
           className="h-8 text-sm mb-2"
           autoFocus
         />
@@ -227,11 +234,13 @@ export function CreatableCitySelect({
               onClick={addCity}
             >
               <Plus className="h-3.5 w-3.5 shrink-0" />
-              הוסף &quot;{search.trim()}&quot;
+              {t("addCity")} &quot;{search.trim()}&quot;
             </div>
           )}
           {filtered.length === 0 && !canAdd && (
-            <p className="text-sm text-muted-foreground px-2 py-3 text-center">לא נמצאה עיר</p>
+            <p className="text-sm text-muted-foreground px-2 py-3 text-center">
+              {t("cityNotFound")}
+            </p>
           )}
         </div>
       </PopoverContent>
@@ -239,192 +248,296 @@ export function CreatableCitySelect({
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Inline form body (shared with edit) ─────────────────────────────────────
 
-export function NewLeadDialog({ employees = [] }: { employees?: EmployeeOption[] }) {
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [constructionTypes, setConstructionTypes] = useState<string[]>([]);
-  const [city, setCity] = useState("");
+export function LeadFormBody({
+  employees,
+  defaultValues,
+  onSubmit,
+  onCancel,
+  submitLabel,
+}: {
+  employees:      EmployeeOption[];
+  defaultValues?: Partial<CreateLeadInput> & { constructionTypes?: string[]; city?: string };
+  onSubmit:       (data: CreateLeadInput, constructionTypes: string[], city: string) => Promise<void>;
+  onCancel:       () => void;
+  submitLabel?:   string;
+}) {
+  const t      = useTranslations("leads");
+  const tCommon = useTranslations("common");
+  const { areaUnit } = useMeasurement();
+
+  // Build schema with translated validation messages
+  const schema = useMemo(
+    () => buildLeadSchema({
+      nameTooShort: t("validation.nameTooShort"),
+      invalidPhone: t("validation.invalidPhone"),
+      invalidEmail: t("validation.invalidEmail"),
+    }),
+    [t]
+  );
+
+  const [constructionTypes, setConstructionTypes] = useState<string[]>(
+    defaultValues?.constructionTypes ?? []
+  );
+  const [city, setCity] = useState(defaultValues?.city ?? "");
 
   const employeeOptions = employees.map((e) => ({ value: e.id, label: e.name }));
 
   const {
     register,
     handleSubmit,
-    reset,
     setValue,
     watch,
     formState: { errors, isSubmitting },
   } = useForm<CreateLeadInput>({
-    resolver: zodResolver(createLeadSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
-      name: "",
-      phone: "",
+      name:   "",
+      phone:  "",
       source: "OTHER" as const,
+      ...defaultValues,
     },
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const assignedEmployeeId = watch("assignedEmployeeId");
 
-  function handleClose(v: boolean) {
-    if (!v) {
-      reset();
-      setConstructionTypes([]);
-      setCity("");
-      setServerError(null);
-    }
-    setOpen(v);
+  async function handleFormSubmit(data: CreateLeadInput) {
+    await onSubmit(data, constructionTypes, city);
   }
 
-  async function onSubmit(data: CreateLeadInput) {
-    setServerError(null);
+  const tf = t as (k: string) => string; // shorthand for form.fields / form.placeholders
+
+  return (
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+      {/* שם + טלפון */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="lf-name">
+            {tf("form.fields.name")} <span className="text-destructive">*</span>
+          </Label>
+          <Input id="lf-name" placeholder={tf("form.placeholders.name")} {...register("name")} />
+          {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="lf-phone">
+            {tf("form.fields.phone")} <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="lf-phone"
+            placeholder={tf("form.placeholders.phone")}
+            type="tel"
+            dir="ltr"
+            {...register("phone")}
+          />
+          {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
+        </div>
+      </div>
+
+      {/* טלפון נוסף + אימייל */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="lf-phone2">{tf("form.fields.phone2")}</Label>
+          <Input
+            id="lf-phone2"
+            placeholder={tf("form.placeholders.phone2")}
+            type="tel"
+            dir="ltr"
+            {...register("phone2")}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="lf-email">{tf("form.fields.email")}</Label>
+          <Input
+            id="lf-email"
+            placeholder={tf("form.placeholders.email")}
+            type="email"
+            dir="ltr"
+            {...register("email")}
+          />
+          {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+        </div>
+      </div>
+
+      {/* כתובת + עיר */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="lf-address">{tf("form.fields.address")}</Label>
+          <Input
+            id="lf-address"
+            placeholder={tf("form.placeholders.address")}
+            {...register("propertyAddress")}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label>{tf("form.fields.city")}</Label>
+          <CreatableCitySelect value={city} onChange={setCity} />
+        </div>
+      </div>
+
+      {/* מקור ליד + נציג מטפל */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label>{tf("form.fields.source")}</Label>
+          <Select
+            defaultValue={defaultValues?.source ?? "OTHER"}
+            onValueChange={(v) => setValue("source", v as CreateLeadInput["source"])}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {LEAD_SOURCE_VALUES.map((value) => (
+                <SelectItem key={value} value={value}>
+                  {tf(`source.${value}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {employeeOptions.length > 0 && (
+          <div className="space-y-1.5">
+            <Label>{tf("form.fields.assignedRep")}</Label>
+            <Combobox
+              options={employeeOptions}
+              value={assignedEmployeeId ?? ""}
+              onValueChange={(v) => setValue("assignedEmployeeId", v || undefined)}
+              placeholder={tf("form.placeholders.selectRep")}
+              searchPlaceholder={tf("form.placeholders.searchEmp")}
+              emptyText={tf("form.placeholders.noEmployees")}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* סוג בנייה + תקציב + גודל */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="space-y-1.5">
+          <Label>{tf("form.fields.constructionType")}</Label>
+          <MultiSelectCreatable
+            options={DEFAULT_CONSTRUCTION_TYPES}
+            selected={constructionTypes}
+            onChange={setConstructionTypes}
+            placeholder={tf("form.placeholders.selectTypes")}
+            addPlaceholder={tf("form.placeholders.addType")}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="lf-budget">{tf("form.fields.budget")}</Label>
+          <Input
+            id="lf-budget"
+            placeholder={tf("form.placeholders.budget")}
+            type="number"
+            dir="ltr"
+            {...register("budget")}
+          />
+          {errors.budget && <p className="text-xs text-destructive">{errors.budget.message}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="lf-size">{tf("form.fields.size")} ({areaUnit})</Label>
+          <Input
+            id="lf-size"
+            placeholder="120"
+            type="number"
+            min={0}
+            dir="ltr"
+            {...register("estimatedSize")}
+          />
+        </div>
+      </div>
+
+      {/* הערות */}
+      <div className="space-y-1.5">
+        <Label htmlFor="lf-notes">{tf("form.fields.notes")}</Label>
+        <Textarea
+          id="lf-notes"
+          placeholder={tf("form.placeholders.notes")}
+          rows={3}
+          {...register("notes")}
+        />
+      </div>
+
+      <div className="flex justify-end gap-2 pt-1">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          {tCommon("cancel")}
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="h-4 w-4 me-1.5 animate-spin" />}
+          {submitLabel ?? t("form.saveLead")}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+// ─── Main export: button + inline expandable form ─────────────────────────────
+
+export function NewLeadDialog({ employees: _employees = [] }: { employees?: EmployeeOption[] }) {
+  const t    = useTranslations("leads");
+  const [open, setOpen] = useState(false);
+
+  if (!open) {
+    return (
+      <Button size="sm" onClick={() => setOpen(true)}>
+        <Plus className="h-4 w-4 me-1.5" />
+        {t("newLead")}
+      </Button>
+    );
+  }
+
+  return <div className="col-span-full w-full" />;
+}
+
+// ─── Section wrapper used in leads page ──────────────────────────────────────
+
+export function NewLeadSection({ employees = [] }: { employees?: EmployeeOption[] }) {
+  const t      = useTranslations("leads");
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+
+  async function handleSubmit(data: CreateLeadInput, constructionTypes: string[], city: string) {
     const res = await createLead({ ...data, constructionTypes, city: city || undefined });
     if (res.success) {
-      toast.success("ליד נוצר בהצלחה");
-      handleClose(false);
+      toast.success(t("form.toastSuccess"));
+      setOpen(false);
       router.refresh();
     } else {
-      setServerError(res.error);
-      toast.error("שגיאה ביצירת הליד");
+      toast.error(t("form.toastError"));
     }
   }
 
   return (
-    <Sheet open={open} onOpenChange={handleClose}>
-      <SheetTrigger asChild>
-        <Button size="sm">
-          <Plus className="h-4 w-4 me-1.5" />
-          ליד חדש
-        </Button>
-      </SheetTrigger>
+    <div className="space-y-3">
+      {/* Button row */}
+      <div className="flex justify-end">
+        {open ? (
+          <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
+            <X className="h-4 w-4 me-1.5" />
+            {t("close")}
+          </Button>
+        ) : (
+          <Button size="sm" onClick={() => setOpen(true)}>
+            <Plus className="h-4 w-4 me-1.5" />
+            {t("newLead")}
+          </Button>
+        )}
+      </div>
 
-      <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto" dir="rtl">
-        <SheetHeader className="mb-5">
-          <SheetTitle>הוספת ליד חדש</SheetTitle>
-        </SheetHeader>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Name + Phone */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="name">שם מלא <span className="text-destructive">*</span></Label>
-              <Input id="name" placeholder="ישראל ישראלי" {...register("name")} />
-              {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="phone">טלפון ראשי <span className="text-destructive">*</span></Label>
-              <Input id="phone" placeholder="050-1234567" type="tel" dir="ltr" {...register("phone")} />
-              {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
-            </div>
-          </div>
-
-          {/* Phone2 + Email */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="phone2">טלפון נוסף</Label>
-              <Input id="phone2" placeholder="03-1234567" type="tel" dir="ltr" {...register("phone2")} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="email">אימייל</Label>
-              <Input id="email" placeholder="israel@example.com" type="email" dir="ltr" {...register("email")} />
-              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-            </div>
-          </div>
-
-          {/* City + Size */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>עיר</Label>
-              <CreatableCitySelect value={city} onChange={setCity} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="estimatedSize">גודל משוער (מ&quot;ר)</Label>
-              <Input
-                id="estimatedSize"
-                placeholder="120"
-                type="number"
-                min={0}
-                dir="ltr"
-                {...register("estimatedSize")}
-              />
-            </div>
-          </div>
-
-          {/* Address */}
-          <div className="space-y-1.5">
-            <Label htmlFor="propertyAddress">כתובת הנכס</Label>
-            <Input id="propertyAddress" placeholder="רחוב הרצל 1, תל אביב" {...register("propertyAddress")} />
-          </div>
-
-          {/* Construction types */}
-          <div className="space-y-1.5">
-            <Label>סוג בנייה</Label>
-            <MultiSelectCreatable
-              options={DEFAULT_CONSTRUCTION_TYPES}
-              selected={constructionTypes}
-              onChange={setConstructionTypes}
+      {/* Inline form card */}
+      {open && (
+        <Card className="border-primary/20 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">{t("form.addNew")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LeadFormBody
+              employees={employees}
+              onSubmit={handleSubmit}
+              onCancel={() => setOpen(false)}
             />
-          </div>
-
-          {/* Source */}
-          <div className="space-y-1.5">
-            <Label>מקור ליד</Label>
-            <Select
-              defaultValue="OTHER"
-              onValueChange={(v) => setValue("source", v as CreateLeadInput["source"])}
-            >
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(LEAD_SOURCE_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Assigned employee */}
-          {employeeOptions.length > 0 && (
-            <div className="space-y-1.5">
-              <Label>נציג מטפל</Label>
-              <Combobox
-                options={employeeOptions}
-                value={assignedEmployeeId ?? ""}
-                onValueChange={(v) => setValue("assignedEmployeeId", v || undefined)}
-                placeholder="בחר נציג..."
-                searchPlaceholder="חיפוש עובד..."
-                emptyText="לא נמצאו עובדים"
-              />
-            </div>
-          )}
-
-          {/* Budget + Size */}
-          <div className="space-y-1.5">
-            <Label htmlFor="budget">תקציב משוער (₪)</Label>
-            <Input id="budget" placeholder="500000" type="number" dir="ltr" {...register("budget")} />
-            {errors.budget && <p className="text-xs text-destructive">{errors.budget.message}</p>}
-          </div>
-
-          {/* Notes */}
-          <div className="space-y-1.5">
-            <Label htmlFor="notes">הערות</Label>
-            <Textarea id="notes" placeholder="פרטים נוספים על הליד..." rows={3} {...register("notes")} />
-          </div>
-
-          {serverError && <p className="text-sm text-destructive">{serverError}</p>}
-
-          <div className="flex justify-end gap-2 pt-2 pb-6">
-            <Button type="button" variant="outline" onClick={() => handleClose(false)}>
-              ביטול
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="h-4 w-4 me-1.5 animate-spin" />}
-              שמור ליד
-            </Button>
-          </div>
-        </form>
-      </SheetContent>
-    </Sheet>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }

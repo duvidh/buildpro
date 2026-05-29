@@ -1,16 +1,18 @@
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/app-header";
+import { OfflineIndicator } from "@/components/layout/offline-indicator";
+import { LivingBackground } from "@/components/layout/living-background";
+import { CurrencyProvider } from "@/lib/currency-context";
+import { MeasurementProvider } from "@/lib/measurement-context";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { getSystemSettings } from "@/actions/settings";
+import { getLocale } from "next-intl/server";
+import type { UserRole } from "@/lib/auth-utils";
 
-async function getNotificationCount(): Promise<number> {
+async function getNotificationCount(userId: string): Promise<number> {
   try {
-    const now = new Date();
-    const [overdueTasks, atRiskProjects] = await Promise.all([
-      db.task.count({ where: { status: { not: "DONE" }, dueDate: { lt: now } } }),
-      db.project.count({ where: { status: "ON_HOLD" } }),
-    ]);
-    return overdueTasks + atRiskProjects;
+    return db.notification.count({ where: { userId, read: false } });
   } catch {
     return 0;
   }
@@ -23,27 +25,49 @@ function getInitials(name: string): string {
 }
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const [notificationCount, session] = await Promise.all([
-    getNotificationCount(),
+  const [session, settings, locale] = await Promise.all([
     getSession(),
+    getSystemSettings().catch(() => ({} as Record<string, string>)),
+    getLocale(),
   ]);
 
+  const notificationCount = session
+    ? await getNotificationCount(session.userId)
+    : 0;
+
+  const userRole = (session?.role ?? "FIELD_WORKER") as UserRole;
+
   const user = session
-    ? { name: session.name, email: session.email, initials: getInitials(session.name) }
-    : { name: "משתמש", email: "", initials: "מ" };
+    ? { name: session.name, email: session.email, initials: getInitials(session.name), role: userRole }
+    : { name: "משתמש", email: "", initials: "מ", role: "FIELD_WORKER" as UserRole };
+
+  const companyName       = settings["company_name"] || undefined;
+  const defaultCurrency   = locale === "en" ? "USD" : "ILS";
+  const currencyCode      = settings["company_currency"] || settings["default_currency"] || defaultCurrency;
+  const measurementSystem = settings["company_measurement_system"] || "AUTO";
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[radial-gradient(at_left_top,_rgba(255,255,255,1),_rgba(244,244,245,0.8),_rgba(235,235,240,0.5))]">
+  <CurrencyProvider currencyCode={currencyCode}>
+  <MeasurementProvider measurementSystem={measurementSystem}>
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* Animated background blobs */}
+      <LivingBackground />
+
       {/* Sidebar — hidden on mobile, visible md+ (appears on right in RTL) */}
-      <div className="hidden md:flex">
-        <AppSidebar user={user} />
+      <div className="hidden md:block">
+        <AppSidebar user={user} companyName={companyName} />
       </div>
 
       {/* Main area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         <AppHeader notificationCount={notificationCount} user={user} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
+
+      {/* Global offline banner — renders only when navigator.onLine === false */}
+      <OfflineIndicator />
     </div>
+  </MeasurementProvider>
+  </CurrencyProvider>
   );
 }

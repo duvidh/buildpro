@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { UserRole } from "@/generated/prisma/client";
+import { requireRole, ADMIN_ROLES } from "@/lib/auth-utils";
+import { getSession } from "@/lib/session";
 
 export async function getUsers() {
   return db.user.findMany({
@@ -19,6 +21,18 @@ export async function getUsers() {
       createdAt: true,
     },
   });
+}
+
+export async function saveDashboardLayout(layout: unknown) {
+  const { getSession } = await import("@/lib/session");
+  const session = await getSession();
+  if (!session) return { success: false as const, error: "לא מחובר" };
+  await db.user.update({
+    where: { id: session.userId },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data: { dashboardLayout: layout as any },
+  });
+  return { success: true as const };
 }
 
 export async function getCurrentUser() {
@@ -40,25 +54,30 @@ export async function getCurrentUser() {
 }
 
 export async function updateUserRole(id: string, role: UserRole) {
+  await requireRole(ADMIN_ROLES);
   await db.user.update({ where: { id }, data: { role } });
   revalidatePath("/settings");
   return { success: true as const };
 }
 
 export async function toggleUserActive(id: string, active: boolean) {
+  await requireRole(ADMIN_ROLES);
   await db.user.update({ where: { id }, data: { active } });
   revalidatePath("/settings");
   return { success: true as const };
 }
 
 export async function updateCurrentUserProfile(data: {
-  id: string;
   name: string;
   email: string;
   phone?: string;
 }) {
+  // Scope to the authenticated user — never trust a client-supplied id
+  const session = await getSession();
+  if (!session) throw new Error("Unauthorized access");
+
   await db.user.update({
-    where: { id: data.id },
+    where: { id: session.userId },
     data: {
       name: data.name,
       email: data.email,

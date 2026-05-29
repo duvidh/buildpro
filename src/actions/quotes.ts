@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { type CreateQuoteInput, type UpdateQuoteHeaderInput } from "@/lib/schemas/quote-schema";
 import type { QuoteStatusValue } from "@/lib/constants/quote-enums";
+import { requireRole, PROJECT_ROLES, DELETE_ROLES } from "@/lib/auth-utils";
+
+// ─── Read ──────────────────────────────────────────────────────────────────────
 
 export async function getQuotes() {
   return db.quote.findMany({
@@ -21,7 +24,10 @@ export async function getQuoteById(id: string) {
     where: { id },
     include: {
       client: { select: { id: true, name: true } },
-      lead: { select: { id: true, name: true } },
+      lead:   { select: { id: true, name: true } },
+      categories: {
+        orderBy: { order: "asc" },
+      },
       items: {
         orderBy: { order: "asc" },
         include: {
@@ -32,11 +38,12 @@ export async function getQuoteById(id: string) {
   });
 }
 
+// ─── Quote CRUD ───────────────────────────────────────────────────────────────
+
 async function generateQuoteNumber(tx: Parameters<Parameters<typeof db.$transaction>[0]>[0]): Promise<string> {
-  const year = new Date().getFullYear();
+  const year   = new Date().getFullYear();
   const prefix = `Q${year}-`;
-  // Use MAX on the numeric suffix instead of COUNT — survives deletions and is deterministic
-  const last = await tx.quote.findFirst({
+  const last   = await tx.quote.findFirst({
     where: { quoteNumber: { startsWith: prefix } },
     orderBy: { quoteNumber: "desc" },
     select: { quoteNumber: true },
@@ -46,18 +53,17 @@ async function generateQuoteNumber(tx: Parameters<Parameters<typeof db.$transact
 }
 
 export async function createQuote(data: CreateQuoteInput) {
-  // Generate number and create inside one transaction so concurrent calls
-  // hit the unique constraint rather than producing duplicate numbers.
+  await requireRole(PROJECT_ROLES);
   const quote = await db.$transaction(async (tx) => {
     const quoteNumber = await generateQuoteNumber(tx);
     return tx.quote.create({
       data: {
-        clientId: data.clientId || null,
-        leadId: data.leadId || null,
+        clientId:  data.clientId  || null,
+        leadId:    data.leadId    || null,
         projectId: data.projectId || null,
         quoteNumber,
-        date: new Date(),
-        status: "DRAFT",
+        date:       new Date(),
+        status:     "DRAFT",
         taxPercent: 17,
       },
     });
@@ -67,6 +73,7 @@ export async function createQuote(data: CreateQuoteInput) {
 }
 
 export async function updateQuoteHeader(id: string, data: UpdateQuoteHeaderInput) {
+  await requireRole(PROJECT_ROLES);
   await db.quote.update({
     where: { id },
     data: {
@@ -83,81 +90,8 @@ export async function updateQuoteHeader(id: string, data: UpdateQuoteHeaderInput
   return { success: true as const };
 }
 
-export async function addQuoteItem(quoteId: string) {
-  const last = await db.quoteItem.findFirst({
-    where: { quoteId },
-    orderBy: { order: "desc" },
-    select: { order: true },
-  });
-  const item = await db.quoteItem.create({
-    data: { quoteId, name: "", unit: "יח'", order: (last?.order ?? -1) + 1 },
-  });
-  revalidatePath(`/quotes/${quoteId}`);
-  return { success: true as const, item };
-}
-
-export async function deleteQuoteItem(id: string) {
-  const item = await db.quoteItem.delete({ where: { id } });
-  revalidatePath(`/quotes/${item.quoteId}`);
-  return { success: true as const };
-}
-
-type ItemSaveData = {
-  id: string;
-  catalogItemId: string | null;
-  name: string;
-  unit: string;
-  dim1: number;
-  dim2: number | null;
-  quantity: number;
-  unitPrice: number;
-  profitPercent: number;
-  linePrice: number;
-  order: number;
-};
-
-export async function saveQuoteItems(quoteId: string, items: ItemSaveData[]) {
-  // Read the quote's taxPercent from DB instead of hardcoding
-  const quote = await db.quote.findUnique({
-    where: { id: quoteId },
-    select: { taxPercent: true },
-  });
-  const taxPercent = quote?.taxPercent ?? 17;
-
-  const subtotal = Math.round(items.reduce((s, i) => s + i.linePrice, 0) * 100) / 100;
-  const taxAmount = Math.round(subtotal * (taxPercent / 100) * 100) / 100;
-  const total = Math.round((subtotal + taxAmount) * 100) / 100;
-
-  await db.$transaction(async (tx) => {
-    for (const item of items) {
-      await tx.quoteItem.update({
-        where: { id: item.id },
-        data: {
-          catalogItemId: item.catalogItemId,
-          name: item.name,
-          unit: item.unit,
-          dim1: item.dim1 || null,
-          dim2: item.dim2,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          profitPercent: item.profitPercent,
-          linePrice: item.linePrice,
-          order: item.order,
-        },
-      });
-    }
-    await tx.quote.update({
-      where: { id: quoteId },
-      data: { subtotal, taxAmount, total },
-    });
-  });
-
-  revalidatePath(`/quotes/${quoteId}`);
-  revalidatePath("/quotes");
-  return { success: true as const, subtotal, taxAmount, total };
-}
-
 export async function updateQuoteStatus(id: string, status: QuoteStatusValue) {
+  await requireRole(PROJECT_ROLES);
   await db.quote.update({ where: { id }, data: { status } });
   revalidatePath(`/quotes/${id}`);
   revalidatePath("/quotes");
@@ -165,7 +99,137 @@ export async function updateQuoteStatus(id: string, status: QuoteStatusValue) {
 }
 
 export async function deleteQuote(id: string) {
+  await requireRole(DELETE_ROLES);
   await db.quote.delete({ where: { id } });
   revalidatePath("/quotes");
   return { success: true as const };
+}
+
+// ─── Category (Chapter) CRUD ──────────────────────────────────────────────────
+
+export async function createQuoteCategory(quoteId: string, name: string) {
+  await requireRole(PROJECT_ROLES);
+  const last = await db.quoteCategory.findFirst({
+    where: { quoteId },
+    orderBy: { order: "desc" },
+    select: { order: true },
+  });
+  const category = await db.quoteCategory.create({
+    data: { quoteId, name, order: (last?.order ?? -1) + 1 },
+  });
+  revalidatePath(`/quotes/${quoteId}`);
+  return { success: true as const, category };
+}
+
+export async function updateQuoteCategory(id: string, name: string) {
+  await requireRole(PROJECT_ROLES);
+  const cat = await db.quoteCategory.update({
+    where: { id },
+    data: { name },
+    select: { quoteId: true },
+  });
+  revalidatePath(`/quotes/${cat.quoteId}`);
+  return { success: true as const };
+}
+
+export async function deleteQuoteCategory(id: string) {
+  await requireRole(DELETE_ROLES);
+  // Items become uncategorized (categoryId → null) due to SetNull on the relation
+  const cat = await db.quoteCategory.delete({ where: { id } });
+  revalidatePath(`/quotes/${cat.quoteId}`);
+  return { success: true as const };
+}
+
+// ─── Item CRUD ────────────────────────────────────────────────────────────────
+
+export async function addQuoteItem(quoteId: string, categoryId?: string | null) {
+  await requireRole(PROJECT_ROLES);
+  const last = await db.quoteItem.findFirst({
+    where: { quoteId },
+    orderBy: { order: "desc" },
+    select: { order: true },
+  });
+  const item = await db.quoteItem.create({
+    data: {
+      quoteId,
+      categoryId: categoryId ?? null,
+      name: "",
+      unit: "יח'",
+      order: (last?.order ?? -1) + 1,
+    },
+  });
+  revalidatePath(`/quotes/${quoteId}`);
+  return { success: true as const, item };
+}
+
+export async function deleteQuoteItem(id: string) {
+  await requireRole(DELETE_ROLES);
+  const item = await db.quoteItem.delete({ where: { id } });
+  revalidatePath(`/quotes/${item.quoteId}`);
+  return { success: true as const };
+}
+
+type ItemSaveData = {
+  id: string;
+  categoryId: string | null;
+  catalogItemId: string | null;
+  name: string;
+  unit: string;
+  dim1: number;
+  dim2: number | null;
+  quantity: number;
+  unitPrice: number;
+  costPrice: number;
+  profitPercent: number;
+  linePrice: number;
+  order: number;
+};
+
+export async function saveQuoteItems(
+  quoteId: string,
+  items: ItemSaveData[],
+  contingencyPercent: number,
+) {
+  await requireRole(PROJECT_ROLES);
+  const quote = await db.quote.findUnique({
+    where: { id: quoteId },
+    select: { taxPercent: true },
+  });
+  const taxPercent = quote?.taxPercent ?? 17;
+
+  const subtotal       = Math.round(items.reduce((s, i) => s + i.linePrice, 0) * 100) / 100;
+  const contingencyAmt = Math.round(subtotal * (contingencyPercent / 100) * 100) / 100;
+  const totalBeforeVat = subtotal + contingencyAmt;
+  const taxAmount      = Math.round(totalBeforeVat * (taxPercent / 100) * 100) / 100;
+  const total          = Math.round((totalBeforeVat + taxAmount) * 100) / 100;
+
+  await db.$transaction(async (tx) => {
+    for (const item of items) {
+      await tx.quoteItem.update({
+        where: { id: item.id },
+        data: {
+          categoryId:    item.categoryId,
+          catalogItemId: item.catalogItemId,
+          name:          item.name,
+          unit:          item.unit,
+          dim1:          item.dim1 || null,
+          dim2:          item.dim2,
+          quantity:      item.quantity,
+          unitPrice:     item.unitPrice,
+          costPrice:     item.costPrice,
+          profitPercent: item.profitPercent,
+          linePrice:     item.linePrice,
+          order:         item.order,
+        },
+      });
+    }
+    await tx.quote.update({
+      where: { id: quoteId },
+      data: { subtotal, contingencyPercent, taxAmount, total },
+    });
+  });
+
+  revalidatePath(`/quotes/${quoteId}`);
+  revalidatePath("/quotes");
+  return { success: true as const, subtotal, contingencyPercent, taxAmount, total };
 }

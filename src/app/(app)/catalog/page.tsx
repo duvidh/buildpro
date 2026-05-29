@@ -1,11 +1,15 @@
 export const dynamic = "force-dynamic";
 
 import { ShoppingBag } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { CatalogManager } from "@/components/catalog/catalog-manager";
 import { getCatalogItems } from "@/actions/catalog";
 
 export default async function CatalogPage() {
-  const items = await getCatalogItems();
+  const [items, t] = await Promise.all([
+    getCatalogItems(),
+    getTranslations("catalog"),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -14,10 +18,8 @@ export default async function CatalogPage() {
           <ShoppingBag className="h-5 w-5 text-orange-600" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">קטלוג פריטים</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            ניהול מחירון, יחידות מידה וקטגוריות
-          </p>
+          <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{t("subtitle")}</p>
         </div>
       </div>
 

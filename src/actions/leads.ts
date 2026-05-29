@@ -1,9 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cache } from "react";
 import { db } from "@/lib/db";
 import type { LeadStatusValue } from "@/lib/constants/lead-enums";
 import { createLeadSchema, type CreateLeadInput } from "@/lib/schemas/lead-schema";
+import { requireRole, CLIENT_ROLES, DELETE_ROLES } from "@/lib/auth-utils";
+
+export const getLeadById = cache(async (id: string) => {
+  return db.lead.findUnique({
+    where: { id },
+    include: {
+      assignedEmployee: { select: { id: true, name: true } },
+    },
+  });
+});
 
 export async function getLeads() {
   return db.lead.findMany({
@@ -16,6 +27,9 @@ export async function getLeads() {
 }
 
 export async function createLead(raw: CreateLeadInput) {
+  try { await requireRole(CLIENT_ROLES); }
+  catch { return { success: false as const, error: "אין הרשאה לבצע פעולה זו" }; }
+
   const parsed = createLeadSchema.safeParse(raw);
   if (!parsed.success) {
     return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאת ולידציה" };
@@ -41,6 +55,9 @@ export async function createLead(raw: CreateLeadInput) {
 }
 
 export async function updateLead(id: string, raw: CreateLeadInput) {
+  try { await requireRole(CLIENT_ROLES); }
+  catch { return { success: false as const, error: "אין הרשאה לבצע פעולה זו" }; }
+
   const parsed = createLeadSchema.safeParse(raw);
   if (!parsed.success) {
     return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאת ולידציה" };
@@ -64,6 +81,9 @@ export async function updateLead(id: string, raw: CreateLeadInput) {
 }
 
 export async function deleteLead(id: string) {
+  try { await requireRole(DELETE_ROLES); }
+  catch { return { success: false as const, error: "אין הרשאה לבצע פעולה זו" }; }
+
   try {
     await db.lead.delete({ where: { id } });
     revalidatePath("/leads");
@@ -75,6 +95,7 @@ export async function deleteLead(id: string) {
 
 export async function updateLeadStatus(id: string, status: LeadStatusValue) {
   try {
+    await requireRole(CLIENT_ROLES);
     await db.lead.update({ where: { id }, data: { status } });
     revalidatePath("/leads");
     return { success: true as const };
@@ -92,6 +113,7 @@ export async function getLeadsForSelect() {
 }
 
 export async function convertLeadToClient(leadId: string) {
+  await requireRole(CLIENT_ROLES);
   const lead = await db.lead.findUnique({ where: { id: leadId } });
 
   if (!lead) {

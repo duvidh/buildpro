@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useRef, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import {
-  Bell,
   Menu,
   Search,
   Settings,
@@ -12,10 +12,13 @@ import {
   User,
   ChevronDown,
 } from "lucide-react";
+import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
+import type { UserRole } from "@/lib/auth-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
 import {
   Avatar,
   AvatarFallback,
@@ -31,32 +34,20 @@ import {
 import { AppSidebar } from "./app-sidebar";
 import { logout } from "@/actions/auth";
 
-type SessionUser = { name: string; email: string; initials: string };
+type SessionUser = { name: string; email: string; initials: string; role: UserRole };
 
-const pageTitles: Record<string, string> = {
-  "/dashboard":    "לוח בקרה",
-  "/leads":        "לידים ומכירות",
-  "/clients":      "לקוחות",
-  "/projects":     "פרויקטים",
-  "/quotes":       "הצעות מחיר",
-  "/field":        "דיווחים מהשטח",
-  "/hr":           "כוח אדם",
-  "/equipment":    "ציוד",
-  "/daily-logs":   "יומן עבודה",
-  "/tasks":        "משימות",
-  "/subcontractors": "ספקים וקבלנים",
-  "/catalog":      "קטלוג",
-  "/finance":      "כספים",
-  "/settings":     "הגדרות",
-  "/profile":      "פרופיל אישי",
-};
-
-function getPageTitle(pathname: string): string {
-  if (pageTitles[pathname]) return pageTitles[pathname];
-  const match = Object.keys(pageTitles).find((k) =>
-    pathname.startsWith(k + "/")
-  );
-  return match ? pageTitles[match] : "BuildPro";
+// Page title resolution — driven by the header.pages translation namespace
+function usePageTitle(pathname: string): string {
+  const t = useTranslations("header.pages");
+  // Exact match
+  const segments = pathname.split("/").filter(Boolean);
+  const root = segments[0] ?? "dashboard";
+  try {
+    // Try to get translation (throws/returns undefined if key missing)
+    return t(root as Parameters<typeof t>[0]);
+  } catch {
+    return "BuildPro";
+  }
 }
 
 export function AppHeader({
@@ -66,11 +57,16 @@ export function AppHeader({
   notificationCount?: number;
   user: SessionUser;
 }) {
-  const pathname = usePathname();
-  const title = getPageTitle(pathname);
+  const pathname          = usePathname();
+  const title             = usePageTitle(pathname);
+  const tCommon           = useTranslations("common");
   const [searchValue, setSearchValue] = useState("");
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tHeader           = useTranslations("header");
+  const debounceRef       = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [, startTransition] = useTransition();
+
+  // Request browser push-notification permission once on mount
+  usePushNotifications();
 
   const handleSearch = useCallback((value: string) => {
     setSearchValue(value);
@@ -87,7 +83,7 @@ export function AppHeader({
   }
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-card px-4 sm:px-6">
+    <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-background/80 glass-header sticky top-0 z-30 px-4 sm:px-6">
       {/* Mobile sidebar trigger */}
       <Sheet>
         <SheetTrigger asChild>
@@ -111,22 +107,18 @@ export function AppHeader({
         <Input
           value={searchValue}
           onChange={(e) => handleSearch(e.target.value)}
-          placeholder="חיפוש גלובלי..."
+          placeholder={tHeader("searchPlaceholder")}
           className="pe-9 text-sm bg-muted/50 border-transparent focus:border-border focus:bg-background"
         />
       </div>
 
       <div className="flex-1" />
 
+      {/* Language switcher */}
+      <LanguageSwitcher />
+
       {/* Notification bell */}
-      <Button variant="ghost" size="icon" className="relative shrink-0" aria-label={`${notificationCount} התראות`}>
-        <Bell className="h-5 w-5" />
-        {notificationCount > 0 && (
-          <Badge className="absolute -top-0.5 -start-0.5 h-4 min-w-4 px-1 flex items-center justify-center text-[10px] leading-none rounded-full">
-            {notificationCount > 99 ? "99+" : notificationCount}
-          </Badge>
-        )}
-      </Button>
+      <NotificationDropdown initialCount={notificationCount} />
 
       {/* User dropdown */}
       <DropdownMenu>
@@ -155,13 +147,13 @@ export function AppHeader({
           <DropdownMenuItem asChild>
             <Link href="/profile" className="flex items-center gap-2 cursor-pointer w-full">
               <User className="h-4 w-4" />
-              פרופיל אישי
+              {tCommon("profile")}
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href="/settings" className="flex items-center gap-2 cursor-pointer w-full">
               <Settings className="h-4 w-4" />
-              הגדרות מערכת
+              {tCommon("systemSettings")}
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
@@ -170,7 +162,7 @@ export function AppHeader({
             onClick={handleLogout}
           >
             <LogOut className="h-4 w-4 me-2" />
-            התנתקות
+            {tCommon("logout")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

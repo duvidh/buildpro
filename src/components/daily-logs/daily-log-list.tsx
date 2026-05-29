@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import { Plus, FolderKanban, Cloud, Users, AlertTriangle, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,8 +46,9 @@ const EMPTY_FORM = {
   notes: "",
 };
 
-function fmt(date: Date) {
-  return new Intl.DateTimeFormat("he-IL", {
+function fmt(date: Date, locale: string): string {
+  const dateLocale = locale === "he" ? "he-IL" : "en-US";
+  return new Intl.DateTimeFormat(dateLocale, {
     weekday: "short",
     day: "2-digit",
     month: "2-digit",
@@ -61,12 +63,24 @@ export function DailyLogList({
   initial: DailyLog[];
   projects: Project[];
 }) {
-  const [logs, setLogs] = useState(initial);
+  const t      = useTranslations("dailyLogs");
+  const tField = useTranslations("field");
+  const tCommon = useTranslations("common");
+  const locale  = useLocale();
+
+  const [logs] = useState(initial);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+
+  // Translate a stored weather key (SUNNY, CLOUDY, etc.) to the locale label
+  const weatherLabel = (w: string | null) => {
+    if (!w) return "";
+    try { return tField(`weather.${w}` as Parameters<typeof tField>[0]); }
+    catch { return w; }
+  };
 
   const filtered = logs.filter((log) => {
     if (!search) return true;
@@ -78,20 +92,19 @@ export function DailyLogList({
     );
   });
 
-  // Group by project name for display
   const projectNames = [...new Set(logs.map((l) => l.project.name))];
 
   function handleAdd() {
-    if (!form.projectId) { setError("יש לבחור פרויקט."); return; }
-    if (!form.date) { setError("יש להזין תאריך."); return; }
+    if (!form.projectId) { setError(t("form.projectRequired")); return; }
+    if (!form.date)       { setError(t("form.dateRequired"));    return; }
     startTransition(async () => {
       const res = await createDailyLog({
-        projectId: form.projectId,
-        date: form.date,
+        projectId:         form.projectId,
+        date:              form.date,
         weatherConditions: form.weatherConditions || undefined,
-        visitors: form.visitors || undefined,
-        safetyIncidents: form.safetyIncidents || undefined,
-        notes: form.notes || undefined,
+        visitors:          form.visitors          || undefined,
+        safetyIncidents:   form.safetyIncidents   || undefined,
+        notes:             form.notes             || undefined,
       });
       if (!res.success) { setError(res.error); return; }
       setOpen(false);
@@ -106,20 +119,21 @@ export function DailyLogList({
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {[
-          { label: "סה״כ יומנים",  value: logs.length,         color: "text-foreground" },
-          { label: "פרויקטים פעילים", value: projectNames.length, color: "text-blue-600" },
-          { label: "השבוע",
+          { labelKey: "stats.total",          value: logs.length,         color: "text-foreground" },
+          { labelKey: "stats.activeProjects",  value: projectNames.length, color: "text-blue-600"  },
+          {
+            labelKey: "stats.thisWeek",
             value: logs.filter((l) => {
-              const d = new Date(l.date);
-              const now = new Date();
+              const d    = new Date(l.date);
+              const now  = new Date();
               const weekAgo = new Date(now.getTime() - 7 * 86400000);
               return d >= weekAgo;
             }).length,
             color: "text-emerald-600",
           },
         ].map((s) => (
-          <div key={s.label} className="rounded-lg border border-border bg-muted/30 p-3">
-            <p className="text-xs text-muted-foreground">{s.label}</p>
+          <div key={s.labelKey} className="rounded-lg border border-border bg-muted/30 p-3">
+            <p className="text-xs text-muted-foreground">{t(s.labelKey as Parameters<typeof t>[0])}</p>
             <p className={`text-xl font-bold mt-0.5 ${s.color}`}>{s.value}</p>
           </div>
         ))}
@@ -128,7 +142,7 @@ export function DailyLogList({
       {/* Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <Input
-          placeholder="חיפוש לפי פרויקט, הערות..."
+          placeholder={t("search")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="sm:max-w-xs"
@@ -138,20 +152,20 @@ export function DailyLogList({
             <SheetTrigger asChild>
               <Button size="sm">
                 <Plus className="h-4 w-4 me-1" />
-                יומן חדש
+                {t("newLog")}
               </Button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto" dir="rtl">
+            <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto" dir={locale === "he" ? "rtl" : "ltr"}>
               <SheetHeader className="mb-4">
-                <SheetTitle>יומן עבודה חדש</SheetTitle>
+                <SheetTitle>{t("sheetTitle")}</SheetTitle>
               </SheetHeader>
               <div className="space-y-4 max-w-lg mx-auto">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label>פרויקט *</Label>
+                    <Label>{t("form.project")} *</Label>
                     <Select value={form.projectId} onValueChange={(v) => setForm({ ...form, projectId: v })}>
                       <SelectTrigger>
-                        <SelectValue placeholder="בחר פרויקט..." />
+                        <SelectValue placeholder={t("form.selectProject")} />
                       </SelectTrigger>
                       <SelectContent>
                         {projects.map((p) => (
@@ -161,7 +175,7 @@ export function DailyLogList({
                     </Select>
                   </div>
                   <div className="space-y-1">
-                    <Label>תאריך *</Label>
+                    <Label>{t("form.date")} *</Label>
                     <Input
                       type="date"
                       value={form.date}
@@ -170,44 +184,44 @@ export function DailyLogList({
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label>תנאי מזג אוויר</Label>
+                  <Label>{t("form.weather")}</Label>
                   <Input
                     value={form.weatherConditions}
                     onChange={(e) => setForm({ ...form, weatherConditions: e.target.value })}
-                    placeholder="בהיר, +28°"
+                    placeholder={t("form.weatherPlaceholder")}
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>מבקרים / פיקוח</Label>
+                  <Label>{t("form.visitors")}</Label>
                   <Input
                     value={form.visitors}
                     onChange={(e) => setForm({ ...form, visitors: e.target.value })}
-                    placeholder="מהנדס עיריה, מפקח בטיחות..."
+                    placeholder={t("form.visitorsPlaceholder")}
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>אירועי בטיחות</Label>
+                  <Label>{t("form.safetyIncidents")}</Label>
                   <Input
                     value={form.safetyIncidents}
                     onChange={(e) => setForm({ ...form, safetyIncidents: e.target.value })}
-                    placeholder="ללא אירועים / תיאור אירוע..."
+                    placeholder={t("form.safetyPlaceholder")}
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>הערות כלליות</Label>
+                  <Label>{t("form.notes")}</Label>
                   <Textarea
                     value={form.notes}
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                    placeholder="פירוט העבודות שבוצעו היום..."
+                    placeholder={t("form.notesPlaceholder")}
                     rows={3}
                   />
                 </div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
                 <div className="flex justify-end gap-2 pb-4">
                   <Button variant="outline" onClick={() => { setOpen(false); setForm(EMPTY_FORM); setError(null); }}>
-                    ביטול
+                    {tCommon("cancel")}
                   </Button>
-                  <Button onClick={handleAdd}>שמור יומן</Button>
+                  <Button onClick={handleAdd}>{t("save")}</Button>
                 </div>
               </div>
             </SheetContent>
@@ -218,8 +232,8 @@ export function DailyLogList({
       {/* Log cards */}
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-border bg-muted/20">
-          <p className="text-muted-foreground text-sm">אין יומנים עבודה עדיין.</p>
-          <p className="text-xs text-muted-foreground mt-1">לחץ על ״יומן חדש״ כדי להוסיף דיווח יומי.</p>
+          <p className="text-muted-foreground text-sm">{t("empty")}</p>
+          <p className="text-xs text-muted-foreground mt-1">{t("emptyHint")}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -230,7 +244,7 @@ export function DailyLogList({
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-semibold text-sm">{fmt(log.date)}</p>
+                  <p className="font-semibold text-sm">{fmt(log.date, locale)}</p>
                   <Link
                     href={`/projects/${log.project.id}`}
                     className="flex items-center gap-1 text-xs text-primary hover:underline mt-0.5"
@@ -248,7 +262,7 @@ export function DailyLogList({
                 {log.weatherConditions && (
                   <div className="flex items-start gap-2 text-xs text-muted-foreground">
                     <Cloud className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                    <span>{log.weatherConditions}</span>
+                    <span>{weatherLabel(log.weatherConditions)}</span>
                   </div>
                 )}
                 {log.visitors && (

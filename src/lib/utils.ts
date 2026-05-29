@@ -7,6 +7,8 @@ export function cn(...inputs: ClassValue[]) {
 
 // ─── Formatting utilities shared across the app ──────────────────────────────
 
+export { formatCurrency, formatCurrencyCompact } from "@/lib/formatters";
+
 /** שמות חודשים בעברית קצרים */
 export const HE_MONTHS = [
   "ינו׳","פבר׳","מרץ","אפר׳","מאי","יונ׳",
@@ -14,8 +16,9 @@ export const HE_MONTHS = [
 ] as const;
 
 /**
- * פורמט סכום בשקלים — מציג M/K לסכומים גדולים
- * דוגמה: 1500000 → ₪1.5M, 3000 → ₪3K, 250 → ₪250
+ * @deprecated Use `useCurrency().fmtCompact()` in client components
+ * or `formatCurrencyCompact(amount, code, locale)` in server components.
+ * Kept for gradual migration — always formats as ILS / he-IL.
  */
 export function fmtShekel(v: number): string {
   if (Math.abs(v) >= 1_000_000) return `₪${(v / 1_000_000).toFixed(1)}M`;

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
+import { requireRole, ADMIN_ROLES, DELETE_ROLES, PROJECT_ROLES } from "@/lib/auth-utils";
 
 export async function getEmployees() {
   return db.employee.findMany({
@@ -21,6 +22,7 @@ export async function createEmployee(data: {
   startDate?: string;
 }) {
   try {
+    await requireRole(PROJECT_ROLES);
     await db.employee.create({
       data: {
         name: data.name,
@@ -45,6 +47,7 @@ export async function updateEmployee(
   data: { name: string; trade?: string; phone?: string; idNumber?: string; hourlyRate?: number }
 ) {
   try {
+    await requireRole(PROJECT_ROLES);
     await db.employee.update({
       where: { id },
       data: {
@@ -66,6 +69,7 @@ export async function updateEmployee(
 
 export async function deleteEmployee(id: string) {
   try {
+    await requireRole(DELETE_ROLES);
     await db.employee.delete({ where: { id } });
     revalidatePath("/hr");
     return { success: true as const };
@@ -75,6 +79,7 @@ export async function deleteEmployee(id: string) {
 }
 
 export async function toggleEmployeeActive(id: string, active: boolean) {
+  await requireRole(ADMIN_ROLES);
   await db.employee.update({ where: { id }, data: { active } });
   revalidatePath("/hr");
   return { success: true as const };

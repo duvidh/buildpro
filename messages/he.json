@@ -1,0 +1,1382 @@
+{
+  "nav": {
+    "groups": {
+      "management": "ניהול",
+      "field": "שטח ומשאבים",
+      "finance": "רכש וכספים"
+    },
+    "dashboard": "לוח בקרה",
+    "leads": "לידים ומכירות",
+    "clients": "לקוחות",
+    "projects": "פרויקטים",
+    "quotes": "הצעות מחיר",
+    "fieldReports": "דיווחים מהשטח",
+    "hr": "כוח אדם",
+    "equipment": "ציוד",
+    "dailyLogs": "יומן עבודה",
+    "tasks": "משימות",
+    "subcontractors": "ספקים וקבלנים",
+    "catalog": "קטלוג",
+    "finance": "כספים",
+    "settings": "הגדרות"
+  },
+  "common": {
+    "newClient": "לקוח חדש",
+    "newProject": "פרויקט חדש",
+    "newLead": "ליד חדש",
+    "newTask": "משימה חדשה",
+    "save": "שמור",
+    "cancel": "ביטול",
+    "delete": "מחק",
+    "edit": "ערוך",
+    "back": "חזור",
+    "actions": "פעולות",
+    "confirm": "אישור",
+    "logout": "התנתקות",
+    "profile": "פרופיל אישי",
+    "systemSettings": "הגדרות מערכת"
+  },
+  "header": {
+    "searchPlaceholder": "חיפוש גלובלי...",
+    "pages": {
+      "dashboard": "לוח בקרה",
+      "leads": "לידים ומכירות",
+      "clients": "לקוחות",
+      "projects": "פרויקטים",
+      "quotes": "הצעות מחיר",
+      "field": "דיווחים מהשטח",
+      "daily-logs": "יומן עבודה",
+      "catalog": "קטלוג",
+      "finance": "כספים",
+      "equipment": "ציוד",
+      "hr": "כוח אדם",
+      "tasks": "משימות",
+      "subcontractors": "ספקים וקבלנים",
+      "settings": "הגדרות",
+      "profile": "פרופיל אישי"
+    }
+  },
+  "dashboard": {
+    "kpi": {
+      "activeLeads": "לידים פעילים",
+      "newLeads": "{count, plural, =0 {אין חדשים} one {1 חדש} other {# חדשים}}",
+      "activeProjects": "פרויקטים פעילים",
+      "atRisk": "{count, plural, =0 {הכל תקין} other {# מושהים}}",
+      "openTasks": "משימות פתוחות",
+      "overdue": "{count, plural, =0 {ללא פיגורים} other {# בפיגור}}",
+      "monthlyRevenue": "הכנסה החודש",
+      "revenueFirst": "נתון ראשון",
+      "revenueVsPrev": "{change}% מחודש קודם"
+    },
+    "quickActions": {
+      "newLead": "ליד חדש",
+      "newProject": "פרויקט חדש",
+      "newTask": "משימה חדשה",
+      "newClient": "לקוח חדש",
+      "invoice": "חשבונית",
+      "finance": "פיננסים",
+      "calendar": "לוח שנה",
+      "fieldReport": "דוח שטח",
+      "suppliers": "ספקים",
+      "comingSoon": "עוד בקרוב"
+    }
+  },
+  "leads": {
+    "page": {
+      "title": "ניהול לידים",
+      "subtitle": "ניהול מחזור המכירות ולקוחות פוטנציאליים"
+    },
+    "newLead": "ליד חדש",
+    "close": "סגור",
+    "form": {
+      "addNew": "הוספת ליד חדש",
+      "saveLead": "שמור ליד",
+      "fields": {
+        "name": "שם מלא",
+        "phone": "טלפון ראשי",
+        "phone2": "טלפון נוסף",
+        "email": "אימייל",
+        "address": "כתובת הנכס",
+        "city": "עיר",
+        "source": "מקור ליד",
+        "assignedRep": "נציג מטפל",
+        "constructionType": "סוג בנייה",
+        "budget": "תקציב משוער (₪)",
+        "size": "גודל משוער",
+        "notes": "הערות"
+      },
+      "placeholders": {
+        "name": "ישראל ישראלי",
+        "phone": "050-1234567",
+        "phone2": "03-1234567",
+        "email": "israel@example.com",
+        "address": "רחוב הרצל 1",
+        "selectCity": "בחר עיר...",
+        "searchCity": "חפש עיר...",
+        "selectRep": "בחר נציג...",
+        "searchEmp": "חיפוש עובד...",
+        "noEmployees": "לא נמצאו עובדים",
+        "selectTypes": "בחר סוגי בנייה...",
+        "addType": "הוסף סוג בנייה...",
+        "budget": "500,000",
+        "notes": "פרטים נוספים על הליד..."
+      },
+      "addCity": "הוסף",
+      "cityNotFound": "לא נמצאה עיר",
+      "toastSuccess": "ליד נוצר בהצלחה",
+      "toastError": "שגיאה ביצירת הליד"
+    },
+    "table": {
+      "search": "חיפוש לפי שם, טלפון...",
+      "filterByRep": "סנן לפי נציג",
+      "allReps": "כל הנציגים",
+      "clearFilter": "נקה סינון",
+      "emptyTitle": "אין לידים עדיין",
+      "emptyDesc": "הוסף ליד ראשון כדי להתחיל לעקוב אחר מחזור המכירות שלך.",
+      "noMatch": "לא נמצאו לידים התואמים את הסינון",
+      "col": {
+        "name": "שם",
+        "phone": "טלפון",
+        "address": "כתובת נכס",
+        "city": "עיר",
+        "source": "מקור",
+        "status": "סטטוס",
+        "constructionType": "סוג בנייה",
+        "budget": "תקציב",
+        "actions": "פעולות"
+      },
+      "changeStatus": "שינוי סטטוס",
+      "delete": "מחיקה",
+      "open": "פתח",
+      "whatsapp": "שלח הודעת וואטסאפ",
+      "confirmDeleteTitle": "האם אתה בטוח?",
+      "confirmDeleteDesc": "פעולה זו תמחק את הליד לצמיתות ואינה הפיכה.",
+      "deleteLead": "מחק ליד",
+      "toastDeleted": "ליד נמחק",
+      "toastStatusUpdated": "סטטוס עודכן"
+    },
+    "pipeline": {
+      "dragHere": "גרור לכאן",
+      "noBudget": "ללא תקציב",
+      "converted": "{count} הומרו ללקוח",
+      "lost": "{count} אבדו",
+      "errorStatus": "שגיאה בעדכון סטטוס הליד",
+      "timeNow": "כעת",
+      "timeMins": "{n}ד",
+      "timeHours": "{n}ש",
+      "timeDays": "{n}י",
+      "timeMonths": "{n}ח'"
+    },
+    "view": {
+      "list": "רשימה",
+      "pipeline": "פייפליין",
+      "listTitle": "תצוגת רשימה",
+      "pipelineTitle": "תצוגת פייפליין"
+    },
+    "stats": {
+      "total": "סה\"כ",
+      "new": "חדשים",
+      "active": "פעילים",
+      "converted": "הומרו"
+    },
+    "status": {
+      "NEW": "ליד חדש",
+      "CONTACTED": "נוצר קשר",
+      "MEETING_SCHEDULED": "פגישה נקבעה",
+      "QUOTE_SENT": "הצעה נשלחה",
+      "NEGOTIATION": "משא ומתן",
+      "CONVERTED": "הומר ללקוח",
+      "LOST": "ליד אבוד"
+    },
+    "urgency": {
+      "HIGH": "דחוף",
+      "MEDIUM": "בינוני",
+      "LOW": "נמוך"
+    },
+    "source": {
+      "REFERRAL": "המלצה / חבר מביא חבר",
+      "WEBSITE": "אתר אינטרנט",
+      "PHONE": "פנייה טלפונית",
+      "SOCIAL_MEDIA": "רשתות חברתיות",
+      "WALK_IN": "פנייה ישירה",
+      "GOOGLE_ADS": "קמפיין גוגל",
+      "FACEBOOK": "פייסבוק / אינסטגרם",
+      "WORD_OF_MOUTH": "מפה לאוזן",
+      "COLD_CALL": "פנייה יזומה (Cold Call)",
+      "B2B": "לקוח עסקי B2B",
+      "EXHIBITION": "תערוכה / אירוע",
+      "WEBSITE_ORGANIC": "אתר אינטרנט / SEO",
+      "OTHER": "אחר"
+    },
+    "validation": {
+      "nameTooShort": "שם חייב להכיל לפחות 2 תווים",
+      "invalidPhone": "מספר טלפון לא תקין",
+      "invalidEmail": "כתובת אימייל לא תקינה"
+    },
+    "widget": {
+      "activeInPipeline": "לידים פעילים בפייפליין",
+      "allLeads": "כל הלידים"
+    },
+    "header": {
+      "convertToClient": "המר ללקוח",
+      "viewClient": "צפה בלקוח",
+      "alreadyConverted": "הומר ללקוח",
+      "convertSuccess": "הליד הומר ללקוח בהצלחה",
+      "convertError": "שגיאה בהמרה",
+      "deleteError": "שגיאה במחיקה",
+      "confirmDeleteDesc": "האם למחוק את הליד של {name}? פעולה זו אינה הפיכה."
+    }
+  },
+  "clients": {
+    "page": {
+      "title": "ניהול לקוחות",
+      "subtitle": "כרטיס לקוח 360 — פרויקטים, הצעות מחיר וחשבוניות",
+      "newClient": "לקוח חדש"
+    },
+    "new": {
+      "title": "לקוח חדש",
+      "subtitle": "הוספת לקוח למערכת עם כל פרטי הקשר",
+      "sectionIdentity": "פרטי הזדהות",
+      "sectionContact": "פרטי קשר",
+      "sectionAddrNotes": "כתובת והערות",
+      "creating": "שומר...",
+      "create": "צור לקוח",
+      "toastSuccess": "לקוח נוצר בהצלחה",
+      "toastError": "שגיאה ביצירת הלקוח"
+    },
+    "form": {
+      "fields": {
+        "name": "שם לקוח",
+        "contactName": "שם איש קשר",
+        "companyNumber": "ח.פ / ת.ז",
+        "phone": "טלפון ראשי",
+        "phone2": "טלפון נוסף",
+        "phone2Short": "טלפון 2",
+        "email": "דוא\"ל",
+        "address": "כתובת",
+        "notes": "הערות"
+      },
+      "placeholders": {
+        "name": "חברה בע\"מ / שם פרטי ומשפחה",
+        "contactName": "ישראל ישראלי",
+        "companyNumber": "515XXXXXXX",
+        "phone": "050-1234567",
+        "phone2": "03-1234567",
+        "email": "contact@example.com",
+        "address": "רחוב הרצל 1, תל אביב",
+        "notes": "מידע נוסף על הלקוח, הערות מיוחדות..."
+      }
+    },
+    "table": {
+      "col": {
+        "client": "לקוח",
+        "phone": "טלפון",
+        "email": "דוא\"ל",
+        "projects": "פרויקטים",
+        "contractValue": "ערך חוזים",
+        "openBalance": "חוב פתוח",
+        "added": "נוסף"
+      },
+      "emptyTitle": "אין לקוחות עדיין",
+      "emptyDesc": "לקוחות נוצרים על ידי המרת ליד. עבור ללידים והמר ליד ללקוח.",
+      "goToLeads": "עבור ללידים",
+      "active": "פעיל",
+      "settled": "מסולק",
+      "openEdit": "פתח / ערוך",
+      "delete": "מחיקה",
+      "confirmDeleteTitle": "האם אתה בטוח?",
+      "confirmDeleteDesc": "פעולה זו תמחק את הלקוח לצמיתות ואינה הפיכה. לא ניתן למחוק לקוח שיש לו פרויקטים או חשבוניות.",
+      "deleteClient": "מחק לקוח",
+      "toastDeleted": "לקוח נמחק",
+      "toastDeleteError": "לא ניתן למחוק לקוח זה"
+    },
+    "header": {
+      "editClient": "ערוך לקוח",
+      "deleteClient": "מחק לקוח",
+      "editTitle": "עריכת לקוח",
+      "deleteItemKind": "לקוח",
+      "toastUpdated": "הלקוח עודכן",
+      "toastUpdateError": "שגיאה בעדכון",
+      "toastDeleted": "הלקוח נמחק",
+      "toastDeleteError": "שגיאה במחיקה",
+      "cascade": {
+        "projects": "כל הפרויקטים של הלקוח",
+        "invoices": "כל החשבוניות",
+        "quotes": "כל הצעות המחיר",
+        "files": "כל הקבצים",
+        "tasks": "כל המשימות והתקשורות"
+      }
+    },
+    "tabs": {
+      "overview": "סקירה",
+      "projects": "פרויקטים",
+      "quotes": "הצעות מחיר",
+      "invoices": "חשבוניות",
+      "activity": "יומן פעילות",
+      "tasks": "משימות",
+      "files": "מסמכים"
+    },
+    "overview": {
+      "contractValue": "ערך חוזים",
+      "totalBilled": "סה\"כ חויב",
+      "totalPaid": "סה\"כ שולם",
+      "openBalance": "יתרת חוב",
+      "notes": "הערות"
+    },
+    "validation": {
+      "nameTooShort": "שם חייב להכיל לפחות 2 תווים",
+      "invalidEmail": "כתובת אימייל לא תקינה"
+    }
+  },
+  "projects": {
+    "page": {
+      "title": "ניהול פרויקטים",
+      "subtitle": "מעקב התקדמות, משימות ומודולי פרויקט",
+      "newProject": "פרויקט חדש",
+      "emptyTitle": "אין פרויקטים עדיין",
+      "emptyDesc": "לחץ על ״פרויקט חדש״ כדי ליצור את הפרויקט הראשון שלך.",
+      "progress": "התקדמות",
+      "tasks": "{count} משימות",
+      "milestones": "{count} אבני דרך"
+    },
+    "status": {
+      "PLANNING": "תכנון",
+      "ACTIVE": "פעיל",
+      "ON_HOLD": "מושהה",
+      "COMPLETED": "הושלם",
+      "CANCELLED": "בוטל"
+    },
+    "new": {
+      "title": "פרויקט חדש",
+      "subtitle": "יצירת פרויקט חדש וקישורו ללקוח",
+      "sectionIdentity": "פרטי הפרויקט",
+      "sectionLocation": "מיקום ולוח זמנים",
+      "sectionDesc": "תיאור",
+      "creating": "יוצר פרויקט...",
+      "create": "צור פרויקט",
+      "toastSuccess": "הפרויקט נוצר בהצלחה",
+      "toastError": "שגיאה ביצירת הפרויקט"
+    },
+    "form": {
+      "fields": {
+        "name": "שם הפרויקט",
+        "client": "לקוח",
+        "status": "סטטוס",
+        "contractValue": "ערך חוזה (₪)",
+        "address": "כתובת האתר",
+        "startDate": "תאריך התחלה",
+        "endDate": "תאריך סיום",
+        "description": "תיאור"
+      },
+      "placeholders": {
+        "name": "בניית בית, שיפוץ משרד, תוספת בנייה...",
+        "client": "בחר לקוח...",
+        "clientSearch": "חיפוש לקוח...",
+        "clientEmpty": "לא נמצאו לקוחות",
+        "address": "רחוב, עיר",
+        "description": "תיאור קצר של הפרויקט, מטרות, היקף עבודה..."
+      }
+    },
+    "header": {
+      "breadcrumb": "פרויקטים",
+      "deleteProject": "מחק פרויקט",
+      "moreActions": "פעולות נוספות",
+      "toastDeleted": "הפרויקט נמחק בהצלחה",
+      "toastDeleteError": "שגיאה במחיקת הפרויקט",
+      "deleteItemKind": "פרויקט",
+      "cascade": {
+        "tasks": "כל המשימות",
+        "milestones": "כל אבני הדרך",
+        "files": "כל הקבצים",
+        "invoices": "חשבוניות ותשלומים",
+        "contracts": "חוזים וספקים",
+        "labor": "שעות עבודה והוצאות",
+        "qc": "בדיקות איכות ו-NCR",
+        "risks": "סיכונים ובקשות שינוי"
+      }
+    },
+    "edit": {
+      "trigger": "ערוך פרויקט",
+      "title": "עריכת פרויקט — {name}",
+      "saveChanges": "שמור שינויים",
+      "toastSuccess": "הפרויקט עודכן בהצלחה",
+      "toastError": "שגיאה בעדכון הפרויקט"
+    },
+    "tabs": {
+      "overview": "סקירה",
+      "tasks": "משימות",
+      "financials": "פיננסי",
+      "field": "דיווחי שטח",
+      "team": "צוות וציוד",
+      "prefab": "ייצור",
+      "files": "קבצים",
+      "milestones": "אבני דרך",
+      "wbs": "WBS",
+      "qc": "איכות",
+      "risks": "סיכונים",
+      "cr": "שינויים",
+      "procurement": "רכש",
+      "gantt": "גאנט",
+      "settings": "הגדרות"
+    },
+    "overview": {
+      "openTasks": "משימות פתוחות",
+      "doneTasks": "משימות הושלמו",
+      "teamMembers": "חברי צוות",
+      "files": "קבצים",
+      "recentTasks": "משימות אחרונות",
+      "upcomingMilestones": "אבני דרך קרובות",
+      "teamSection": "צוות הפרויקט",
+      "activityLog": "יומן פעילות",
+      "noActivity": "אין פעילות רשומה עדיין לפרויקט זה.",
+      "emptyTitle": "פרויקט חדש — אין נתונים עדיין.",
+      "emptySubtitle": "עבור ללשונית ״משימות״ להוספת משימות."
+    },
+    "taskStatus": {
+      "TODO": "לביצוע",
+      "IN_PROGRESS": "בביצוע",
+      "BLOCKED": "חסום",
+      "DONE": "הושלם"
+    },
+    "memberRole": {
+      "MANAGER": "מנהל",
+      "ENGINEER": "מהנדס",
+      "FOREMAN": "ממונה",
+      "VIEWER": "צופה"
+    },
+    "relativeTime": {
+      "now": "עכשיו",
+      "minutesAgo": "לפני {n} דקות",
+      "hoursAgo": "לפני {n} שעות",
+      "yesterday": "אתמול",
+      "daysAgo": "לפני {n} ימים"
+    },
+    "tasks": {
+      "empty": "אין משימות עדיין.",
+      "count": "{count} משימות",
+      "emptyCell": "ריק",
+      "columns": {
+        "todo": "לביצוע",
+        "inprogress": "בביצוע",
+        "done": "הושלם"
+      },
+      "priority": {
+        "LOW": "נמוך",
+        "MEDIUM": "בינוני",
+        "HIGH": "גבוה",
+        "URGENT": "דחוף"
+      },
+      "nextStatus": {
+        "TODO": "התחל",
+        "BLOCKED": "בטל חסימה",
+        "IN_PROGRESS": "סיים",
+        "DONE": "פתח מחדש"
+      },
+      "newTask": "משימה חדשה",
+      "seedDemo": "הוסף נתוני דמו",
+      "form": {
+        "title": "משימה חדשה",
+        "editTitle": "עריכת משימה",
+        "name": "שם המשימה",
+        "priority": "עדיפות",
+        "dueDate": "תאריך יעד",
+        "dependency": "תלוי ב",
+        "noDependency": "ללא תלות",
+        "descPlaceholder": "פרטים נוספים...",
+        "namePlaceholder": "יציקת קירות, הנחת ריצוף...",
+        "addTask": "הוסף משימה",
+        "saveChanges": "שמור שינויים"
+      },
+      "card": {
+        "edit": "ערוך",
+        "changeStatus": "שנה סטטוס",
+        "delete": "מחק"
+      },
+      "toastDeleted": "משימה נמחקה",
+      "toastUpdated": "משימה עודכנה בהצלחה",
+      "toastUpdateError": "שגיאה בעדכון המשימה"
+    },
+    "team": {
+      "membersTitle": "צוות הפרויקט ({count})",
+      "equipmentTitle": "ציוד משויך ({count})",
+      "noMembers": "לא שויכו חברי צוות לפרויקט זה.",
+      "noEquipment": "אין ציוד משויך לפרויקט זה כרגע.",
+      "col": {
+        "name": "שם",
+        "role": "תפקיד בפרויקט",
+        "equipment": "ציוד",
+        "status": "סטטוס",
+        "assignedFrom": "שויך מתאריך"
+      },
+      "equipmentStatus": {
+        "AVAILABLE": "פנוי",
+        "IN_USE": "בשימוש",
+        "MAINTENANCE": "תחזוקה",
+        "RETIRED": "יצא משימוש"
+      }
+    },
+    "settings": {
+      "description": "הפעל או כבה מודולים עבור פרויקט זה. שינויים מתעדכנים מיד.",
+      "toastError": "שגיאה בשמירת ההגדרות",
+      "modules": {
+        "milestones": {
+          "label": "אבני דרך",
+          "description": "ניהול אבני דרך ולוח זמנים"
+        },
+        "wbs": {
+          "label": "WBS / תקציב",
+          "description": "מבנה פירוק עבודה ותכנון תקציב"
+        },
+        "qc": {
+          "label": "בקרת איכות",
+          "description": "בדיקות QC ודוחות NCR"
+        },
+        "risks": {
+          "label": "ניהול סיכונים",
+          "description": "מעקב סיכונים ומטריצת סיכונים"
+        },
+        "cr": {
+          "label": "בקשות שינוי",
+          "description": "ניהול שינויים בחוזה"
+        },
+        "procurement": {
+          "label": "רכש",
+          "description": "חוזי קבלני משנה וספקים"
+        },
+        "gantt": {
+          "label": "גאנט",
+          "description": "תצוגת לוח זמנים גאנט"
+        }
+      }
+    },
+    "validation": {
+      "nameTooShort": "שם חייב להכיל לפחות 2 תווים",
+      "clientRequired": "בחר לקוח"
+    }
+  },
+  "field": {
+    "title": "דיווחים מהשטח",
+    "subtitle": "טפסי דיווח מהיר לעובדי שטח",
+    "noProjects": "אין פרויקטים פעילים. צור פרויקט תחילה.",
+    "selectProject": "בחר פרויקט",
+    "selectEmployee": "בחר עובד",
+    "saving": "שומר...",
+    "cards": {
+      "time": {
+        "label": "דיווח שעות",
+        "description": "תעד שעות עבודה בפרויקט",
+        "disabledHint": "יש להוסיף עובדים תחילה"
+      },
+      "expense": {
+        "label": "הוצאת שטח",
+        "description": "רשום קנייה, דלק או הוצאה"
+      },
+      "daily": {
+        "label": "יומן יומי",
+        "description": "פתח יומן עבודה לאתר"
+      }
+    },
+    "expenseCategory": {
+      "MATERIALS": "חומרי בניין",
+      "FUEL": "דלק",
+      "TOOLS": "כלים",
+      "MEALS": "אוכל",
+      "TRANSPORT": "תחבורה",
+      "OTHER": "אחר"
+    },
+    "weather": {
+      "SUNNY": "שמשי",
+      "CLOUDY": "מעונן",
+      "RAINY": "גשום",
+      "STORM": "סופה",
+      "FOGGY": "ערפל",
+      "VERY_HOT": "חם מאוד"
+    },
+    "time": {
+      "sheetTitle": "דיווח שעות עבודה",
+      "project": "פרויקט",
+      "employee": "עובד",
+      "date": "תאריך",
+      "hours": "שעות",
+      "hourlyRate": "תעריף שעה (₪)",
+      "hourlyRatePlaceholder": "ממולא מהפרופיל",
+      "description": "תיאור (אופציונלי)",
+      "descriptionPlaceholder": "סוג עבודה, הערות...",
+      "estimatedCost": "עלות משוערת: ₪{amount}",
+      "save": "שמור דיווח שעות",
+      "toastSuccess": "דיווח השעות נשמר בהצלחה!"
+    },
+    "expense": {
+      "sheetTitle": "הוצאת שטח",
+      "project": "פרויקט",
+      "date": "תאריך",
+      "amount": "סכום (₪)",
+      "category": "קטגוריה",
+      "description": "תיאור (אופציונלי)",
+      "descriptionPlaceholder": "פרט את ההוצאה...",
+      "receiptUrl": "קישור לקבלה (אופציונלי)",
+      "receiptPlaceholder": "https://... או מספר קבלה",
+      "save": "שמור הוצאה",
+      "toastSuccess": "ההוצאה נשמרה בהצלחה!"
+    },
+    "daily": {
+      "sheetTitle": "יומן עבודה יומי",
+      "project": "פרויקט",
+      "date": "תאריך",
+      "weather": "תנאי מזג אוויר",
+      "weatherPlaceholder": "בחר מזג אוויר",
+      "visitors": "מבקרים / גורמים חיצוניים",
+      "visitorsPlaceholder": "פקח בטיחות, מהנדס עירייה...",
+      "safetyIncidents": "אירועי בטיחות",
+      "safetyPlaceholder": "לא היו / תיאור האירוע...",
+      "notes": "הערות כלליות",
+      "notesPlaceholder": "תיאור העבודה שבוצעה, בעיות שעלו...",
+      "save": "שמור יומן",
+      "toastSuccess": "יומן העבודה נשמר בהצלחה!",
+      "toastError": "שגיאה בשמירת היומן"
+    }
+  },
+  "hr": {
+    "title": "ניהול עובדים",
+    "subtitle": "כוח אדם, תפקידים ותוקף אישורי בטיחות",
+    "certStatus": {
+      "valid": "בתוקף",
+      "expired": "פג תוקף",
+      "pending": "ממתין"
+    },
+    "stats": {
+      "active": "פעילים",
+      "inactive": "לא פעילים",
+      "certValid": "אישור בתוקף",
+      "certExpired": "אישור פג תוקף"
+    },
+    "search": "חיפוש עובד, מקצוע...",
+    "showInactive": "הצג לא פעילים",
+    "addEmployee": "הוסף עובד",
+    "newEmployee": "עובד חדש",
+    "table": {
+      "employee": "עובד",
+      "trade": "מקצוע",
+      "phone": "טלפון",
+      "hourlyRate": "תעריף שעתי",
+      "cert": "אישור בטיחות",
+      "active": "פעיל",
+      "actions": "פעולות"
+    },
+    "empty": "לא נמצאו עובדים.",
+    "timeEntries": "{count} דיווחי שעות",
+    "hourlyRateDisplay": "₪{rate}/שעה",
+    "form": {
+      "fullName": "שם מלא",
+      "trade": "מקצוע / תפקיד",
+      "phone": "טלפון",
+      "idNumber": "מספר ת.ז",
+      "hourlyRate": "תעריף שעתי (₪)",
+      "startDate": "תאריך תחילת עבודה",
+      "namePlaceholder": "ישראל ישראלי",
+      "tradePlaceholder": "מנהל עבודה",
+      "phonePlaceholder": "050-1234567",
+      "idPlaceholder": "123456789",
+      "nameRequired": "שם העובד הוא שדה חובה."
+    },
+    "edit": {
+      "title": "עריכת עובד — {name}",
+      "save": "שמור שינויים",
+      "toastSuccess": "פרטי העובד עודכנו",
+      "toastError": "שגיאה בעדכון העובד",
+      "updateError": "שגיאה בעדכון"
+    },
+    "delete": {
+      "confirm": "האם אתה בטוח?",
+      "description": "פעולה זו תמחק את העובד לצמיתות ואינה הפיכה.",
+      "action": "מחק עובד",
+      "toastSuccess": "העובד נמחק בהצלחה",
+      "toastError": "לא ניתן למחוק עובד זה",
+      "deleteError": "שגיאה במחיקה"
+    },
+    "actions": {
+      "edit": "עריכה",
+      "delete": "מחיקה"
+    }
+  },
+  "equipment": {
+    "title": "ניהול ציוד",
+    "subtitle": "כלי עבודה, רכבים, ומכונות יקרות",
+    "status": {
+      "AVAILABLE": "פנוי",
+      "IN_USE": "בשימוש",
+      "MAINTENANCE": "תחזוקה",
+      "RETIRED": "יצא משימוש"
+    },
+    "filter": {
+      "ALL": "הכל",
+      "AVAILABLE": "פנוי",
+      "IN_USE": "בשימוש",
+      "MAINTENANCE": "תחזוקה"
+    },
+    "stats": {
+      "total": "סה״כ ציוד",
+      "inUse": "בשימוש",
+      "maintenance": "בתחזוקה",
+      "totalValue": "שווי כולל"
+    },
+    "search": "חיפוש ציוד, קוד...",
+    "addEquipment": "הוסף ציוד",
+    "newEquipment": "ציוד חדש",
+    "table": {
+      "equipment": "ציוד",
+      "status": "סטטוס",
+      "project": "פרויקט נוכחי",
+      "value": "שווי",
+      "actions": "פעולות"
+    },
+    "empty": "לא נמצא ציוד.",
+    "form": {
+      "name": "שם הציוד",
+      "code": "קוד ציוד",
+      "value": "ערך / שווי (₪)",
+      "purchaseDate": "תאריך רכישה",
+      "notes": "הערות",
+      "namePlaceholder": "מחפר CAT 320",
+      "codePlaceholder": "EQ-011",
+      "notesPlaceholder": "מידע נוסף...",
+      "nameRequired": "שם הציוד הוא שדה חובה."
+    },
+    "assign": {
+      "title": "שיוך ציוד לפרויקט",
+      "project": "פרויקט",
+      "selectProject": "בחר פרויקט...",
+      "submit": "שייך",
+      "toastSuccess": "ציוד שויך לפרויקט",
+      "action": "שייך לפרויקט"
+    },
+    "unassign": {
+      "action": "שחרר מפרויקט",
+      "toastSuccess": "ציוד שוחרר מהפרויקט"
+    },
+    "add": {
+      "toastSuccess": "ציוד נוסף בהצלחה"
+    },
+    "delete": {
+      "confirm": "האם אתה בטוח?",
+      "description": "פעולה זו תמחק את הציוד לצמיתות ואינה הפיכה.",
+      "action": "מחק ציוד",
+      "toastSuccess": "הציוד נמחק בהצלחה",
+      "toastError": "לא ניתן למחוק ציוד זה",
+      "deleteError": "שגיאה במחיקה"
+    },
+    "actions": {
+      "delete": "מחיקה"
+    }
+  },
+  "dailyLogs": {
+    "title": "יומן עבודה",
+    "subtitle": "דוחות יומיים מכל הפרויקטים",
+    "stats": {
+      "total": "סה״כ יומנים",
+      "activeProjects": "פרויקטים פעילים",
+      "thisWeek": "השבוע"
+    },
+    "search": "חיפוש לפי פרויקט, הערות...",
+    "newLog": "יומן חדש",
+    "sheetTitle": "יומן עבודה חדש",
+    "empty": "אין יומנים עבודה עדיין.",
+    "emptyHint": "לחץ על ״יומן חדש״ כדי להוסיף דיווח יומי.",
+    "form": {
+      "project": "פרויקט",
+      "date": "תאריך",
+      "weather": "תנאי מזג אוויר",
+      "weatherPlaceholder": "בהיר, +28°",
+      "visitors": "מבקרים / פיקוח",
+      "visitorsPlaceholder": "מהנדס עיריה, מפקח בטיחות...",
+      "safetyIncidents": "אירועי בטיחות",
+      "safetyPlaceholder": "ללא אירועים / תיאור אירוע...",
+      "notes": "הערות כלליות",
+      "notesPlaceholder": "פירוט העבודות שבוצעו היום...",
+      "selectProject": "בחר פרויקט...",
+      "projectRequired": "יש לבחור פרויקט.",
+      "dateRequired": "יש להזין תאריך."
+    },
+    "save": "שמור יומן"
+  },
+  "globalTasks": {
+    "title": "משימות",
+    "subtitle": "מנוע משימות גלובלי — כל המשימות במקום אחד",
+    "stats": {
+      "todo": "לביצוע",
+      "inProgress": "בביצוע",
+      "blocked": "חסומות",
+      "done": "הושלמו"
+    },
+    "newTask": "משימה חדשה",
+    "groups": {
+      "projects": "משימות פרויקטים",
+      "leads": "מכירות ולידים",
+      "clients": "משימות לקוחות",
+      "personal": "משימות אישיות"
+    },
+    "groupEmpty": {
+      "projects": "אין משימות פרויקטים פעילות.",
+      "leads": "אין משימות מכירות פעילות.",
+      "clients": "אין משימות לקוחות פעילות.",
+      "personal": "אין משימות אישיות. לחץ \"משימה חדשה\" ובחר \"אישי\"."
+    },
+    "doneCount": "{count} הושלמו",
+    "doneTasksCount": "{count} משימות שהושלמו",
+    "empty": "אין משימות עדיין. לחץ \"משימה חדשה\" להוסיף.",
+    "actions": {
+      "edit": "ערוך משימה",
+      "delete": "מחק משימה",
+      "actions": "פעולות"
+    },
+    "status": {
+      "TODO": "לביצוע",
+      "IN_PROGRESS": "בביצוע",
+      "BLOCKED": "חסום",
+      "DONE": "הושלם"
+    },
+    "priority": {
+      "LOW": "נמוכה",
+      "MEDIUM": "בינונית",
+      "HIGH": "גבוהה",
+      "URGENT": "דחוף"
+    },
+    "type": {
+      "GENERAL": "משימה",
+      "CALL": "שיחה",
+      "MEETING": "פגישה",
+      "EMAIL": "אימייל"
+    },
+    "context": {
+      "personal": "אישי",
+      "project": "פרויקט",
+      "lead": "ליד",
+      "client": "לקוח"
+    },
+    "form": {
+      "title": "משימה חדשה",
+      "name": "שם המשימה",
+      "namePlaceholder": "הוסף שם למשימה...",
+      "type": "סוג",
+      "context": "שיוך",
+      "selectProject": "בחר פרויקט...",
+      "selectLead": "בחר ליד...",
+      "selectClient": "בחר לקוח...",
+      "noItems": "אין פריטים זמינים",
+      "dueDate": "תאריך ושעת יעד",
+      "priority": "עדיפות",
+      "assignee": "הקצה ל (אופציונלי)",
+      "noAssignee": "לא מוקצה",
+      "description": "תיאור (אופציונלי)",
+      "descPlaceholder": "הוסף תיאור...",
+      "creating": "יוצר...",
+      "create": "צור משימה",
+      "nameRequired": "שם המשימה הוא שדה חובה",
+      "toastSuccess": "משימה נוצרה בהצלחה",
+      "toastError": "שגיאה ביצירת משימה"
+    },
+    "edit": {
+      "title": "עריכת משימה",
+      "name": "שם המשימה",
+      "namePlaceholder": "שם המשימה...",
+      "status": "סטטוס",
+      "priority": "עדיפות",
+      "dueDate": "תאריך ושעת יעד",
+      "description": "תיאור (אופציונלי)",
+      "descPlaceholder": "הוסף תיאור...",
+      "saving": "שומר...",
+      "save": "שמור שינויים",
+      "nameRequired": "שם המשימה הוא שדה חובה",
+      "toastSuccess": "המשימה עודכנה בהצלחה",
+      "toastError": "שגיאה בעדכון המשימה"
+    },
+    "deleteConfirm": {
+      "title": "מחיקת משימה",
+      "description": "פעולה זו אינה ניתנת לביטול. המשימה תימחק לצמיתות מהמערכת.",
+      "action": "מחק",
+      "toastSuccess": "המשימה נמחקה",
+      "toastError": "שגיאה במחיקת המשימה"
+    }
+  },
+  "subcontractors": {
+    "title": "ספקים וקבלני משנה",
+    "subtitle": "ניהול ספקים, קבלני משנה ודירוגיהם",
+    "type": {
+      "SUBCONTRACTOR": "קבלן משנה",
+      "SUPPLIER": "ספק"
+    },
+    "filter": {
+      "ALL": "הכל",
+      "SUBCONTRACTOR": "קבלני משנה",
+      "SUPPLIER": "ספקים"
+    },
+    "searchPlaceholder": "חיפוש לפי שם, איש קשר, טלפון...",
+    "add": "הוסף ספק / קבלן",
+    "count": "מציג {visible} מתוך {total} רשומות",
+    "table": {
+      "name": "שם",
+      "type": "סוג",
+      "contact": "איש קשר",
+      "contactInfo": "פרטי קשר",
+      "rating": "דירוג",
+      "contracts": "חוזים",
+      "actions": "פעולות"
+    },
+    "empty": {
+      "title": "לא נמצאו ספקים או קבלני משנה",
+      "hint": "לחץ על \"הוסף ספק / קבלן\" להתחיל"
+    },
+    "form": {
+      "addTitle": "הוספת ספק / קבלן משנה",
+      "editTitle": "עריכת ספק / קבלן — {name}",
+      "typeFld": "סוג *",
+      "companyName": "שם החברה / עצמאי *",
+      "namePlaceholder": "שם הספק...",
+      "contact": "איש קשר",
+      "contactPlaceholder": "שם מלא",
+      "phone": "טלפון",
+      "email": "דוא״ל",
+      "address": "כתובת",
+      "addressPlaceholder": "רחוב, עיר",
+      "notes": "הערות",
+      "notesPlaceholder": "התמחות, תנאי תשלום...",
+      "addBtn": "הוסף",
+      "saveBtn": "שמור שינויים"
+    },
+    "delete": {
+      "title": "האם אתה בטוח?",
+      "description": "פעולה זו תמחק את הרשומה לצמיתות. לא ניתן למחוק ספק שיש לו חוזים משויכים."
+    },
+    "actions": {
+      "edit": "עריכה",
+      "delete": "מחיקה"
+    },
+    "toast": {
+      "addSuccess": "נוסף בהצלחה",
+      "addError": "שגיאה בהוספה",
+      "updateSuccess": "עודכן בהצלחה",
+      "updateError": "שגיאה בעדכון",
+      "deleteSuccess": "הרשומה נמחקה בהצלחה"
+    }
+  },
+  "catalog": {
+    "title": "קטלוג פריטים",
+    "subtitle": "ניהול מחירון, יחידות מידה וקטגוריות",
+    "itemCount": "{count} פריטים פעילים",
+    "catItemCount": "{count} פריטים",
+    "defaultCategory": "כללי",
+    "toolbar": {
+      "seed": "טען נתוני דמו",
+      "downloadTemplate": "הורד תבנית",
+      "export": "ייצוא CSV",
+      "import": "ייבוא CSV",
+      "newItem": "פריט חדש"
+    },
+    "empty": "הקטלוג ריק — הוסף פריטים ידנית, ייבא CSV, או טען נתוני דמו",
+    "table": {
+      "name": "שם פריט",
+      "sku": "מק״ט",
+      "unit": "יחידה",
+      "unitCost": "מחיר עלות",
+      "description": "תיאור"
+    },
+    "form": {
+      "addTitle": "פריט חדש",
+      "editTitle": "עריכת פריט",
+      "name": "שם פריט *",
+      "namePlaceholder": "ריצוף גרניט 60×60",
+      "sku": "מק״ט",
+      "category": "קטגוריה",
+      "categoryPlaceholder": "ריצוף, עבודה...",
+      "unit": "יחידה *",
+      "unitCost": "מחיר עלות (₪)",
+      "description": "תיאור",
+      "descPlaceholder": "תיאור קצר...",
+      "save": "שמור"
+    },
+    "import": {
+      "title": "ייבוא פריטים מ-CSV",
+      "dropTitle": "גרור קובץ CSV / Excel כאן",
+      "dropHint": "או לחץ לבחירת קובץ",
+      "preview": "תצוגה מקדימה ({count} שורות)",
+      "importBtn": "ייבוא",
+      "toastEmpty": "הקובץ ריק או לא תקין",
+      "toastSuccess": "יובאו {count} פריטים בהצלחה",
+      "toastError": "שגיאה בייבוא"
+    },
+    "csvHeaders": {
+      "name": "שם המוצר",
+      "sku": "מק\"ט",
+      "category": "קטגוריה",
+      "unit": "יחידה",
+      "unitCost": "מחיר עלות"
+    },
+    "toast": {
+      "exportEmpty": "הקטלוג ריק",
+      "exportSuccess": "יוצאו {count} פריטים",
+      "templateSuccess": "קובץ תבנית הורד"
+    }
+  },
+  "finance": {
+    "title": "ניהול פיננסי",
+    "subtitle": "ריכוז הכנסות, עלויות ורווחיות · ספר תנועות כלל-חברתי",
+    "kpi": {
+      "revenue": "הכנסות גבויות",
+      "outstanding": "חייבים (פתוח)",
+      "cost": "עלויות בפועל",
+      "costSub": "עבודה + חומרים + קבלנים",
+      "grossProfit": "רווח גולמי",
+      "projects": "{count} פרויקטים",
+      "margin": "מרווח {pct}%"
+    },
+    "tabs": {
+      "dashboard": "דאשבורד אנליטיקה",
+      "ledger": "ספר תנועות"
+    },
+    "chart": {
+      "title": "הכנסות מול הוצאות — 12 חודשים",
+      "subtitle": "עמודות = הכנסות גבויות · קו = הוצאות בפועל",
+      "overallMargin": "מרווח כולל {pct}%",
+      "empty": "אין נתוני הכנסות/הוצאות עדיין — יוצגו כאשר יוזנו חשבוניות ודיווחי שטח",
+      "legendRevenue": "הכנסות",
+      "legendCost": "הוצאות",
+      "tooltipProfit": "רווח"
+    },
+    "projectPL": {
+      "title": "רווח/הפסד לפי פרויקט",
+      "empty": "אין פרויקטים עדיין",
+      "colProject": "פרויקט",
+      "colContract": "ערך חוזה",
+      "colCost": "עלות בפועל",
+      "colGrossProfit": "רווח גולמי",
+      "colOutstanding": "חייבים",
+      "colMargin": "מרווח"
+    },
+    "projectStatus": {
+      "PLANNING": "תכנון",
+      "ACTIVE": "פעיל",
+      "ON_HOLD": "מושהה",
+      "COMPLETED": "הושלם",
+      "CANCELLED": "בוטל"
+    },
+    "ledger": {
+      "title": "ספר תנועות — כלל החברה",
+      "subtitle": "תקבולים מלקוחות (ירוק) ותשלומים לקבלנים/הוצאות (אדום) — בסינון אחד",
+      "summary": {
+        "inbound": "תקבולים",
+        "outbound": "תשלומים",
+        "net": "נטו"
+      },
+      "filters": {
+        "search": "חיפוש...",
+        "typeAll": "כל התנועות",
+        "typeInbound": "תקבולים בלבד",
+        "typeOutbound": "תשלומים בלבד",
+        "allProjects": "כל הפרויקטים",
+        "fromDate": "מתאריך",
+        "toDate": "עד תאריך"
+      },
+      "table": {
+        "date": "תאריך",
+        "type": "סוג",
+        "description": "תיאור",
+        "project": "פרויקט",
+        "reference": "אסמכתא",
+        "amount": "סכום"
+      },
+      "types": {
+        "INBOUND": "תקבול",
+        "OUTBOUND_SUPPLIER": "קבלן",
+        "OUTBOUND_EXPENSE": "הוצאה"
+      },
+      "empty": "לא נמצאו תנועות תואמות",
+      "entryCount": "{count} תנועות"
+    }
+  },
+  "quotes": {
+    "title": "הצעות מחיר",
+    "subtitle": "{count} הצעות",
+    "newQuote": "הצעת מחיר חדשה",
+    "lead": "ליד",
+    "empty": "אין הצעות מחיר עדיין",
+    "status": {
+      "DRAFT": "טיוטה",
+      "SENT": "נשלחה",
+      "ACCEPTED": "אושרה",
+      "REJECTED": "נדחתה",
+      "EXPIRED": "פגת תוקף"
+    },
+    "table": {
+      "number": "מספר הצעה",
+      "client": "לקוח / ליד",
+      "date": "תאריך",
+      "validUntil": "בתוקף עד",
+      "status": "סטטוס",
+      "items": "פריטים",
+      "total": "סכום כולל"
+    },
+    "actions": {
+      "open": "פתח הצעה",
+      "delete": "מחק"
+    },
+    "dialog": {
+      "title": "הצעת מחיר חדשה",
+      "modeClient": "לקוח",
+      "modeLead": "ליד",
+      "clientLabel": "לקוח *",
+      "leadLabel": "ליד *",
+      "clientPlaceholder": "בחר לקוח...",
+      "leadPlaceholder": "בחר ליד...",
+      "clientSearch": "חיפוש לקוח...",
+      "leadSearch": "חיפוש ליד...",
+      "noClients": "לא נמצאו לקוחות",
+      "noLeads": "לא נמצאו לידים",
+      "errorSelectClient": "בחר לקוח",
+      "errorSelectLead": "בחר ליד",
+      "create": "צור הצעה"
+    },
+    "header": {
+      "client": "לקוח",
+      "date": "תאריך הצעה",
+      "validUntil": "בתוקף עד",
+      "status": "סטטוס",
+      "notes": "הערות",
+      "notesPlaceholder": "הערות להצעה...",
+      "selectClient": "בחר לקוח"
+    },
+    "detail": {
+      "breadcrumb": "הצעות מחיר",
+      "newQuoteLabel": "הצעה חדשה",
+      "noAssignment": "ללא שיוך",
+      "headerSection": "פרטי הצעה",
+      "itemsSection": "פריטי הצעה"
+    },
+    "calc": {
+      "viewInternal": "תצוגת ניהול",
+      "viewClient": "תצוגת לקוח",
+      "colDesc": "תיאור / מקטלוג",
+      "colUnit": "יחידה",
+      "colDim1": "מ'1",
+      "colDim2": "מ'2 (ס\"מ)",
+      "colQty": "כמות",
+      "colUnitPrice": "מחיר מכירה",
+      "colCost": "עלות",
+      "colMarginPct": "מרג'ין%",
+      "colEstProfit": "רווח ₪",
+      "colProfit": "רווח%",
+      "colTotal": "סה\"כ",
+      "colCatalog": "מקטלוג",
+      "itemPlaceholder": "שם פריט",
+      "emptyCategory": "אין פריטים בפרק זה — לחץ «הוסף שורה» למטה",
+      "addRow": "הוסף שורה לפרק",
+      "catSubtotal": "סה\"כ פרק {name}",
+      "noCategory": "ללא פרק",
+      "emptyUncategorized": "אין פריטים — לחץ «הוסף שורה» להתחיל",
+      "addRowUncategorized": "הוסף שורה",
+      "addCategory": "הוסף פרק",
+      "save": "שמור הצעה",
+      "saving": "שומר...",
+      "saved": "נשמר!",
+      "subtotal": "סכום ביניים",
+      "contingency": "בצ\"מ",
+      "contingencyPct": "בצ\"מ %",
+      "contingencyAmount": "סכום בצ\"מ",
+      "totalBeforeVat": "סה\"כ לפני מע\"מ",
+      "internalProfitLabel": "רווח כולל (פנימי)",
+      "internalMarginLabel": "מרג'ין (פנימי)",
+      "tax": "מע\"מ {pct}%",
+      "grandTotal": "סה\"כ לתשלום",
+      "noItemName": "ללא שם",
+      "additionalItems": "פריטים נוספים",
+      "additionalSubtotal": "סה\"כ פריטים נוספים",
+      "subtotalBeforeTax": "סכום ביניים (לפני מע\"מ)",
+      "notesLabel": "הערות",
+      "docDate": "תאריך",
+      "docValidUntil": "בתוקף עד",
+      "chapterPrefix": "פרק",
+      "selectCatalog": "בחר",
+      "renameCategory": "שנה שם פרק",
+      "deleteCategory": "מחק פרק",
+      "newChapterName": "פרק חדש",
+      "toastNewChapter": "פרק חדש נוצר: {name}",
+      "noChapter": "ללא פרק",
+      "forClient": "ללקוח",
+      "docTitle": "הצעת מחיר {number}"
+    }
+  },
+  "hardDelete": {
+    "title": "אזהרה חמורה: מחיקת נתונים לצמיתות",
+    "warning": "פעולה זו תמחק לצמיתות את ה{itemKind} \"{itemName}\" וכל הנתונים המשויכים אליו.",
+    "cantUndo": "לא ניתן לבטל פעולה זו.",
+    "willBeDeleted": "מה יימחק לצמיתות:",
+    "typeToConfirm": "כדי לאשר, הקלד את השם המדויק:",
+    "nameMismatch": "השם אינו תואם — נדרש התאמה מדויקת כולל רווחים ותווים",
+    "cancel": "ביטול",
+    "deleting": "מוחק...",
+    "deleteForever": "מחק לצמיתות"
+  },
+  "language": {
+    "he": "עברית",
+    "en": "English",
+    "switchTo": "עבור ל{lang}"
+  },
+  "settings": {
+    "title": "הגדרות מערכת",
+    "subtitle": "פרטי חברה, העדפות אישיות וניהול משתמשים",
+    "tabs": {
+      "company": "פרטי חברה",
+      "financials": "פיננסים",
+      "documents": "מסמכים",
+      "preferences": "הגדרות אישיות",
+      "users": "משתמשים והרשאות",
+      "appearance": "מראה"
+    },
+    "roles": {
+      "ADMIN": "מנהל מערכת",
+      "OFFICE_MANAGER": "מנהל/ת משרד",
+      "PROJECT_MANAGER": "מנהל פרויקטים",
+      "FIELD_WORKER": "איש שטח"
+    },
+    "save": "שמור",
+    "saved": "ההגדרות נשמרו",
+    "noteLabel": "הערה",
+    "company": {
+      "title": "פרטי החברה",
+      "subtitle": "פרטים אלו יופיעו בהצעות המחיר, חשבוניות ומסמכים.",
+      "fields": {
+        "company_name": "שם החברה",
+        "company_phone": "טלפון",
+        "company_email": "דוא\"ל",
+        "company_address": "כתובת",
+        "company_vat": "מספר ח.פ / ע.מ"
+      },
+      "placeholders": {
+        "company_name": "BuildPro בניה ופיתוח בע\"מ",
+        "company_phone": "03-1234567",
+        "company_email": "office@company.co.il",
+        "company_address": "רחוב הרצל 1, תל אביב",
+        "company_vat": "123456789"
+      },
+      "logo": {
+        "title": "לוגו החברה",
+        "subtitle": "הלוגו יופיע בהצעות המחיר ובמסמכים הרשמיים.",
+        "upload": "העלאת לוגו",
+        "hint": "PNG, JPG עד 2MB",
+        "placeholder": "לוגו"
+      },
+      "systemInfo": {
+        "title": "מידע מערכת",
+        "version": "גרסת מערכת",
+        "db": "מסד נתונים",
+        "currency": "מטבע",
+        "lang": "שפה",
+        "versionValue": "BuildPro v1.0",
+        "dbValue": "SQLite (פיתוח)",
+        "currencyValue": "שקל ישראלי (₪ ILS)",
+        "langValue": "עברית (HE)",
+        "langValueEn": "English (EN)"
+      },
+      "save": "שמור",
+      "saved": "ההגדרות נשמרו"
+    },
+    "preferences": {
+      "title": "העדפות התראות וממשק",
+      "subtitle": "הגדרות אלו חלות על החשבון האישי שלך.",
+      "saved": "ההעדפות נשמרו",
+      "save": "שמור העדפות",
+      "toggles": {
+        "notif_tasks": {
+          "label": "התראות משימות",
+          "description": "קבל התראה כשמשימה מוקצית אליך או משנה סטטוס"
+        },
+        "notif_invoices": {
+          "label": "התראות חשבוניות",
+          "description": "קבל התראה על חשבוניות שמועד הפירעון שלהן מתקרב"
+        },
+        "notif_leads": {
+          "label": "התראות לידים חדשים",
+          "description": "קבל התראה כשנכנס ליד חדש"
+        },
+        "notif_daily": {
+          "label": "תזכורת יומן עבודה",
+          "description": "תזכורת יומית להגשת יומן עבודה (בוקר)"
+        },
+        "notif_safety": {
+          "label": "אירועי בטיחות דחופים",
+          "description": "התראה מיידית על כל דיווח בטיחות"
+        },
+        "compact_view": {
+          "label": "תצוגה קומפקטית",
+          "description": "הצג טבלאות עם שורות צפופות יותר"
+        }
+      }
+    },
+    "users": {
+      "title": "משתמשי המערכת",
+      "subtitle": "הקצאת תפקידים ושליטה בגישה. שינוי תפקיד נכנס לתוקף מיידית.",
+      "colUser": "משתמש",
+      "colEmail": "דוא\"ל",
+      "colRole": "תפקיד",
+      "colActive": "פעיל",
+      "note": "שינוי תפקיד ל\"עובד שטח\" מגביל גישה למידע פיננסי ולסכומי חוזים. ADMIN הוא התפקיד היחיד עם גישה מלאה לדוחות רווח/הפסד."
+    },
+    "financials": {
+      "title": "הגדרות פיננסיות",
+      "subtitle": "ערכים אלו משמשים לחישובי מע\"מ ולהצגת מטבע במסמכים.",
+      "vatLabel": "שיעור מע\"מ (%)",
+      "vatDefault": "(ברירת מחדל: 17%)",
+      "currencyLabel": "מטבע ברירת מחדל",
+      "currencies": {
+        "ILS": "שקל ישראלי (₪ ILS)",
+        "USD": "דולר אמריקאי ($ USD)",
+        "EUR": "אירו (€ EUR)"
+      },
+      "save": "שמור",
+      "saved": "ההגדרות נשמרו",
+      "note": "שינוי שיעור המע\"מ ישפיע על חישובים בהצעות מחיר וחשבוניות חדשות בלבד. מסמכים קיימים לא יושפעו.",
+      "measurementLabel": "שיטת מדידה",
+      "measurementOptions": {
+        "AUTO": "אוטומטי (לפי שפה)",
+        "METRIC": "מטרי (מטרים, מ״ר)",
+        "IMPERIAL": "אימפריאלי (רגל, Sq Ft)"
+      }
+    },
+    "documents": {
+      "title": "תחתית מסמכים",
+      "subtitle": "הטקסט שיופיע בתחתית הצעות המחיר והחשבוניות שלך.",
+      "quoteFooterLabel": "תחתית הצעת מחיר",
+      "quoteFooterHint": "לדוגמה: תנאי תשלום, הערות משפטיות, ערבויות.",
+      "quoteFooterPlaceholder": "תשלום: 30% מקדמה, יתרה עם השלמת העבודה.\nתוקף הצעה: 30 יום.\nהצעה זו אינה מהווה חוזה מחייב עד לחתימת הלקוח.",
+      "invoiceFooterLabel": "תחתית חשבונית",
+      "invoiceFooterHint": "לדוגמה: פרטי בנק לתשלום, מספר חשבון, תנאי פירעון.",
+      "invoiceFooterPlaceholder": "פרטי בנק: בנק לאומי, סניף 900, חשבון 12345678.\nתשלום עד 30 יום מתאריך החשבונית.\nלברורים: office@company.co.il",
+      "charCount": "{count} / 1000 תווים",
+      "save": "שמור",
+      "saved": "ההגדרות נשמרו"
+    },
+    "appearance": {
+      "title": "ערכת צבעים",
+      "subtitle": "בחר את מראה הממשק המועדף. הבחירה נשמרת מקומית בדפדפן.",
+      "activeTheme": "ערכה פעילה:",
+      "animations": {
+        "title": "אנימציות",
+        "subtitle": "שלוט בהשפעות התנועה. כיבוי מומלץ למי שרגיש לתנועה.",
+        "label": "כבה אנימציות רקע",
+        "description": "הסר את אנימציות ה-blob מהרקע הראשי"
+      },
+      "themes": {
+        "light": "בהיר",
+        "dark": "כהה",
+        "teal": "טיל כהה",
+        "slate": "פלדה",
+        "indigo": "אינדיגו",
+        "blue": "כחול אוקיינוס",
+        "green": "ירוק רענן",
+        "purple": "סגול רויאל",
+        "rose": "ורוד",
+        "orange": "כתום שקיעה",
+        "amber": "ענבר"
+      }
+    }
+  }
+}

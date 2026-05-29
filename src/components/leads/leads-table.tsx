@@ -1,9 +1,10 @@
 "use client";
 
+import { useCurrency } from "@/lib/currency-context";
 import { useState, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -12,9 +13,6 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -22,22 +20,17 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Combobox } from "@/components/ui/combobox";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
-  MoreHorizontal, PhoneCall, UserCheck, Loader2, Pencil, Trash2, Users,
-  ArrowUpDown, ArrowUp, ArrowDown, Search, X,
+  MoreHorizontal, PhoneCall, Loader2, Trash2, Users,
+  ArrowUpDown, ArrowUp, ArrowDown, Search, X, ExternalLink,
 } from "lucide-react";
 
 // ─── WhatsApp helpers ─────────────────────────────────────────────────────────
 
 function toWhatsAppNumber(phone: string): string {
   const digits = phone.replace(/\D/g, "");
-  // Israeli mobile: 05X → 9725X
   if (digits.startsWith("0")) return "972" + digits.slice(1);
   return digits;
 }
@@ -49,58 +42,40 @@ function WhatsAppIcon() {
     </svg>
   );
 }
+
 import { toast } from "sonner";
-import { NewLeadDialog } from "@/components/leads/new-lead-dialog";
 import type { LeadStatusValue } from "@/components/leads/lead-status-badge";
-import {
-  updateLeadStatus, convertLeadToClient, updateLead, deleteLead,
-} from "@/actions/leads";
+import { updateLeadStatus, deleteLead } from "@/actions/leads";
 import { LEAD_STATUS_VALUES } from "@/lib/constants/lead-enums";
-import { createLeadSchema, type CreateLeadInput } from "@/lib/schemas/lead-schema";
-import {
-  LeadStatusBadge, LeadUrgencyBadge,
-  LEAD_SOURCE_LABELS,
-} from "./lead-status-badge";
-import {
-  MultiSelectCreatable, CreatableCitySelect, DEFAULT_CONSTRUCTION_TYPES,
-} from "./new-lead-dialog";
+import { LeadStatusBadge } from "./lead-status-badge";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type EmployeeOption = { id: string; name: string };
 
 type Lead = {
-  id: string;
-  name: string;
-  phone: string;
-  phone2: string | null;
-  email: string | null;
-  propertyAddress: string | null;
-  city: string | null;
-  estimatedSize: number | null;
-  constructionTypes: string[];
-  source: string;
-  status: LeadStatusValue;
-  urgency: string;
-  budget: number | null;
-  notes: string | null;
-  convertedToId: string | null;
+  id:                 string;
+  name:               string;
+  phone:              string;
+  phone2:             string | null;
+  email:              string | null;
+  propertyAddress:    string | null;
+  city:               string | null;
+  estimatedSize:      number | null;
+  constructionTypes:  string[];
+  source:             string;
+  status:             LeadStatusValue;
+  urgency:            string;
+  budget:             number | null;
+  notes:              string | null;
+  convertedToId:      string | null;
   assignedEmployeeId: string | null;
-  assignedEmployee: { id: string; name: string } | null;
-  createdAt: string;
+  assignedEmployee:   { id: string; name: string } | null;
+  createdAt:          string;
 };
 
-type SortKey = "name" | "status" | "urgency" | "budget" | "createdAt";
+type SortKey = "name" | "status" | "budget";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatDate(iso: string) {
-  return new Intl.DateTimeFormat("he-IL", {
-    day: "2-digit", month: "2-digit", year: "numeric",
-  }).format(new Date(iso));
-}
-
-const URGENCY_ORDER: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
 const STATUS_ORDER: Record<string, number> = {
   NEW: 0, CONTACTED: 1, MEETING_SCHEDULED: 2,
   QUOTE_SENT: 3, NEGOTIATION: 4, CONVERTED: 5, LOST: 6,
@@ -112,12 +87,8 @@ function compareLeads(a: Lead, b: Lead, key: SortKey, dir: "asc" | "desc"): numb
     diff = a.name.localeCompare(b.name, "he");
   } else if (key === "status") {
     diff = (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
-  } else if (key === "urgency") {
-    diff = (URGENCY_ORDER[a.urgency] ?? 99) - (URGENCY_ORDER[b.urgency] ?? 99);
   } else if (key === "budget") {
     diff = (a.budget ?? -1) - (b.budget ?? -1);
-  } else if (key === "createdAt") {
-    diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   }
   return dir === "asc" ? diff : -diff;
 }
@@ -125,15 +96,18 @@ function compareLeads(a: Lead, b: Lead, key: SortKey, dir: "asc" | "desc"): numb
 // ─── Status dropdown ──────────────────────────────────────────────────────────
 
 function StatusDropdown({ lead }: { lead: Lead }) {
+  const t      = useTranslations("leads.table");
   const router = useRouter();
   const [, startTransition] = useTransition();
+
   function changeStatus(status: LeadStatusValue) {
     startTransition(async () => {
       await updateLeadStatus(lead.id, status);
-      toast.success("סטטוס עודכן");
+      toast.success(t("toastStatusUpdated"));
       router.refresh();
     });
   }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -142,7 +116,9 @@ function StatusDropdown({ lead }: { lead: Lead }) {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
-        <DropdownMenuLabel className="text-xs text-muted-foreground">שינוי סטטוס</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-xs text-muted-foreground">
+          {t("changeStatus")}
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {LEAD_STATUS_VALUES.map((s) => (
           <DropdownMenuItem
@@ -158,252 +134,35 @@ function StatusDropdown({ lead }: { lead: Lead }) {
   );
 }
 
-// ─── Convert button ───────────────────────────────────────────────────────────
+// ─── Sort icon (module-level to avoid React reconciler issues) ────────────────
 
-function ConvertButton({ lead }: { lead: Lead }) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
-  if (lead.status === "CONVERTED" || lead.convertedToId) {
-    return (
-      <span className="text-xs text-emerald-600 flex items-center gap-1">
-        <UserCheck className="h-3.5 w-3.5" /> לקוח
-      </span>
-    );
-  }
-
-  function handleConvert() {
-    startTransition(async () => {
-      const res = await convertLeadToClient(lead.id);
-      if (res.success) {
-        toast.success("הליד הומר ללקוח בהצלחה");
-        router.push(`/clients/${res.clientId}`);
-      } else {
-        toast.error("שגיאה בהמרת הליד");
-      }
-    });
-  }
-
-  return (
-    <Button
-      variant="outline" size="sm"
-      className="h-7 text-xs gap-1.5 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-      onClick={handleConvert} disabled={isPending}
-    >
-      {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserCheck className="h-3 w-3" />}
-      המר
-    </Button>
-  );
-}
-
-// ─── Edit dialog ──────────────────────────────────────────────────────────────
-
-function EditLeadDialog({
-  lead, open, onOpenChange, employees,
+function SortIcon({
+  field, sortKey, sortDir,
 }: {
-  lead: Lead;
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  employees: EmployeeOption[];
+  field:   SortKey;
+  sortKey: SortKey | null;
+  sortDir: "asc" | "desc";
 }) {
-  const router = useRouter();
-  const employeeOptions = employees.map((e) => ({ value: e.id, label: e.name }));
-  const [constructionTypes, setConstructionTypes] = useState<string[]>(lead.constructionTypes ?? []);
-  const [city, setCity] = useState(lead.city ?? "");
-
-  const {
-    register, handleSubmit, setValue, watch,
-    formState: { errors, isSubmitting },
-  } = useForm<CreateLeadInput>({
-    resolver: zodResolver(createLeadSchema),
-    defaultValues: {
-      name: lead.name,
-      phone: lead.phone,
-      phone2: lead.phone2 ?? "",
-      email: lead.email ?? "",
-      propertyAddress: lead.propertyAddress ?? "",
-      city: lead.city ?? "",
-      estimatedSize: lead.estimatedSize !== null ? String(lead.estimatedSize) : "",
-      constructionTypes: lead.constructionTypes ?? [],
-      source: lead.source as CreateLeadInput["source"],
-      budget: lead.budget !== null ? String(lead.budget) : "",
-      notes: lead.notes ?? "",
-      assignedEmployeeId: lead.assignedEmployeeId ?? undefined,
-    },
-  });
-  const assignedEmployeeId = watch("assignedEmployeeId");
-
-  async function onSubmit(data: CreateLeadInput) {
-    const res = await updateLead(lead.id, { ...data, constructionTypes, city: city || undefined });
-    if (res.success) {
-      toast.success("ליד עודכן בהצלחה");
-      onOpenChange(false);
-      router.refresh();
-    } else {
-      toast.error("שגיאה בעדכון הליד");
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>כרטיס ליד — {lead.name}</DialogTitle>
-        </DialogHeader>
-        <Tabs defaultValue="details" dir="rtl">
-          <TabsList
-            variant="line"
-            className="w-full justify-start border-b border-border rounded-none pb-0 mb-4"
-          >
-            <TabsTrigger value="details">פרטים אישיים</TabsTrigger>
-            <TabsTrigger value="activity">יומן פעילות</TabsTrigger>
-            <TabsTrigger value="tasks">משימות</TabsTrigger>
-            <TabsTrigger value="docs">מסמכים</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="details">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="el-name">שם מלא <span className="text-destructive">*</span></Label>
-                  <Input id="el-name" {...register("name")} />
-                  {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="el-phone">טלפון ראשי <span className="text-destructive">*</span></Label>
-                  <Input id="el-phone" type="tel" dir="ltr" {...register("phone")} />
-                  {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="el-phone2">טלפון נוסף</Label>
-                  <Input id="el-phone2" type="tel" dir="ltr" {...register("phone2")} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="el-email">אימייל</Label>
-                  <Input id="el-email" type="email" dir="ltr" {...register("email")} />
-                  {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>עיר</Label>
-                  <CreatableCitySelect value={city} onChange={setCity} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="el-size">גודל משוער (מ&quot;ר)</Label>
-                  <Input id="el-size" type="number" min={0} dir="ltr" {...register("estimatedSize")} />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="el-address">כתובת הנכס</Label>
-                <Input id="el-address" {...register("propertyAddress")} />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>סוג בנייה</Label>
-                <MultiSelectCreatable
-                  options={DEFAULT_CONSTRUCTION_TYPES}
-                  selected={constructionTypes}
-                  onChange={setConstructionTypes}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>מקור ליד</Label>
-                <Select
-                  defaultValue={lead.source}
-                  onValueChange={(v) => setValue("source", v as CreateLeadInput["source"])}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(LEAD_SOURCE_LABELS).map(([v, label]) => (
-                      <SelectItem key={v} value={v}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {employeeOptions.length > 0 && (
-                <div className="space-y-1.5">
-                  <Label>נציג מטפל</Label>
-                  <Combobox
-                    options={employeeOptions}
-                    value={assignedEmployeeId ?? ""}
-                    onValueChange={(v) => setValue("assignedEmployeeId", v || undefined)}
-                    placeholder="בחר נציג..."
-                    searchPlaceholder="חיפוש עובד..."
-                    emptyText="לא נמצאו עובדים"
-                  />
-                </div>
-              )}
-
-              <div className="space-y-1.5">
-                <Label htmlFor="el-budget">תקציב משוער (₪)</Label>
-                <Input id="el-budget" type="number" dir="ltr" {...register("budget")} />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="el-notes">הערות</Label>
-                <Textarea id="el-notes" rows={3} {...register("notes")} />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  ביטול
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="h-4 w-4 me-1.5 animate-spin" />}
-                  שמור שינויים
-                </Button>
-              </div>
-            </form>
-          </TabsContent>
-
-          <TabsContent value="activity">
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-sm font-medium text-foreground">יומן פעילות</p>
-              <p className="text-xs text-muted-foreground mt-1">יתווסף בקרוב</p>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="tasks">
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-sm font-medium text-foreground">משימות</p>
-              <p className="text-xs text-muted-foreground mt-1">יתווספו בקרוב</p>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="docs">
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-sm font-medium text-foreground">מסמכים</p>
-              <p className="text-xs text-muted-foreground mt-1">יתווספו בקרוב</p>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
-  );
+  if (sortKey !== field)
+    return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50 shrink-0" />;
+  return sortDir === "asc"
+    ? <ArrowUp   className="h-3 w-3 text-foreground shrink-0" />
+    : <ArrowDown className="h-3 w-3 text-foreground shrink-0" />;
 }
 
 // ─── Main table ───────────────────────────────────────────────────────────────
 
 export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: EmployeeOption[] }) {
-  const router = useRouter();
-  const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const { fmtCompact } = useCurrency();
+  const t       = useTranslations("leads");
+  const tCommon = useTranslations("common");
+  const router  = useRouter();
   const [deletingLeadId, setDeletingLeadId] = useState<string | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
 
-  // ── Sort state ──────────────────────────────────────────────────────────────
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-
-  // ── Filter state ────────────────────────────────────────────────────────────
-  const [searchText, setSearchText] = useState("");
+  const [searchText, setSearchText]         = useState("");
   const [filterEmployeeId, setFilterEmployeeId] = useState<string>("");
 
   function handleSort(key: SortKey) {
@@ -415,17 +174,8 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
     }
   }
 
-  function SortIcon({ field }: { field: SortKey }) {
-    if (sortKey !== field)
-      return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50 shrink-0" />;
-    return sortDir === "asc"
-      ? <ArrowUp className="h-3 w-3 text-foreground shrink-0" />
-      : <ArrowDown className="h-3 w-3 text-foreground shrink-0" />;
-  }
-
   const processedLeads = useMemo(() => {
     let result = leads;
-
     if (searchText.trim()) {
       const q = searchText.toLowerCase();
       result = result.filter(
@@ -436,15 +186,12 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
           (l.propertyAddress ?? "").toLowerCase().includes(q)
       );
     }
-
     if (filterEmployeeId) {
       result = result.filter((l) => l.assignedEmployeeId === filterEmployeeId);
     }
-
     if (sortKey) {
       result = [...result].sort((a, b) => compareLeads(a, b, sortKey, sortDir));
     }
-
     return result;
   }, [leads, searchText, filterEmployeeId, sortKey, sortDir]);
 
@@ -452,7 +199,7 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
     if (!deletingLeadId) return;
     startDeleteTransition(async () => {
       await deleteLead(deletingLeadId);
-      toast.success("ליד נמחק");
+      toast.success(t("table.toastDeleted"));
       setDeletingLeadId(null);
       router.refresh();
     });
@@ -464,11 +211,8 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mb-4">
           <Users className="h-7 w-7 text-primary" />
         </div>
-        <p className="text-base font-semibold text-foreground">אין לידים עדיין</p>
-        <p className="text-sm text-muted-foreground mt-1 mb-5 max-w-xs">
-          הוסף ליד ראשון כדי להתחיל לעקוב אחר מחזור המכירות שלך.
-        </p>
-        <NewLeadDialog employees={employees} />
+        <p className="text-base font-semibold text-foreground">{t("table.emptyTitle")}</p>
+        <p className="text-sm text-muted-foreground mt-1 max-w-xs">{t("table.emptyDesc")}</p>
       </div>
     );
   }
@@ -477,12 +221,11 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
     <>
       {/* ── Filter / Search bar ───────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        {/* Search */}
         <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
             className="ps-8 h-9 text-sm"
-            placeholder="חיפוש לפי שם, טלפון..."
+            placeholder={t("table.search")}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
           />
@@ -496,17 +239,16 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
           )}
         </div>
 
-        {/* Employee filter */}
         {employees.length > 0 && (
           <Select
             value={filterEmployeeId || "__all__"}
             onValueChange={(v) => setFilterEmployeeId(v === "__all__" ? "" : v)}
           >
             <SelectTrigger className="h-9 w-44 text-sm">
-              <SelectValue placeholder="סנן לפי נציג" />
+              <SelectValue placeholder={t("table.filterByRep")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__all__">כל הנציגים</SelectItem>
+              <SelectItem value="__all__">{t("table.allReps")}</SelectItem>
               {employees.map((e) => (
                 <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
               ))}
@@ -514,7 +256,6 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
           </Select>
         )}
 
-        {/* Active filter indicator */}
         {(searchText || filterEmployeeId) && (
           <Button
             variant="ghost"
@@ -523,7 +264,7 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
             onClick={() => { setSearchText(""); setFilterEmployeeId(""); }}
           >
             <X className="h-3.5 w-3.5" />
-            נקה סינון
+            {t("table.clearFilter")}
             <span className="ms-1 font-medium text-foreground">
               ({processedLeads.length}/{leads.length})
             </span>
@@ -533,7 +274,7 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
 
       {processedLeads.length === 0 ? (
         <div className="rounded-xl border border-border/50 py-14 text-center text-muted-foreground text-sm">
-          לא נמצאו לידים התואמים את הסינון
+          {t("table.noMatch")}
         </div>
       ) : (
         <Table>
@@ -544,45 +285,34 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
                 onClick={() => handleSort("name")}
               >
                 <div className="flex items-center gap-1">
-                  שם <SortIcon field="name" />
+                  {t("table.col.name")}
+                  <SortIcon field="name" sortKey={sortKey} sortDir={sortDir} />
                 </div>
               </TableHead>
-              <TableHead className="text-center">טלפון</TableHead>
-              <TableHead className="hidden md:table-cell">כתובת נכס</TableHead>
-              <TableHead className="hidden sm:table-cell">מקור</TableHead>
-              <TableHead
-                className="cursor-pointer select-none"
-                onClick={() => handleSort("urgency")}
-              >
-                <div className="flex items-center gap-1">
-                  דחיפות <SortIcon field="urgency" />
-                </div>
-              </TableHead>
+              <TableHead className="text-center">{t("table.col.phone")}</TableHead>
+              <TableHead className="hidden md:table-cell">{t("table.col.address")}</TableHead>
+              <TableHead className="hidden lg:table-cell">{t("table.col.city")}</TableHead>
+              <TableHead className="hidden sm:table-cell">{t("table.col.source")}</TableHead>
               <TableHead
                 className="cursor-pointer select-none"
                 onClick={() => handleSort("status")}
               >
                 <div className="flex items-center gap-1">
-                  סטטוס <SortIcon field="status" />
+                  {t("table.col.status")}
+                  <SortIcon field="status" sortKey={sortKey} sortDir={sortDir} />
                 </div>
               </TableHead>
+              <TableHead className="hidden xl:table-cell">{t("table.col.constructionType")}</TableHead>
               <TableHead
                 className="hidden lg:table-cell cursor-pointer select-none"
                 onClick={() => handleSort("budget")}
               >
                 <div className="flex items-center gap-1">
-                  תקציב <SortIcon field="budget" />
+                  {t("table.col.budget")}
+                  <SortIcon field="budget" sortKey={sortKey} sortDir={sortDir} />
                 </div>
               </TableHead>
-              <TableHead
-                className="hidden md:table-cell cursor-pointer select-none"
-                onClick={() => handleSort("createdAt")}
-              >
-                <div className="flex items-center gap-1">
-                  תאריך <SortIcon field="createdAt" />
-                </div>
-              </TableHead>
-              <TableHead className="w-28">פעולות</TableHead>
+              <TableHead className="w-28">{t("table.col.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -590,7 +320,7 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
               <TableRow
                 key={lead.id}
                 className="group cursor-pointer hover:bg-muted/50"
-                onClick={() => setEditingLead(lead)}
+                onClick={() => router.push(`/leads/${lead.id}`)}
               >
                 <TableCell className="font-medium">{lead.name}</TableCell>
                 <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
@@ -606,7 +336,7 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
                       href={`https://wa.me/${toWhatsAppNumber(lead.phone)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      title="שלח הודעת וואטסאפ"
+                      title={t("table.whatsapp")}
                       className="inline-flex items-center justify-center h-6 w-6 rounded text-[#25D366] hover:bg-[#25D366]/10 transition-colors"
                     >
                       <WhatsAppIcon />
@@ -616,22 +346,33 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
                 <TableCell className="hidden md:table-cell text-muted-foreground text-sm max-w-[160px] truncate">
                   {lead.propertyAddress || "—"}
                 </TableCell>
-                <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
-                  {LEAD_SOURCE_LABELS[lead.source] ?? lead.source}
+                <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                  {lead.city || "—"}
                 </TableCell>
-                <TableCell><LeadUrgencyBadge urgency={lead.urgency} /></TableCell>
+                <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
+                  {(() => {
+                    try { return t(`source.${lead.source}` as Parameters<typeof t>[0]); }
+                    catch { return lead.source; }
+                  })()}
+                </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <StatusDropdown lead={lead} />
                 </TableCell>
-                <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                  {lead.budget ? `₪${lead.budget.toLocaleString("he-IL")}` : "—"}
+                <TableCell className="hidden xl:table-cell text-sm text-muted-foreground max-w-[180px]">
+                  {lead.constructionTypes?.length ? lead.constructionTypes.join(", ") : "—"}
                 </TableCell>
-                <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                  {formatDate(lead.createdAt)}
+                <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                  {lead.budget ? fmtCompact(lead.budget) : "—"}
                 </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1.5 justify-end">
-                    <ConvertButton lead={lead} />
+                    <Link
+                      href={`/leads/${lead.id}`}
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 rounded hover:bg-muted"
+                    >
+                      {t("table.open")}
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -642,17 +383,13 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditingLead(lead)}>
-                          <Pencil className="h-4 w-4 me-2" />
-                          עריכה
-                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="text-destructive focus:text-destructive"
                           onClick={() => setDeletingLeadId(lead.id)}
                         >
                           <Trash2 className="h-4 w-4 me-2" />
-                          מחיקה
+                          {t("table.delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -664,36 +401,24 @@ export function LeadsTable({ leads, employees }: { leads: Lead[]; employees: Emp
         </Table>
       )}
 
-      {editingLead && (
-        <EditLeadDialog
-          key={editingLead.id}
-          lead={editingLead}
-          open={!!editingLead}
-          onOpenChange={(open) => { if (!open) setEditingLead(null); }}
-          employees={employees}
-        />
-      )}
-
       <AlertDialog
         open={!!deletingLeadId}
         onOpenChange={(open) => { if (!open) setDeletingLeadId(null); }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>האם אתה בטוח?</AlertDialogTitle>
-            <AlertDialogDescription>
-              פעולה זו תמחק את הליד לצמיתות ואינה הפיכה.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("table.confirmDeleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("table.confirmDeleteDesc")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className={buttonVariants({ variant: "destructive" })}
               onClick={handleConfirmDelete}
               disabled={isDeleting}
             >
               {isDeleting && <Loader2 className="h-4 w-4 me-1.5 animate-spin" />}
-              מחק ליד
+              {t("table.deleteLead")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

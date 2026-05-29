@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useCurrency } from "@/lib/currency-context";
 import { Plus, Sparkles, GitPullRequest, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { createChangeRequest, updateChangeRequestStatus, seedChangeRequests } from "@/actions/change-orders";
-import { fmtShekel, fmtDate } from "@/lib/utils";
+import { fmtDate } from "@/lib/utils";
+
 
 type ChangeRequestEntry = {
   id: string;
@@ -40,6 +42,7 @@ export function CRTab({
   projectId: string;
   changeRequests: ChangeRequestEntry[];
 }) {
+  const { fmtCompact } = useCurrency();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -85,10 +88,66 @@ export function CRTab({
       <div className="flex flex-col items-center py-16 gap-3">
         <GitPullRequest className="h-10 w-10 text-muted-foreground/30" />
         <p className="text-sm text-muted-foreground">אין בקשות שינוי עדיין.</p>
-        <Button variant="outline" size="sm" onClick={handleSeed} disabled={isPending}>
-          <Sparkles className="h-3.5 w-3.5 me-1.5" />
-          {isPending ? "טוען..." : "הוסף נתוני דמו"}
-        </Button>
+        <div className="flex gap-2">
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1.5">
+                <Plus className="h-3.5 w-3.5" />
+                בקשת שינוי חדשה
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md" dir="rtl">
+              <DialogHeader><DialogTitle>בקשת שינוי חדשה</DialogTitle></DialogHeader>
+              <div className="space-y-3 pt-2">
+                <div className="space-y-1">
+                  <Label>תיאור השינוי *</Label>
+                  <Textarea
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="תאר את השינוי המבוקש..."
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>מבוקש על ידי *</Label>
+                  <Input
+                    value={form.requestedBy}
+                    onChange={(e) => setForm({ ...form, requestedBy: e.target.value })}
+                    placeholder="שם המבקש"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label>השפעה על עלות</Label>
+                    <Input
+                      type="number" min="0" step="100" dir="ltr"
+                      value={form.costImpact}
+                      onChange={(e) => setForm({ ...form, costImpact: e.target.value })}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>השפעה על לוח זמנים (ימים)</Label>
+                    <Input
+                      type="number" min="0" dir="ltr"
+                      value={form.scheduleImpact}
+                      onChange={(e) => setForm({ ...form, scheduleImpact: e.target.value })}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button variant="outline" size="sm" onClick={() => setOpen(false)}>ביטול</Button>
+                  <Button onClick={handleAdd} disabled={isPending}>הוסף</Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Button variant="outline" size="sm" onClick={handleSeed} disabled={isPending}>
+            <Sparkles className="h-3.5 w-3.5 me-1.5" />
+            {isPending ? "טוען..." : "נתוני דמו"}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -99,7 +158,7 @@ export function CRTab({
       <div className="grid grid-cols-3 gap-3">
         {[
           { label: "סה״כ בקשות",     value: changeRequests.length,           color: "text-foreground" },
-          { label: "עלות מאושרת",     value: fmtShekel(approvedTotal),        color: "text-emerald-600" },
+          { label: "עלות מאושרת",     value: fmtCompact(approvedTotal),        color: "text-emerald-600" },
           { label: "ממתינות לאישור",  value: pendingList.length,              color: pendingList.length > 0 ? "text-orange-600" : "text-emerald-600" },
         ].map((s) => (
           <div key={s.label} className="rounded-lg border border-border bg-muted/30 p-3">
@@ -112,7 +171,7 @@ export function CRTab({
       {pendingList.length > 0 && (
         <div className="rounded-lg bg-orange-50 border border-orange-200 px-3 py-2 text-xs text-orange-700">
           {pendingList.length} בקשה/ות ממתינות לאישור · עלות פוטנציאלית:{" "}
-          {fmtShekel(pendingList.reduce((s, cr) => s + cr.costImpact, 0))}
+          {fmtCompact(pendingList.reduce((s, cr) => s + cr.costImpact, 0))}
         </div>
       )}
 
@@ -151,7 +210,7 @@ export function CRTab({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label>השפעה תקציבית (₪)</Label>
+                  <Label>השפעה תקציבית</Label>
                   <Input
                     type="number"
                     value={form.costImpact}
@@ -207,7 +266,7 @@ export function CRTab({
                     {cr.requestedBy}
                   </td>
                   <td className="px-3 py-2.5 text-end tabular-nums font-medium text-xs">
-                    {cr.costImpact !== 0 ? fmtShekel(cr.costImpact) : "—"}
+                    {cr.costImpact !== 0 ? fmtCompact(cr.costImpact) : "—"}
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex justify-center">

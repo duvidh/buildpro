@@ -1,10 +1,15 @@
 "use server";
 
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { clientSchema, type ClientInput } from "@/lib/schemas/client-schema";
+import { requireRole, CLIENT_ROLES, DELETE_ROLES } from "@/lib/auth-utils";
 
 export async function createClient(raw: ClientInput) {
+  try { await requireRole(CLIENT_ROLES); }
+  catch { return { success: false as const, error: "אין הרשאה לבצע פעולה זו" }; }
+
   const parsed = clientSchema.safeParse(raw);
   if (!parsed.success) {
     return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאה" };
@@ -29,6 +34,9 @@ export async function getClients() {
 }
 
 export async function updateClient(id: string, raw: ClientInput) {
+  try { await requireRole(CLIENT_ROLES); }
+  catch { return { success: false as const, error: "אין הרשאה לבצע פעולה זו" }; }
+
   const parsed = clientSchema.safeParse(raw);
   if (!parsed.success) {
     return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאה" };
@@ -39,19 +47,122 @@ export async function updateClient(id: string, raw: ClientInput) {
     data: { ...rest, email: email || null },
   });
   revalidatePath("/clients");
+  revalidatePath(`/clients/${id}`);
   return { success: true as const };
 }
 
 export async function deleteClient(id: string) {
+  try { await requireRole(DELETE_ROLES); }
+  catch { return { success: false as const, error: "אין הרשאה לבצע פעולה זו" }; }
+
   try {
+    // All child relations (Projects, Invoices, Quotes, Tasks, Files, etc.)
+    // have onDelete: Cascade / SetNull in the schema — one delete is enough.
     await db.client.delete({ where: { id } });
     revalidatePath("/clients");
+    revalidatePath("/projects");
+    revalidatePath("/finance");
     return { success: true as const };
-  } catch {
-    return { success: false as const, error: "לא ניתן למחוק לקוח עם נתונים משויכים (פרויקטים / חשבוניות)" };
+  } catch (e) {
+    console.error("deleteClient error:", e);
+    return { success: false as const, error: "שגיאה במחיקת הלקוח" };
   }
 }
 
+// ─── Focused per-page queries ─────────────────────────────────────────────────
+
+/** Lean query for the layout sticky header (deduped across layout+page). */
+export const getClientHeader = cache(async (id: string) => {
+  return db.client.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      contactName: true,
+      phone: true,
+      phone2: true,
+      email: true,
+      address: true,
+      companyNumber: true,
+      notes: true,
+      _count: { select: { projects: true, quotes: true, invoices: true } },
+    },
+  });
+});
+
+/** Financial KPIs for the overview tab. */
+export async function getClientOverview(id: string) {
+  const data = await db.client.findUnique({
+    where: { id },
+    select: {
+      projects: { select: { contractValue: true } },
+      invoices: { select: { total: true, paidAmount: true } },
+    },
+  });
+  if (!data) return null;
+  const totalContractValue = data.projects.reduce((s, p) => s + p.contractValue, 0);
+  const totalInvoiced = data.invoices.reduce((s, i) => s + i.total, 0);
+  const totalPaid = data.invoices.reduce((s, i) => s + i.paidAmount, 0);
+  return {
+    totalContractValue,
+    totalInvoiced,
+    totalPaid,
+    openBalance: totalInvoiced - totalPaid,
+  };
+}
+
+/** Projects list for the /projects tab. */
+export async function getClientProjects(id: string) {
+  return db.project.findMany({
+    where: { clientId: id },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      contractValue: true,
+      progressPercent: true,
+      startDate: true,
+      endDate: true,
+      address: true,
+    },
+  });
+}
+
+/** Quotes list for the /quotes tab. */
+export async function getClientQuotes(id: string) {
+  return db.quote.findMany({
+    where: { clientId: id },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      quoteNumber: true,
+      date: true,
+      validUntil: true,
+      status: true,
+      total: true,
+    },
+  });
+}
+
+/** Invoices list for the /invoices tab. */
+export async function getClientInvoices(id: string) {
+  return db.invoice.findMany({
+    where: { clientId: id },
+    orderBy: { date: "desc" },
+    select: {
+      id: true,
+      invoiceNumber: true,
+      date: true,
+      dueDate: true,
+      status: true,
+      total: true,
+      paidAmount: true,
+    },
+  });
+}
+
+// Keep legacy full fetch for any code that still needs it
 export async function getClientById(id: string) {
   return db.client.findUnique({
     where: { id },
@@ -64,40 +175,23 @@ export async function getClientById(id: string) {
       projects: {
         orderBy: { createdAt: "desc" },
         select: {
-          id: true,
-          name: true,
-          status: true,
-          contractValue: true,
-          progressPercent: true,
-          startDate: true,
-          endDate: true,
-          address: true,
-          createdAt: true,
+          id: true, name: true, status: true, contractValue: true,
+          progressPercent: true, startDate: true, endDate: true,
+          address: true, createdAt: true,
         },
       },
       quotes: {
         orderBy: { createdAt: "desc" },
         select: {
-          id: true,
-          quoteNumber: true,
-          date: true,
-          validUntil: true,
-          status: true,
-          total: true,
-          createdAt: true,
+          id: true, quoteNumber: true, date: true, validUntil: true,
+          status: true, total: true, createdAt: true,
         },
       },
       invoices: {
         orderBy: { date: "desc" },
         select: {
-          id: true,
-          invoiceNumber: true,
-          date: true,
-          dueDate: true,
-          status: true,
-          total: true,
-          paidAmount: true,
-          createdAt: true,
+          id: true, invoiceNumber: true, date: true, dueDate: true,
+          status: true, total: true, paidAmount: true, createdAt: true,
         },
       },
     },

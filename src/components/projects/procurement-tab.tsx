@@ -1,5 +1,6 @@
 "use client";
 
+import { useCurrency } from "@/lib/currency-context";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Sparkles, ShoppingCart } from "lucide-react";
@@ -14,7 +15,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { seedProcurement, createContractSimple } from "@/actions/procurement";
-import { fmtShekel } from "@/lib/utils";
 
 type ProjectContract = {
   id: string;
@@ -48,6 +48,7 @@ export function ProcurementTab({
   projectId: string;
   contracts: ProjectContract[];
 }) {
+  const { fmtCompact } = useCurrency();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -86,10 +87,75 @@ export function ProcurementTab({
       <div className="flex flex-col items-center py-16 gap-3">
         <ShoppingCart className="h-10 w-10 text-muted-foreground/30" />
         <p className="text-sm text-muted-foreground">אין חוזי קבלני משנה עדיין.</p>
-        <Button variant="outline" size="sm" onClick={handleSeed} disabled={isPending}>
-          <Sparkles className="h-3.5 w-3.5 me-1.5" />
-          {isPending ? "טוען..." : "הוסף נתוני דמו"}
-        </Button>
+        <div className="flex gap-2">
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1.5">
+                <Plus className="h-3.5 w-3.5" />
+                הוספת חוזה
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md" dir="rtl">
+              <DialogHeader><DialogTitle>הוספת חוזה קבלן / ספק</DialogTitle></DialogHeader>
+              <div className="space-y-3 pt-2">
+                <div className="space-y-1">
+                  <Label>שם הספק / קבלן *</Label>
+                  <Input
+                    value={form.supplierName}
+                    onChange={(e) => setForm({ ...form, supplierName: e.target.value })}
+                    placeholder="שם הקבלן או הספק"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>סוג</Label>
+                  <Select value={form.supplierType} onValueChange={(v) => setForm({ ...form, supplierType: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SUBCONTRACTOR">קבלן משנה</SelectItem>
+                      <SelectItem value="SUPPLIER">ספק</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>תיאור העבודה</Label>
+                  <Input
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="תיאור קצר של העבודה"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label>שווי חוזה *</Label>
+                    <Input
+                      type="number" min="0" step="1000" dir="ltr"
+                      value={form.value}
+                      onChange={(e) => setForm({ ...form, value: e.target.value })}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>עכבון (%)</Label>
+                    <Input
+                      type="number" min="0" max="20" step="1" dir="ltr"
+                      value={form.retentionPercent}
+                      onChange={(e) => setForm({ ...form, retentionPercent: e.target.value })}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button variant="outline" size="sm" onClick={() => setOpen(false)}>ביטול</Button>
+                  <Button onClick={handleAdd} disabled={isPending}>הוסף</Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Button variant="outline" size="sm" onClick={handleSeed} disabled={isPending}>
+            <Sparkles className="h-3.5 w-3.5 me-1.5" />
+            {isPending ? "טוען..." : "נתוני דמו"}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -99,9 +165,9 @@ export function ProcurementTab({
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "שווי חוזים", value: fmtShekel(totalValue),     color: "text-foreground" },
-          { label: "שולם",       value: fmtShekel(totalPaid),      color: "text-emerald-600" },
-          { label: "עכבון",      value: fmtShekel(totalRetention), color: "text-orange-600" },
+          { label: "שווי חוזים", value: fmtCompact(totalValue),     color: "text-foreground" },
+          { label: "שולם",       value: fmtCompact(totalPaid),      color: "text-emerald-600" },
+          { label: "עכבון",      value: fmtCompact(totalRetention), color: "text-orange-600" },
         ].map((s) => (
           <div key={s.label} className="rounded-lg border border-border bg-muted/30 p-3">
             <p className="text-xs text-muted-foreground">{s.label}</p>
@@ -156,7 +222,7 @@ export function ProcurementTab({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label>שווי חוזה (₪) *</Label>
+                  <Label>שווי חוזה *</Label>
                   <Input
                     type="number"
                     value={form.value}
@@ -209,10 +275,10 @@ export function ProcurementTab({
 
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                 <span className="text-muted-foreground">
-                  שווי: <strong className="text-foreground">{fmtShekel(c.value)}</strong>
+                  שווי: <strong className="text-foreground">{fmtCompact(c.value)}</strong>
                 </span>
                 <span className="text-muted-foreground">
-                  שולם: <strong className="text-emerald-700">{fmtShekel(c.paidAmount)}</strong>
+                  שולם: <strong className="text-emerald-700">{fmtCompact(c.paidAmount)}</strong>
                 </span>
                 {c.retentionPercent > 0 && (
                   <span className="text-muted-foreground">

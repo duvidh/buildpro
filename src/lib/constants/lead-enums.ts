@@ -15,6 +15,13 @@ export const LEAD_SOURCE_VALUES = [
   "PHONE",
   "SOCIAL_MEDIA",
   "WALK_IN",
+  "GOOGLE_ADS",
+  "FACEBOOK",
+  "WORD_OF_MOUTH",
+  "COLD_CALL",
+  "B2B",
+  "EXHIBITION",
+  "WEBSITE_ORGANIC",
   "OTHER",
 ] as const;
 export type LeadSourceValue = (typeof LEAD_SOURCE_VALUES)[number];

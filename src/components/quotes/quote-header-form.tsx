@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Badge } from "@/components/ui/badge";
@@ -28,38 +29,36 @@ type Client = { id: string; name: string };
 type Props = {
   quoteId: string;
   initialValues: {
-    clientId: string;
-    date: string;
+    clientId:   string;
+    date:       string;
     validUntil?: string | null;
-    status: string;
-    notes?: string | null;
+    status:     string;
+    notes?:     string | null;
   };
-  clients: Client[];
-  leadName?: string | null;
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  DRAFT: "טיוטה",
-  SENT: "נשלחה",
-  ACCEPTED: "אושרה",
-  REJECTED: "נדחתה",
-  EXPIRED: "פגת תוקף",
+  clients:    Client[];
+  leadName?:  string | null;
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function QuoteHeaderForm({ quoteId, initialValues, clients, leadName }: Props) {
+  const t = useTranslations("quotes");
+
+  const tStatus = (s: string) => {
+    try { return t(`status.${s}` as Parameters<typeof t>[0]); } catch { return s; }
+  };
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLeadQuote = !initialValues.clientId && !!leadName;
 
   const { register, watch, setValue, getValues } = useForm<UpdateQuoteHeaderInput>({
     resolver: zodResolver(updateQuoteHeaderSchema),
     defaultValues: {
-      clientId: initialValues.clientId,
-      date: initialValues.date,
+      clientId:   initialValues.clientId,
+      date:       initialValues.date,
       validUntil: initialValues.validUntil ?? "",
-      status: initialValues.status as UpdateQuoteHeaderInput["status"],
-      notes: initialValues.notes ?? "",
+      status:     initialValues.status as UpdateQuoteHeaderInput["status"],
+      notes:      initialValues.notes ?? "",
     },
   });
 
@@ -72,6 +71,7 @@ export function QuoteHeaderForm({ quoteId, initialValues, clients, leadName }: P
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/incompatible-library
     const sub = watch(() => autoSave());
     return () => sub.unsubscribe();
   });
@@ -80,11 +80,11 @@ export function QuoteHeaderForm({ quoteId, initialValues, clients, leadName }: P
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {/* Client or Lead */}
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="clientId">לקוח</Label>
+        <Label htmlFor="clientId">{t("header.client")}</Label>
         {isLeadQuote ? (
           <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-border bg-muted/40">
             <Badge variant="outline" className="text-[10px] h-4 px-1.5 py-0 bg-amber-50 text-amber-700 border-amber-200 shrink-0">
-              ליד
+              {t("lead")}
             </Badge>
             <span className="text-sm text-muted-foreground truncate">{leadName}</span>
           </div>
@@ -97,7 +97,7 @@ export function QuoteHeaderForm({ quoteId, initialValues, clients, leadName }: P
             }}
           >
             <SelectTrigger id="clientId">
-              <SelectValue placeholder="בחר לקוח" />
+              <SelectValue placeholder={t("header.selectClient")} />
             </SelectTrigger>
             <SelectContent>
               {clients.map((c) => (
@@ -112,7 +112,7 @@ export function QuoteHeaderForm({ quoteId, initialValues, clients, leadName }: P
 
       {/* Date */}
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="date">תאריך הצעה</Label>
+        <Label htmlFor="date">{t("header.date")}</Label>
         <Input
           id="date"
           type="date"
@@ -123,7 +123,7 @@ export function QuoteHeaderForm({ quoteId, initialValues, clients, leadName }: P
 
       {/* Valid Until */}
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="validUntil">בתוקף עד</Label>
+        <Label htmlFor="validUntil">{t("header.validUntil")}</Label>
         <Input
           id="validUntil"
           type="date"
@@ -134,7 +134,7 @@ export function QuoteHeaderForm({ quoteId, initialValues, clients, leadName }: P
 
       {/* Status */}
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="status">סטטוס</Label>
+        <Label htmlFor="status">{t("header.status")}</Label>
         <Select
           defaultValue={initialValues.status}
           onValueChange={(val) => {
@@ -148,7 +148,7 @@ export function QuoteHeaderForm({ quoteId, initialValues, clients, leadName }: P
           <SelectContent>
             {QUOTE_STATUS_VALUES.map((s) => (
               <SelectItem key={s} value={s}>
-                {STATUS_LABELS[s] ?? s}
+                {tStatus(s)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -157,11 +157,11 @@ export function QuoteHeaderForm({ quoteId, initialValues, clients, leadName }: P
 
       {/* Notes */}
       <div className="flex flex-col gap-1.5 sm:col-span-2">
-        <Label htmlFor="notes">הערות</Label>
+        <Label htmlFor="notes">{t("header.notes")}</Label>
         <Textarea
           id="notes"
           rows={2}
-          placeholder="הערות להצעה..."
+          placeholder={t("header.notesPlaceholder")}
           {...register("notes")}
           onBlur={autoSave}
         />

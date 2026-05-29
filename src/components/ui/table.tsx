@@ -8,7 +8,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-hidden rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.07),0_0_0_1px_rgba(255,255,255,0.8)_inset] border border-white/30 bg-white/80 backdrop-blur-md"
+      className="relative w-full overflow-hidden rounded-2xl shadow-sm border border-border/50 bg-card/80 backdrop-blur-md"
     >
       <div className="overflow-x-auto">
         <table
@@ -25,7 +25,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("bg-[#fdfbf7] [&_tr]:border-b", className)}
+      className={cn("bg-muted/40 [&_tr]:border-b", className)}
       {...props}
     />
   )

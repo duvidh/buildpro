@@ -1,5 +1,6 @@
 "use client";
 
+import { useCurrency } from "@/lib/currency-context";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Sparkles, GitBranch, Pencil, Trash2 } from "lucide-react";
@@ -21,7 +22,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { createWorkPackage, updateWorkPackage, deleteWorkPackage, seedWorkPackages } from "@/actions/wbs";
-import { fmtShekel, fmtDate } from "@/lib/utils";
+import { fmtDate } from "@/lib/utils";
 
 type WorkPackageEntry = {
   id: string;
@@ -66,6 +67,7 @@ export function WBSTab({
   projectId: string;
   workPackages: WorkPackageEntry[];
 }) {
+  const { fmtCompact } = useCurrency();
   const router = useRouter();
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_ADD);
@@ -143,10 +145,64 @@ export function WBSTab({
       <div className="flex flex-col items-center py-16 gap-3">
         <GitBranch className="h-10 w-10 text-muted-foreground/30" />
         <p className="text-sm text-muted-foreground">אין מבנה פירוק עבודה עדיין.</p>
-        <Button variant="outline" size="sm" onClick={handleSeed} disabled={isPending}>
-          <Sparkles className="h-3.5 w-3.5 me-1.5" />
-          {isPending ? "טוען..." : "הוסף נתוני דמו"}
-        </Button>
+        <div className="flex gap-2">
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1.5">
+                <Plus className="h-3.5 w-3.5" />
+                חבילת עבודה חדשה
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md" dir="rtl">
+              <DialogHeader><DialogTitle>הוספת חבילת עבודה</DialogTitle></DialogHeader>
+              <div className="space-y-3 pt-2">
+                <div className="space-y-1">
+                  <Label>שם *</Label>
+                  <Input
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="למשל: תכנון, יסודות, גמר..."
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>תיאור</Label>
+                  <Input
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="תיאור קצר (אופציונלי)"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>תקציב מתוכנן</Label>
+                  <Input
+                    type="number" min="0" step="1000" dir="ltr"
+                    value={form.plannedCost}
+                    onChange={(e) => setForm({ ...form, plannedCost: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label>תאריך התחלה</Label>
+                    <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>תאריך סיום</Label>
+                    <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button variant="outline" size="sm" onClick={() => setAddOpen(false)}>ביטול</Button>
+                  <Button onClick={handleAdd} disabled={isPending}>הוסף</Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Button variant="outline" size="sm" onClick={handleSeed} disabled={isPending}>
+            <Sparkles className="h-3.5 w-3.5 me-1.5" />
+            {isPending ? "טוען..." : "נתוני דמו"}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -158,10 +214,10 @@ export function WBSTab({
         {[
           { label: "חבילות עבודה",   value: workPackages.length,            color: "text-foreground" },
           { label: "השלמה כוללת",    value: `${overallCompletion}%`,         color: overallCompletion >= 80 ? "text-emerald-600" : "text-foreground" },
-          { label: "תקציב מתוכנן",  value: fmtShekel(totalPlanned),         color: "text-foreground" },
+          { label: "תקציב מתוכנן",  value: fmtCompact(totalPlanned),         color: "text-foreground" },
           {
             label: "סטייה מתקציב",
-            value: variance === 0 ? "₪0" : `${variance > 0 ? "+" : ""}${fmtShekel(variance)}`,
+            value: variance === 0 ? fmtCompact(0) : `${variance > 0 ? "+" : ""}${fmtCompact(variance)}`,
             color: variance > 0 ? "text-red-600" : variance < 0 ? "text-emerald-600" : "text-foreground",
           },
         ].map((s) => (
@@ -205,7 +261,7 @@ export function WBSTab({
                 />
               </div>
               <div className="space-y-1">
-                <Label>תקציב מתוכנן (₪)</Label>
+                <Label>תקציב מתוכנן</Label>
                 <Input
                   type="number"
                   value={form.plannedCost}
@@ -262,7 +318,7 @@ export function WBSTab({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label>תקציב מתוכנן (₪)</Label>
+                  <Label>תקציב מתוכנן</Label>
                   <Input
                     type="number"
                     value={editForm.plannedCost}
@@ -270,7 +326,7 @@ export function WBSTab({
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>עלות בפועל (₪)</Label>
+                  <Label>עלות בפועל</Label>
                   <Input
                     type="number"
                     value={editForm.actualCost}
@@ -393,19 +449,19 @@ export function WBSTab({
                   <span>{fmtDate(wp.startDate)} — {fmtDate(wp.endDate)}</span>
                 )}
                 <span>
-                  מתוכנן: <strong className="text-foreground">{fmtShekel(wp.plannedCost)}</strong>
+                  מתוכנן: <strong className="text-foreground">{fmtCompact(wp.plannedCost)}</strong>
                 </span>
                 {wp.actualCost > 0 && (
                   <span>
                     בפועל:{" "}
                     <strong className={isOver ? "text-red-600" : "text-emerald-600"}>
-                      {fmtShekel(wp.actualCost)}
+                      {fmtCompact(wp.actualCost)}
                     </strong>
                   </span>
                 )}
                 {wp.actualCost > 0 && wpVariance !== 0 && (
                   <span className={isOver ? "text-red-600" : "text-emerald-600"}>
-                    ({isOver ? "+" : ""}{fmtShekel(wpVariance)})
+                    ({isOver ? "+" : ""}{fmtCompact(wpVariance)})
                   </span>
                 )}
               </div>

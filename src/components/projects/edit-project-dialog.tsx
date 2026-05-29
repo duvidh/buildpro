@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import { Pencil, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -25,25 +26,17 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { updateProject } from "@/actions/projects";
-import { updateProjectSchema, type UpdateProjectInput } from "@/lib/schemas/project-schema";
+import { buildUpdateProjectSchema, type UpdateProjectInput } from "@/lib/schemas/project-schema";
 import { PROJECT_STATUS_VALUES } from "@/lib/constants/project-enums";
 
-const STATUS_LABELS: Record<string, string> = {
-  PLANNING: "תכנון",
-  ACTIVE: "פעיל",
-  ON_HOLD: "מושהה",
-  COMPLETED: "הושלם",
-  CANCELLED: "בוטל",
-};
-
 type ProjectForEdit = {
-  id: string;
-  name: string;
-  description: string | null;
-  address: string | null;
-  status: string;
-  startDate: string | null;
-  endDate: string | null;
+  id:            string;
+  name:          string;
+  description:   string | null;
+  address:       string | null;
+  status:        string;
+  startDate:     string | null;
+  endDate:       string | null;
   contractValue: number;
 };
 
@@ -53,9 +46,16 @@ function isoToDateInput(iso: string | null): string {
 }
 
 export function EditProjectDialog({ project }: { project: ProjectForEdit }) {
-  const router = useRouter();
+  const t       = useTranslations("projects");
+  const tCommon = useTranslations("common");
+  const router  = useRouter();
   const [open, setOpen] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+
+  const schema = useMemo(
+    () => buildUpdateProjectSchema({ nameTooShort: t("validation.nameTooShort") }),
+    [t]
+  );
 
   const {
     register,
@@ -63,14 +63,14 @@ export function EditProjectDialog({ project }: { project: ProjectForEdit }) {
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<UpdateProjectInput>({
-    resolver: zodResolver(updateProjectSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
-      name: project.name,
-      description: project.description ?? "",
-      address: project.address ?? "",
-      status: project.status as UpdateProjectInput["status"],
-      startDate: isoToDateInput(project.startDate),
-      endDate: isoToDateInput(project.endDate),
+      name:          project.name,
+      description:   project.description ?? "",
+      address:       project.address ?? "",
+      status:        project.status as UpdateProjectInput["status"],
+      startDate:     isoToDateInput(project.startDate),
+      endDate:       isoToDateInput(project.endDate),
       contractValue: project.contractValue > 0 ? String(project.contractValue) : "",
     },
   });
@@ -79,33 +79,36 @@ export function EditProjectDialog({ project }: { project: ProjectForEdit }) {
     setServerError(null);
     const res = await updateProject(project.id, data);
     if (res.success) {
-      toast.success("הפרויקט עודכן בהצלחה");
+      toast.success(t("edit.toastSuccess"));
       setOpen(false);
       router.refresh();
     } else {
       setServerError(res.error);
-      toast.error("שגיאה בעדכון הפרויקט");
+      toast.error(t("edit.toastError"));
     }
   }
+
+  // Shorthand for dynamic form key lookups
+  const tf = (k: string) => t(k as Parameters<typeof t>[0]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline" className="gap-1.5">
           <Pencil className="h-4 w-4" />
-          ערוך פרויקט
+          {t("edit.trigger")}
         </Button>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>עריכת פרויקט — {project.name}</DialogTitle>
+          <DialogTitle>{t("edit.title", { name: project.name })}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-1">
           <div className="space-y-1.5">
             <Label htmlFor="ep-name">
-              שם הפרויקט <span className="text-destructive">*</span>
+              {tf("form.fields.name")} <span className="text-destructive">*</span>
             </Label>
             <Input id="ep-name" {...register("name")} />
             {errors.name && (
@@ -115,7 +118,7 @@ export function EditProjectDialog({ project }: { project: ProjectForEdit }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>סטטוס</Label>
+              <Label>{tf("form.fields.status")}</Label>
               <Select
                 defaultValue={project.status}
                 onValueChange={(v) => setValue("status", v as UpdateProjectInput["status"])}
@@ -126,41 +129,45 @@ export function EditProjectDialog({ project }: { project: ProjectForEdit }) {
                 <SelectContent>
                   {PROJECT_STATUS_VALUES.map((s) => (
                     <SelectItem key={s} value={s}>
-                      {STATUS_LABELS[s]}
+                      {tf(`status.${s}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ep-contract">ערך חוזה (₪)</Label>
+              <Label htmlFor="ep-contract">{tf("form.fields.contractValue")}</Label>
               <Input id="ep-contract" dir="ltr" {...register("contractValue")} placeholder="0" />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="ep-address">כתובת האתר</Label>
-            <Input id="ep-address" {...register("address")} placeholder="רחוב, עיר" />
+            <Label htmlFor="ep-address">{tf("form.fields.address")}</Label>
+            <Input
+              id="ep-address"
+              {...register("address")}
+              placeholder={tf("form.placeholders.address")}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="ep-start">תאריך התחלה</Label>
+              <Label htmlFor="ep-start">{tf("form.fields.startDate")}</Label>
               <Input id="ep-start" type="date" {...register("startDate")} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ep-end">תאריך סיום</Label>
+              <Label htmlFor="ep-end">{tf("form.fields.endDate")}</Label>
               <Input id="ep-end" type="date" {...register("endDate")} />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="ep-desc">תיאור</Label>
+            <Label htmlFor="ep-desc">{tf("form.fields.description")}</Label>
             <Textarea
               id="ep-desc"
               rows={3}
               {...register("description")}
-              placeholder="תיאור קצר של הפרויקט..."
+              placeholder={tf("form.placeholders.description")}
             />
           </div>
 
@@ -168,11 +175,11 @@ export function EditProjectDialog({ project }: { project: ProjectForEdit }) {
 
           <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              ביטול
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="h-4 w-4 me-1.5 animate-spin" />}
-              שמור שינויים
+              {t("edit.saveChanges")}
             </Button>
           </div>
         </form>

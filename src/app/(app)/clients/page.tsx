@@ -1,35 +1,38 @@
 export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
-import { Building2 } from "lucide-react";
+import Link from "next/link";
+import { Building2, Plus } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { getClients } from "@/actions/clients";
 import { ClientsTable } from "@/components/clients/clients-table";
-import { NewClientDialog } from "@/components/clients/new-client-dialog";
+import { Button } from "@/components/ui/button";
 
 async function ClientsContent() {
   const clients = await getClients();
 
-  // Serialize Date objects — Client Components cannot receive Date instances as props
   const serializedClients = clients.map((c) => ({
-    id: c.id,
-    name: c.name,
-    contactName: c.contactName,
-    email: c.email,
-    phone: c.phone,
-    phone2: c.phone2,
-    address: c.address,
+    id:            c.id,
+    name:          c.name,
+    contactName:   c.contactName,
+    email:         c.email,
+    phone:         c.phone,
+    phone2:        c.phone2,
+    address:       c.address,
     companyNumber: c.companyNumber,
-    notes: c.notes,
-    createdAt: c.createdAt.toISOString(),
-    _count: c._count,
-    projects: c.projects,
-    invoices: c.invoices,
+    notes:         c.notes,
+    createdAt:     c.createdAt.toISOString(),
+    _count:        c._count,
+    projects:      c.projects,
+    invoices:      c.invoices,
   }));
 
   return <ClientsTable clients={serializedClients} />;
 }
 
-export default function ClientsPage() {
+export default async function ClientsPage() {
+  const t = await getTranslations("clients.page");
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -38,13 +41,16 @@ export default function ClientsPage() {
             <Building2 className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-foreground leading-none">ניהול לקוחות</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              כרטיס לקוח 360 — פרויקטים, הצעות מחיר וחשבוניות
-            </p>
+            <h2 className="text-xl font-bold text-foreground leading-none">{t("title")}</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">{t("subtitle")}</p>
           </div>
         </div>
-        <NewClientDialog />
+        <Button size="sm" asChild>
+          <Link href="/clients/new">
+            <Plus className="h-4 w-4 me-1.5" />
+            {t("newClient")}
+          </Link>
+        </Button>
       </div>
 
       <Suspense

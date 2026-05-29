@@ -58,7 +58,6 @@ export function ProfileClient({ user }: { user: User }) {
     if (!form.name.trim()) return;
     startTransition(async () => {
       await updateCurrentUserProfile({
-        id: user.id,
         name: form.name.trim(),
         email: form.email.trim(),
         phone: form.phone || undefined,

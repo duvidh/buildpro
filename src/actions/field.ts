@@ -3,6 +3,37 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { ExpenseCategory } from "@/generated/prisma/client";
+import { getSession } from "@/lib/session";
+
+// ─── Aggregate page fetch ─────────────────────────────────────────────────────
+
+export async function getFieldPageData(projectId: string) {
+  const [dailyLogs, timeEntries, expenses, members] = await Promise.all([
+    db.dailyLog.findMany({
+      where: { projectId },
+      orderBy: { date: "desc" },
+      include: { supervisor: { select: { id: true, name: true } } },
+    }),
+    db.timeEntry.findMany({
+      where: { projectId },
+      orderBy: { date: "desc" },
+      take: 50,
+      include: { employee: { select: { id: true, name: true } } },
+    }),
+    db.expense.findMany({
+      where: { projectId },
+      orderBy: { date: "desc" },
+      take: 50,
+      include: { employee: { select: { id: true, name: true } } },
+    }),
+    db.projectMember.findMany({
+      where: { projectId },
+      include: { user: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
+  return { projectId, dailyLogs, timeEntries, expenses, members };
+}
 
 // ─── Fetch ────────────────────────────────────────────────────────────────────
 
@@ -67,6 +98,8 @@ export async function createTimeEntry(data: {
   hourlyRate: number;
   description?: string;
 }) {
+  const session = await getSession();
+  if (!session) throw new Error("Unauthorized access");
   const { projectId, employeeId, date, hours, hourlyRate, description } = data;
   await db.timeEntry.create({
     data: {
@@ -92,6 +125,8 @@ export async function createExpense(data: {
   description?: string;
   receiptUrl?: string;
 }) {
+  const session = await getSession();
+  if (!session) throw new Error("Unauthorized access");
   const { projectId, date, amount, category, description, receiptUrl } = data;
   await db.expense.create({
     data: {
@@ -116,6 +151,8 @@ export async function createDailyLog(data: {
   safetyIncidents?: string;
   notes?: string;
 }) {
+  const session = await getSession();
+  if (!session) throw new Error("Unauthorized access");
   const { projectId, date, weatherConditions, visitors, safetyIncidents, notes } = data;
 
   const existing = await db.dailyLog.findUnique({
@@ -125,7 +162,7 @@ export async function createDailyLog(data: {
     return { success: false as const, error: "יומן עבודה כבר קיים לתאריך זה." };
   }
 
-  await db.dailyLog.create({
+  const log = await db.dailyLog.create({
     data: {
       projectId,
       date: new Date(date),
@@ -134,8 +171,34 @@ export async function createDailyLog(data: {
       safetyIncidents: safetyIncidents || null,
       notes: notes || null,
     },
+    include: { supervisor: { select: { id: true, name: true } } },
   });
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/field");
+  return { success: true as const, log };
+}
+
+export async function updateDailyLog(
+  id: string,
+  projectId: string,
+  data: {
+    weatherConditions?: string;
+    visitors?: string;
+    safetyIncidents?: string;
+    notes?: string;
+  },
+) {
+  const session = await getSession();
+  if (!session) throw new Error("Unauthorized access");
+  await db.dailyLog.update({
+    where: { id },
+    data: {
+      weatherConditions: data.weatherConditions || null,
+      visitors: data.visitors || null,
+      safetyIncidents: data.safetyIncidents || null,
+      notes: data.notes || null,
+    },
+  });
+  revalidatePath(`/projects/${projectId}`);
   return { success: true as const };
 }

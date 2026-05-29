@@ -1,14 +1,15 @@
 export const dynamic = "force-dynamic";
 
 import { ClipboardList } from "lucide-react";
-import { getAllDailyLogs } from "@/actions/field";
-import { getActiveProjects } from "@/actions/field";
+import { getTranslations } from "next-intl/server";
+import { getAllDailyLogs, getActiveProjects } from "@/actions/field";
 import { DailyLogList } from "@/components/daily-logs/daily-log-list";
 
 export default async function DailyLogsPage() {
-  const [logs, projects] = await Promise.all([
+  const [logs, projects, t] = await Promise.all([
     getAllDailyLogs(),
     getActiveProjects(),
+    getTranslations("dailyLogs"),
   ]);
 
   return (
@@ -18,10 +19,8 @@ export default async function DailyLogsPage() {
           <ClipboardList className="h-5 w-5 text-orange-600" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">יומן עבודה</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            דוחות יומיים מכל הפרויקטים
-          </p>
+          <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{t("subtitle")}</p>
         </div>
       </div>
 

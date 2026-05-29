@@ -1,12 +1,16 @@
 export const dynamic = "force-dynamic";
 
 import { UserCog } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { getEmployees, seedHRData } from "@/actions/hr";
 import { HRManager } from "@/components/hr/hr-manager";
 
 export default async function HRPage() {
   if (process.env.NODE_ENV !== "production") await seedHRData();
-  const employees = await getEmployees();
+  const [employees, t] = await Promise.all([
+    getEmployees(),
+    getTranslations("hr"),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -15,10 +19,8 @@ export default async function HRPage() {
           <UserCog className="h-5 w-5 text-emerald-600" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">ניהול עובדים</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            כוח אדם, תפקידים ותוקף אישורי בטיחות
-          </p>
+          <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{t("subtitle")}</p>
         </div>
       </div>
 

@@ -25,12 +25,6 @@ type RiskEntry = {
   status: string;
 };
 
-const RISK_STATUS: Record<string, { label: string; cls: string }> = {
-  OPEN:      { label: "פתוח",   cls: "bg-red-100 text-red-700 border-red-200" },
-  MITIGATED: { label: "בטיפול", cls: "bg-orange-100 text-orange-700 border-orange-200" },
-  CLOSED:    { label: "סגור",   cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-};
-
 function riskScore(probability: number, impact: number) {
   const score = probability * impact;
   if (score >= 16) return { label: "קריטי",  cls: "bg-red-200 text-red-900 border-red-300",           score };
@@ -94,10 +88,71 @@ export function RisksTab({
       <div className="flex flex-col items-center py-16 gap-3">
         <AlertTriangle className="h-10 w-10 text-muted-foreground/30" />
         <p className="text-sm text-muted-foreground">אין נתוני סיכונים עדיין.</p>
-        <Button variant="outline" size="sm" onClick={handleSeed} disabled={isPending}>
-          <Sparkles className="h-3.5 w-3.5 me-1.5" />
-          {isPending ? "טוען..." : "הוסף נתוני דמו"}
-        </Button>
+        <div className="flex gap-2">
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1.5">
+                <Plus className="h-3.5 w-3.5" />
+                סיכון חדש
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md" dir="rtl">
+              <DialogHeader><DialogTitle>הוספת סיכון</DialogTitle></DialogHeader>
+              <div className="space-y-3 pt-2">
+                <div className="space-y-1">
+                  <Label>תיאור הסיכון *</Label>
+                  <Textarea
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="תאר את הסיכון..."
+                    rows={3}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label>הסתברות (1-5)</Label>
+                    <Select value={form.probability} onValueChange={(v) => setForm({ ...form, probability: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {[1,2,3,4,5].map((n) => (
+                          <SelectItem key={n} value={String(n)}>{n} — {PROB_LABEL[n]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>השפעה (1-5)</Label>
+                    <Select value={form.impact} onValueChange={(v) => setForm({ ...form, impact: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {[1,2,3,4,5].map((n) => (
+                          <SelectItem key={n} value={String(n)}>{n} — {IMPACT_LABEL[n]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label>תוכנית הפחתה</Label>
+                  <Textarea
+                    value={form.mitigation}
+                    onChange={(e) => setForm({ ...form, mitigation: e.target.value })}
+                    placeholder="כיצד נתמודד עם הסיכון?"
+                    rows={2}
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button variant="outline" size="sm" onClick={() => setOpen(false)}>ביטול</Button>
+                  <Button onClick={handleAdd} disabled={isPending}>הוסף</Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Button variant="outline" size="sm" onClick={handleSeed} disabled={isPending}>
+            <Sparkles className="h-3.5 w-3.5 me-1.5" />
+            {isPending ? "טוען..." : "נתוני דמו"}
+          </Button>
+        </div>
       </div>
     );
   }

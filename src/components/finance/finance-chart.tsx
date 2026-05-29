@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { useCurrency } from "@/lib/currency-context";
 import {
   ComposedChart,
   Bar,
@@ -23,6 +25,8 @@ function CustomTooltip({
   payload?: { name: string; value: number; color: string }[];
   label?: string;
 }) {
+  const t = useTranslations("finance");
+  const { fmtCompact } = useCurrency();
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-lg border border-border bg-card px-3 py-2.5 shadow-md text-sm space-y-1">
@@ -30,15 +34,17 @@ function CustomTooltip({
       {payload.map((p) => (
         <div key={p.name} className="flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: p.color }} />
-          <span className="text-muted-foreground">{p.name}:</span>
+          <span className="text-muted-foreground">
+            {p.name === "revenue" ? t("chart.legendRevenue") : t("chart.legendCost")}:
+          </span>
           <span className="font-medium" style={{ color: p.color }}>
-            ₪{(p.value / 1000).toFixed(0)}K
+            {fmtCompact(p.value)}
           </span>
         </div>
       ))}
       {payload.length === 2 && (
         <div className="border-t border-border pt-1 mt-1">
-          <span className="text-xs text-muted-foreground">רווח: </span>
+          <span className="text-xs text-muted-foreground">{t("chart.tooltipProfit")}: </span>
           <span
             className={`text-xs font-bold ${
               payload[0].value - payload[1].value >= 0
@@ -46,7 +52,7 @@ function CustomTooltip({
                 : "text-red-600"
             }`}
           >
-            ₪{((payload[0].value - payload[1].value) / 1000).toFixed(0)}K
+            {fmtCompact(payload[0].value - payload[1].value)}
           </span>
         </div>
       )}
@@ -55,6 +61,8 @@ function CustomTooltip({
 }
 
 export function FinanceChart({ data }: { data: MonthData[] }) {
+  const t = useTranslations("finance");
+  const { fmtCompact } = useCurrency();
   return (
     <ResponsiveContainer width="100%" height={280}>
       <ComposedChart data={data} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
@@ -69,13 +77,13 @@ export function FinanceChart({ data }: { data: MonthData[] }) {
           axisLine={false}
           tickLine={false}
           tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
-          tickFormatter={(v) => `₪${v / 1000}K`}
+          tickFormatter={(v) => fmtCompact(v)}
           width={56}
         />
         <Tooltip content={<CustomTooltip />} cursor={{ fill: "var(--color-muted)", opacity: 0.3 }} />
         <Legend
           formatter={(value) =>
-            value === "revenue" ? "הכנסות" : "הוצאות"
+            value === "revenue" ? t("chart.legendRevenue") : t("chart.legendCost")
           }
           iconType="circle"
           iconSize={8}

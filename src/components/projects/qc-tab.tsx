@@ -108,13 +108,117 @@ export function QCTab({
 
   if (qualityChecks.length === 0 && ncrs.length === 0) {
     return (
-      <div className="flex flex-col items-center py-16 gap-3">
+      <div className="flex flex-col items-center py-16 gap-4">
         <ShieldCheck className="h-10 w-10 text-muted-foreground/30" />
         <p className="text-sm text-muted-foreground">אין נתוני בקרת איכות עדיין.</p>
-        <Button variant="outline" size="sm" onClick={handleSeed} disabled={isPending}>
-          <Sparkles className="h-3.5 w-3.5 me-1.5" />
-          {isPending ? "טוען..." : "הוסף נתוני דמו"}
-        </Button>
+        <div className="flex flex-wrap justify-center gap-2">
+          {/* New QC Check */}
+          <Dialog open={qcOpen} onOpenChange={setQcOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1.5">
+                <Plus className="h-3.5 w-3.5" />
+                בדיקת איכות חדשה
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md" dir="rtl">
+              <DialogHeader><DialogTitle>בדיקת איכות חדשה</DialogTitle></DialogHeader>
+              <div className="space-y-3 pt-2">
+                <div className="space-y-1">
+                  <Label>סוג בדיקה *</Label>
+                  <Input
+                    value={qcForm.type}
+                    onChange={(e) => setQcForm({ ...qcForm, type: e.target.value })}
+                    placeholder="למשל: בדיקת יסודות, בדיקת חשמל..."
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>תוצאה</Label>
+                  <Select value={qcForm.result} onValueChange={(v) => setQcForm({ ...qcForm, result: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PASS">עבר</SelectItem>
+                      <SelectItem value="FAIL">נכשל</SelectItem>
+                      <SelectItem value="PENDING">ממתין</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>מפקח</Label>
+                  <Input
+                    value={qcForm.inspector}
+                    onChange={(e) => setQcForm({ ...qcForm, inspector: e.target.value })}
+                    placeholder="שם המפקח"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>הערות</Label>
+                  <Textarea
+                    value={qcForm.notes}
+                    onChange={(e) => setQcForm({ ...qcForm, notes: e.target.value })}
+                    rows={2}
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button variant="outline" size="sm" onClick={() => setQcOpen(false)}>ביטול</Button>
+                  <Button onClick={handleAddQC} disabled={isPending}>הוסף</Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* New NCR */}
+          <Dialog open={ncrOpen} onOpenChange={setNcrOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline" className="gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                NCR חדש
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md" dir="rtl">
+              <DialogHeader><DialogTitle>דוח אי-התאמה חדש (NCR)</DialogTitle></DialogHeader>
+              <div className="space-y-3 pt-2">
+                <div className="space-y-1">
+                  <Label>תיאור הבעיה *</Label>
+                  <Textarea
+                    value={ncrForm.description}
+                    onChange={(e) => setNcrForm({ ...ncrForm, description: e.target.value })}
+                    placeholder="תאר את אי-ההתאמה..."
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>חומרה</Label>
+                  <Select value={ncrForm.severity} onValueChange={(v) => setNcrForm({ ...ncrForm, severity: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="LOW">נמוכה</SelectItem>
+                      <SelectItem value="MEDIUM">בינונית</SelectItem>
+                      <SelectItem value="HIGH">גבוהה</SelectItem>
+                      <SelectItem value="CRITICAL">קריטי</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>אחראי לטיפול</Label>
+                  <Input
+                    value={ncrForm.assignedTo}
+                    onChange={(e) => setNcrForm({ ...ncrForm, assignedTo: e.target.value })}
+                    placeholder="שם האחראי"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button variant="outline" size="sm" onClick={() => setNcrOpen(false)}>ביטול</Button>
+                  <Button onClick={handleAddNCR} disabled={isPending}>הוסף</Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Button variant="outline" size="sm" onClick={handleSeed} disabled={isPending}>
+            <Sparkles className="h-3.5 w-3.5 me-1.5" />
+            {isPending ? "טוען..." : "נתוני דמו"}
+          </Button>
+        </div>
       </div>
     );
   }

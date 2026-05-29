@@ -1,0 +1,1382 @@
+{
+  "nav": {
+    "groups": {
+      "management": "Management",
+      "field": "Field & Resources",
+      "finance": "Procurement & Finance"
+    },
+    "dashboard": "Dashboard",
+    "leads": "Leads & Sales",
+    "clients": "Clients",
+    "projects": "Projects",
+    "quotes": "Quotes",
+    "fieldReports": "Field Reports",
+    "hr": "HR",
+    "equipment": "Equipment",
+    "dailyLogs": "Work Log",
+    "tasks": "Tasks",
+    "subcontractors": "Vendors & Subs",
+    "catalog": "Catalog",
+    "finance": "Finance",
+    "settings": "Settings"
+  },
+  "common": {
+    "newClient": "New Client",
+    "newProject": "New Project",
+    "newLead": "New Lead",
+    "newTask": "New Task",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "actions": "Actions",
+    "confirm": "Confirm",
+    "logout": "Sign Out",
+    "profile": "My Profile",
+    "systemSettings": "System Settings"
+  },
+  "header": {
+    "searchPlaceholder": "Global search...",
+    "pages": {
+      "dashboard": "Dashboard",
+      "leads": "Leads & Sales",
+      "clients": "Clients",
+      "projects": "Projects",
+      "quotes": "Quotes",
+      "field": "Field Reports",
+      "daily-logs": "Work Log",
+      "catalog": "Catalog",
+      "finance": "Finance",
+      "equipment": "Equipment",
+      "hr": "HR",
+      "tasks": "Tasks",
+      "subcontractors": "Vendors & Subs",
+      "settings": "Settings",
+      "profile": "My Profile"
+    }
+  },
+  "dashboard": {
+    "kpi": {
+      "activeLeads": "Active Leads",
+      "newLeads": "{count, plural, =0 {none new} one {1 new} other {# new}}",
+      "activeProjects": "Active Projects",
+      "atRisk": "{count, plural, =0 {all on track} other {# on hold}}",
+      "openTasks": "Open Tasks",
+      "overdue": "{count, plural, =0 {no overdue} other {# overdue}}",
+      "monthlyRevenue": "Monthly Revenue",
+      "revenueFirst": "first data point",
+      "revenueVsPrev": "{change}% vs prev month"
+    },
+    "quickActions": {
+      "newLead": "New Lead",
+      "newProject": "New Project",
+      "newTask": "New Task",
+      "newClient": "New Client",
+      "invoice": "Invoice",
+      "finance": "Finance",
+      "calendar": "Calendar",
+      "fieldReport": "Field Report",
+      "suppliers": "Suppliers",
+      "comingSoon": "Coming Soon"
+    }
+  },
+  "leads": {
+    "page": {
+      "title": "Leads Management",
+      "subtitle": "Track your sales pipeline and prospects"
+    },
+    "newLead": "New Lead",
+    "close": "Close",
+    "form": {
+      "addNew": "Add New Lead",
+      "saveLead": "Save Lead",
+      "fields": {
+        "name": "Full Name",
+        "phone": "Primary Phone",
+        "phone2": "Secondary Phone",
+        "email": "Email",
+        "address": "Property Address",
+        "city": "City",
+        "source": "Lead Source",
+        "assignedRep": "Assigned Rep",
+        "constructionType": "Construction Type",
+        "budget": "Est. Budget (₪)",
+        "size": "Est. Size",
+        "notes": "Notes"
+      },
+      "placeholders": {
+        "name": "John Smith",
+        "phone": "050-1234567",
+        "phone2": "03-1234567",
+        "email": "john@example.com",
+        "address": "1 Main Street",
+        "selectCity": "Select city...",
+        "searchCity": "Search city...",
+        "selectRep": "Select rep...",
+        "searchEmp": "Search employee...",
+        "noEmployees": "No employees found",
+        "selectTypes": "Select construction types...",
+        "addType": "Add construction type...",
+        "budget": "500,000",
+        "notes": "Additional details about the lead..."
+      },
+      "addCity": "Add",
+      "cityNotFound": "City not found",
+      "toastSuccess": "Lead created successfully",
+      "toastError": "Error creating lead"
+    },
+    "table": {
+      "search": "Search by name, phone...",
+      "filterByRep": "Filter by rep",
+      "allReps": "All reps",
+      "clearFilter": "Clear filter",
+      "emptyTitle": "No leads yet",
+      "emptyDesc": "Add your first lead to start tracking your sales pipeline.",
+      "noMatch": "No leads match your filter",
+      "col": {
+        "name": "Name",
+        "phone": "Phone",
+        "address": "Property Address",
+        "city": "City",
+        "source": "Source",
+        "status": "Status",
+        "constructionType": "Construction Type",
+        "budget": "Budget",
+        "actions": "Actions"
+      },
+      "changeStatus": "Change Status",
+      "delete": "Delete",
+      "open": "Open",
+      "whatsapp": "Send WhatsApp message",
+      "confirmDeleteTitle": "Are you sure?",
+      "confirmDeleteDesc": "This will permanently delete the lead and cannot be undone.",
+      "deleteLead": "Delete Lead",
+      "toastDeleted": "Lead deleted",
+      "toastStatusUpdated": "Status updated"
+    },
+    "pipeline": {
+      "dragHere": "Drop here",
+      "noBudget": "No budget",
+      "converted": "{count} converted",
+      "lost": "{count} lost",
+      "errorStatus": "Failed to update lead status",
+      "timeNow": "now",
+      "timeMins": "{n}m",
+      "timeHours": "{n}h",
+      "timeDays": "{n}d",
+      "timeMonths": "{n}mo"
+    },
+    "view": {
+      "list": "List",
+      "pipeline": "Pipeline",
+      "listTitle": "List view",
+      "pipelineTitle": "Pipeline view"
+    },
+    "stats": {
+      "total": "Total",
+      "new": "New",
+      "active": "Active",
+      "converted": "Converted"
+    },
+    "status": {
+      "NEW": "New Lead",
+      "CONTACTED": "Contacted",
+      "MEETING_SCHEDULED": "Meeting Scheduled",
+      "QUOTE_SENT": "Quote Sent",
+      "NEGOTIATION": "Negotiation",
+      "CONVERTED": "Converted",
+      "LOST": "Lost"
+    },
+    "urgency": {
+      "HIGH": "Urgent",
+      "MEDIUM": "Medium",
+      "LOW": "Low"
+    },
+    "source": {
+      "REFERRAL": "Referral",
+      "WEBSITE": "Website",
+      "PHONE": "Phone Inquiry",
+      "SOCIAL_MEDIA": "Social Media",
+      "WALK_IN": "Walk-in",
+      "GOOGLE_ADS": "Google Ads",
+      "FACEBOOK": "Facebook / Instagram",
+      "WORD_OF_MOUTH": "Word of Mouth",
+      "COLD_CALL": "Cold Call",
+      "B2B": "B2B Client",
+      "EXHIBITION": "Exhibition / Event",
+      "WEBSITE_ORGANIC": "Organic Search / SEO",
+      "OTHER": "Other"
+    },
+    "validation": {
+      "nameTooShort": "Name must be at least 2 characters",
+      "invalidPhone": "Invalid phone number",
+      "invalidEmail": "Invalid email address"
+    },
+    "widget": {
+      "activeInPipeline": "active leads in pipeline",
+      "allLeads": "All Leads"
+    },
+    "header": {
+      "convertToClient": "Convert to Client",
+      "viewClient": "View Client",
+      "alreadyConverted": "Converted to Client",
+      "convertSuccess": "Lead converted to client successfully",
+      "convertError": "Conversion failed",
+      "deleteError": "Deletion failed",
+      "confirmDeleteDesc": "Delete lead for {name}? This action cannot be undone."
+    }
+  },
+  "clients": {
+    "page": {
+      "title": "Client Management",
+      "subtitle": "360° client card — projects, quotes & invoices",
+      "newClient": "New Client"
+    },
+    "new": {
+      "title": "New Client",
+      "subtitle": "Add a client to the system with all contact details",
+      "sectionIdentity": "Identity Details",
+      "sectionContact": "Contact Details",
+      "sectionAddrNotes": "Address & Notes",
+      "creating": "Saving...",
+      "create": "Create Client",
+      "toastSuccess": "Client created successfully",
+      "toastError": "Error creating client"
+    },
+    "form": {
+      "fields": {
+        "name": "Client Name",
+        "contactName": "Contact Person",
+        "companyNumber": "Company ID / SSN",
+        "phone": "Primary Phone",
+        "phone2": "Secondary Phone",
+        "phone2Short": "Phone 2",
+        "email": "Email",
+        "address": "Address",
+        "notes": "Notes"
+      },
+      "placeholders": {
+        "name": "Acme Ltd. / Full Name",
+        "contactName": "John Smith",
+        "companyNumber": "515XXXXXXX",
+        "phone": "050-1234567",
+        "phone2": "03-1234567",
+        "email": "contact@example.com",
+        "address": "1 Main Street, Tel Aviv",
+        "notes": "Additional info, special notes..."
+      }
+    },
+    "table": {
+      "col": {
+        "client": "Client",
+        "phone": "Phone",
+        "email": "Email",
+        "projects": "Projects",
+        "contractValue": "Contract Value",
+        "openBalance": "Open Balance",
+        "added": "Added"
+      },
+      "emptyTitle": "No clients yet",
+      "emptyDesc": "Clients are created by converting a lead. Go to Leads and convert a lead to a client.",
+      "goToLeads": "Go to Leads",
+      "active": "active",
+      "settled": "Settled",
+      "openEdit": "Open / Edit",
+      "delete": "Delete",
+      "confirmDeleteTitle": "Are you sure?",
+      "confirmDeleteDesc": "This will permanently delete the client. Clients with projects or invoices cannot be deleted.",
+      "deleteClient": "Delete Client",
+      "toastDeleted": "Client deleted",
+      "toastDeleteError": "Cannot delete this client"
+    },
+    "header": {
+      "editClient": "Edit Client",
+      "deleteClient": "Delete Client",
+      "editTitle": "Edit Client",
+      "deleteItemKind": "client",
+      "toastUpdated": "Client updated",
+      "toastUpdateError": "Error updating client",
+      "toastDeleted": "Client deleted",
+      "toastDeleteError": "Error deleting client",
+      "cascade": {
+        "projects": "All client projects",
+        "invoices": "All invoices",
+        "quotes": "All quotes",
+        "files": "All files",
+        "tasks": "All tasks and communications"
+      }
+    },
+    "tabs": {
+      "overview": "Overview",
+      "projects": "Projects",
+      "quotes": "Quotes",
+      "invoices": "Invoices",
+      "activity": "Activity Log",
+      "tasks": "Tasks",
+      "files": "Documents"
+    },
+    "overview": {
+      "contractValue": "Contract Value",
+      "totalBilled": "Total Billed",
+      "totalPaid": "Total Paid",
+      "openBalance": "Open Balance",
+      "notes": "Notes"
+    },
+    "validation": {
+      "nameTooShort": "Name must be at least 2 characters",
+      "invalidEmail": "Invalid email address"
+    }
+  },
+  "projects": {
+    "page": {
+      "title": "Project Management",
+      "subtitle": "Track progress, tasks, and project modules",
+      "newProject": "New Project",
+      "emptyTitle": "No projects yet",
+      "emptyDesc": "Click \"New Project\" at the top to create your first project.",
+      "progress": "Progress",
+      "tasks": "{count} tasks",
+      "milestones": "{count} milestones"
+    },
+    "status": {
+      "PLANNING": "Planning",
+      "ACTIVE": "Active",
+      "ON_HOLD": "On Hold",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    },
+    "new": {
+      "title": "New Project",
+      "subtitle": "Create a new project and link it to a client",
+      "sectionIdentity": "Project Details",
+      "sectionLocation": "Location & Schedule",
+      "sectionDesc": "Description",
+      "creating": "Creating project...",
+      "create": "Create Project",
+      "toastSuccess": "Project created successfully",
+      "toastError": "Error creating project"
+    },
+    "form": {
+      "fields": {
+        "name": "Project Name",
+        "client": "Client",
+        "status": "Status",
+        "contractValue": "Contract Value (₪)",
+        "address": "Site Address",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "description": "Description"
+      },
+      "placeholders": {
+        "name": "Home construction, office renovation...",
+        "client": "Select client...",
+        "clientSearch": "Search client...",
+        "clientEmpty": "No clients found",
+        "address": "Street, City",
+        "description": "Brief project description, goals, scope of work..."
+      }
+    },
+    "header": {
+      "breadcrumb": "Projects",
+      "deleteProject": "Delete Project",
+      "moreActions": "More actions",
+      "toastDeleted": "Project deleted successfully",
+      "toastDeleteError": "Error deleting project",
+      "deleteItemKind": "project",
+      "cascade": {
+        "tasks": "All tasks",
+        "milestones": "All milestones",
+        "files": "All files",
+        "invoices": "Invoices & payments",
+        "contracts": "Contracts & vendors",
+        "labor": "Labor hours & expenses",
+        "qc": "Quality checks & NCRs",
+        "risks": "Risks & change requests"
+      }
+    },
+    "edit": {
+      "trigger": "Edit Project",
+      "title": "Edit Project — {name}",
+      "saveChanges": "Save Changes",
+      "toastSuccess": "Project updated successfully",
+      "toastError": "Error updating project"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "tasks": "Tasks",
+      "financials": "Financials",
+      "field": "Field Reports",
+      "team": "Team & Equipment",
+      "prefab": "Prefab",
+      "files": "Files",
+      "milestones": "Milestones",
+      "wbs": "WBS",
+      "qc": "Quality",
+      "risks": "Risks",
+      "cr": "Changes",
+      "procurement": "Procurement",
+      "gantt": "Gantt",
+      "settings": "Settings"
+    },
+    "overview": {
+      "openTasks": "Open Tasks",
+      "doneTasks": "Completed Tasks",
+      "teamMembers": "Team Members",
+      "files": "Files",
+      "recentTasks": "Recent Tasks",
+      "upcomingMilestones": "Upcoming Milestones",
+      "teamSection": "Project Team",
+      "activityLog": "Activity Log",
+      "noActivity": "No activity recorded yet for this project.",
+      "emptyTitle": "New project — no data yet.",
+      "emptySubtitle": "Go to the Tasks tab to add tasks."
+    },
+    "taskStatus": {
+      "TODO": "To Do",
+      "IN_PROGRESS": "In Progress",
+      "BLOCKED": "Blocked",
+      "DONE": "Done"
+    },
+    "memberRole": {
+      "MANAGER": "Manager",
+      "ENGINEER": "Engineer",
+      "FOREMAN": "Foreman",
+      "VIEWER": "Viewer"
+    },
+    "relativeTime": {
+      "now": "Just now",
+      "minutesAgo": "{n} minutes ago",
+      "hoursAgo": "{n} hours ago",
+      "yesterday": "Yesterday",
+      "daysAgo": "{n} days ago"
+    },
+    "tasks": {
+      "empty": "No tasks yet.",
+      "count": "{count} tasks",
+      "emptyCell": "Empty",
+      "columns": {
+        "todo": "To Do",
+        "inprogress": "In Progress",
+        "done": "Done"
+      },
+      "priority": {
+        "LOW": "Low",
+        "MEDIUM": "Medium",
+        "HIGH": "High",
+        "URGENT": "Urgent"
+      },
+      "nextStatus": {
+        "TODO": "Start",
+        "BLOCKED": "Unblock",
+        "IN_PROGRESS": "Complete",
+        "DONE": "Reopen"
+      },
+      "newTask": "New Task",
+      "seedDemo": "Add Demo Data",
+      "form": {
+        "title": "New Task",
+        "editTitle": "Edit Task",
+        "name": "Task Name",
+        "priority": "Priority",
+        "dueDate": "Due Date",
+        "dependency": "Depends On",
+        "noDependency": "No dependency",
+        "descPlaceholder": "Additional details...",
+        "namePlaceholder": "Pour walls, lay flooring...",
+        "addTask": "Add Task",
+        "saveChanges": "Save Changes"
+      },
+      "card": {
+        "edit": "Edit",
+        "changeStatus": "Change Status",
+        "delete": "Delete"
+      },
+      "toastDeleted": "Task deleted",
+      "toastUpdated": "Task updated successfully",
+      "toastUpdateError": "Error updating task"
+    },
+    "team": {
+      "membersTitle": "Project Team ({count})",
+      "equipmentTitle": "Assigned Equipment ({count})",
+      "noMembers": "No team members assigned to this project.",
+      "noEquipment": "No equipment assigned to this project.",
+      "col": {
+        "name": "Name",
+        "role": "Project Role",
+        "equipment": "Equipment",
+        "status": "Status",
+        "assignedFrom": "Assigned From"
+      },
+      "equipmentStatus": {
+        "AVAILABLE": "Available",
+        "IN_USE": "In Use",
+        "MAINTENANCE": "Maintenance",
+        "RETIRED": "Retired"
+      }
+    },
+    "settings": {
+      "description": "Enable or disable modules for this project. Changes apply immediately.",
+      "toastError": "Error saving settings",
+      "modules": {
+        "milestones": {
+          "label": "Milestones",
+          "description": "Manage milestones and schedule"
+        },
+        "wbs": {
+          "label": "WBS / Budget",
+          "description": "Work breakdown structure and budget planning"
+        },
+        "qc": {
+          "label": "Quality Control",
+          "description": "QC checks and NCR reports"
+        },
+        "risks": {
+          "label": "Risk Management",
+          "description": "Track risks and risk matrix"
+        },
+        "cr": {
+          "label": "Change Requests",
+          "description": "Manage contract changes"
+        },
+        "procurement": {
+          "label": "Procurement",
+          "description": "Subcontractor and vendor contracts"
+        },
+        "gantt": {
+          "label": "Gantt",
+          "description": "Gantt timeline view"
+        }
+      }
+    },
+    "validation": {
+      "nameTooShort": "Name must be at least 2 characters",
+      "clientRequired": "Please select a client"
+    }
+  },
+  "field": {
+    "title": "Field Reports",
+    "subtitle": "Quick reporting forms for field workers",
+    "noProjects": "No active projects. Please create a project first.",
+    "selectProject": "Select project",
+    "selectEmployee": "Select employee",
+    "saving": "Saving...",
+    "cards": {
+      "time": {
+        "label": "Log Hours",
+        "description": "Record work hours on a project",
+        "disabledHint": "Please add employees first"
+      },
+      "expense": {
+        "label": "Field Expense",
+        "description": "Log a purchase, fuel or expense"
+      },
+      "daily": {
+        "label": "Daily Log",
+        "description": "Open a daily site log"
+      }
+    },
+    "expenseCategory": {
+      "MATERIALS": "Materials",
+      "FUEL": "Fuel",
+      "TOOLS": "Tools",
+      "MEALS": "Meals",
+      "TRANSPORT": "Transport",
+      "OTHER": "Other"
+    },
+    "weather": {
+      "SUNNY": "Sunny",
+      "CLOUDY": "Cloudy",
+      "RAINY": "Rainy",
+      "STORM": "Storm",
+      "FOGGY": "Foggy",
+      "VERY_HOT": "Very Hot"
+    },
+    "time": {
+      "sheetTitle": "Log Work Hours",
+      "project": "Project",
+      "employee": "Employee",
+      "date": "Date",
+      "hours": "Hours",
+      "hourlyRate": "Hourly Rate (₪)",
+      "hourlyRatePlaceholder": "Auto-filled from profile",
+      "description": "Description (optional)",
+      "descriptionPlaceholder": "Work type, notes...",
+      "estimatedCost": "Estimated cost: ₪{amount}",
+      "save": "Save Hours",
+      "toastSuccess": "Hours logged successfully!"
+    },
+    "expense": {
+      "sheetTitle": "Field Expense",
+      "project": "Project",
+      "date": "Date",
+      "amount": "Amount (₪)",
+      "category": "Category",
+      "description": "Description (optional)",
+      "descriptionPlaceholder": "Describe the expense...",
+      "receiptUrl": "Receipt link (optional)",
+      "receiptPlaceholder": "https://... or receipt number",
+      "save": "Save Expense",
+      "toastSuccess": "Expense saved successfully!"
+    },
+    "daily": {
+      "sheetTitle": "Daily Work Log",
+      "project": "Project",
+      "date": "Date",
+      "weather": "Weather Conditions",
+      "weatherPlaceholder": "Select weather",
+      "visitors": "Visitors / External Parties",
+      "visitorsPlaceholder": "Safety inspector, city engineer...",
+      "safetyIncidents": "Safety Incidents",
+      "safetyPlaceholder": "None / describe incident...",
+      "notes": "General Notes",
+      "notesPlaceholder": "Work performed today, issues raised...",
+      "save": "Save Log",
+      "toastSuccess": "Daily log saved successfully!",
+      "toastError": "Error saving daily log"
+    }
+  },
+  "hr": {
+    "title": "Employee Management",
+    "subtitle": "HR, roles and safety certificate validity",
+    "certStatus": {
+      "valid": "Valid",
+      "expired": "Expired",
+      "pending": "Pending"
+    },
+    "stats": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "certValid": "Valid Cert",
+      "certExpired": "Expired Cert"
+    },
+    "search": "Search employee, trade...",
+    "showInactive": "Show inactive",
+    "addEmployee": "Add Employee",
+    "newEmployee": "New Employee",
+    "table": {
+      "employee": "Employee",
+      "trade": "Trade",
+      "phone": "Phone",
+      "hourlyRate": "Hourly Rate",
+      "cert": "Safety Cert",
+      "active": "Active",
+      "actions": "Actions"
+    },
+    "empty": "No employees found.",
+    "timeEntries": "{count} time entries",
+    "hourlyRateDisplay": "₪{rate}/hr",
+    "form": {
+      "fullName": "Full Name",
+      "trade": "Trade / Role",
+      "phone": "Phone",
+      "idNumber": "ID Number",
+      "hourlyRate": "Hourly Rate (₪)",
+      "startDate": "Start Date",
+      "namePlaceholder": "John Smith",
+      "tradePlaceholder": "Site Manager",
+      "phonePlaceholder": "050-1234567",
+      "idPlaceholder": "123456789",
+      "nameRequired": "Employee name is required."
+    },
+    "edit": {
+      "title": "Edit Employee — {name}",
+      "save": "Save Changes",
+      "toastSuccess": "Employee updated",
+      "toastError": "Error updating employee",
+      "updateError": "Update error"
+    },
+    "delete": {
+      "confirm": "Are you sure?",
+      "description": "This will permanently delete the employee and cannot be undone.",
+      "action": "Delete Employee",
+      "toastSuccess": "Employee deleted successfully",
+      "toastError": "Cannot delete this employee",
+      "deleteError": "Delete error"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete"
+    }
+  },
+  "equipment": {
+    "title": "Equipment Management",
+    "subtitle": "Tools, vehicles and heavy machinery",
+    "status": {
+      "AVAILABLE": "Available",
+      "IN_USE": "In Use",
+      "MAINTENANCE": "Maintenance",
+      "RETIRED": "Retired"
+    },
+    "filter": {
+      "ALL": "All",
+      "AVAILABLE": "Available",
+      "IN_USE": "In Use",
+      "MAINTENANCE": "Maintenance"
+    },
+    "stats": {
+      "total": "Total Equipment",
+      "inUse": "In Use",
+      "maintenance": "Maintenance",
+      "totalValue": "Total Value"
+    },
+    "search": "Search equipment, code...",
+    "addEquipment": "Add Equipment",
+    "newEquipment": "New Equipment",
+    "table": {
+      "equipment": "Equipment",
+      "status": "Status",
+      "project": "Current Project",
+      "value": "Value",
+      "actions": "Actions"
+    },
+    "empty": "No equipment found.",
+    "form": {
+      "name": "Equipment Name",
+      "code": "Equipment Code",
+      "value": "Value (₪)",
+      "purchaseDate": "Purchase Date",
+      "notes": "Notes",
+      "namePlaceholder": "CAT 320 Excavator",
+      "codePlaceholder": "EQ-011",
+      "notesPlaceholder": "Additional info...",
+      "nameRequired": "Equipment name is required."
+    },
+    "assign": {
+      "title": "Assign Equipment to Project",
+      "project": "Project",
+      "selectProject": "Select project...",
+      "submit": "Assign",
+      "toastSuccess": "Equipment assigned to project",
+      "action": "Assign to Project"
+    },
+    "unassign": {
+      "action": "Release from Project",
+      "toastSuccess": "Equipment released from project"
+    },
+    "add": {
+      "toastSuccess": "Equipment added successfully"
+    },
+    "delete": {
+      "confirm": "Are you sure?",
+      "description": "This will permanently delete the equipment and cannot be undone.",
+      "action": "Delete Equipment",
+      "toastSuccess": "Equipment deleted successfully",
+      "toastError": "Cannot delete this equipment",
+      "deleteError": "Delete error"
+    },
+    "actions": {
+      "delete": "Delete"
+    }
+  },
+  "dailyLogs": {
+    "title": "Work Log",
+    "subtitle": "Daily reports from all projects",
+    "stats": {
+      "total": "Total Logs",
+      "activeProjects": "Active Projects",
+      "thisWeek": "This Week"
+    },
+    "search": "Search by project, notes...",
+    "newLog": "New Log",
+    "sheetTitle": "New Work Log",
+    "empty": "No work logs yet.",
+    "emptyHint": "Click \"New Log\" to add a daily report.",
+    "form": {
+      "project": "Project",
+      "date": "Date",
+      "weather": "Weather Conditions",
+      "weatherPlaceholder": "Clear, +28°",
+      "visitors": "Visitors / Supervision",
+      "visitorsPlaceholder": "City engineer, safety inspector...",
+      "safetyIncidents": "Safety Incidents",
+      "safetyPlaceholder": "None / describe incident...",
+      "notes": "General Notes",
+      "notesPlaceholder": "Work performed today...",
+      "selectProject": "Select project...",
+      "projectRequired": "Please select a project.",
+      "dateRequired": "Please enter a date."
+    },
+    "save": "Save Log"
+  },
+  "globalTasks": {
+    "title": "Tasks",
+    "subtitle": "Global task engine — all tasks in one place",
+    "stats": {
+      "todo": "To Do",
+      "inProgress": "In Progress",
+      "blocked": "Blocked",
+      "done": "Done"
+    },
+    "newTask": "New Task",
+    "groups": {
+      "projects": "Project Tasks",
+      "leads": "Sales & Leads",
+      "clients": "Client Tasks",
+      "personal": "Personal Tasks"
+    },
+    "groupEmpty": {
+      "projects": "No active project tasks.",
+      "leads": "No active sales tasks.",
+      "clients": "No active client tasks.",
+      "personal": "No personal tasks. Click \"New Task\" and choose \"Personal\"."
+    },
+    "doneCount": "{count} completed",
+    "doneTasksCount": "{count} completed tasks",
+    "empty": "No tasks yet. Click \"New Task\" to add one.",
+    "actions": {
+      "edit": "Edit Task",
+      "delete": "Delete Task",
+      "actions": "Actions"
+    },
+    "status": {
+      "TODO": "To Do",
+      "IN_PROGRESS": "In Progress",
+      "BLOCKED": "Blocked",
+      "DONE": "Done"
+    },
+    "priority": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High",
+      "URGENT": "Urgent"
+    },
+    "type": {
+      "GENERAL": "Task",
+      "CALL": "Call",
+      "MEETING": "Meeting",
+      "EMAIL": "Email"
+    },
+    "context": {
+      "personal": "Personal",
+      "project": "Project",
+      "lead": "Lead",
+      "client": "Client"
+    },
+    "form": {
+      "title": "New Task",
+      "name": "Task Name",
+      "namePlaceholder": "Add task name...",
+      "type": "Type",
+      "context": "Assign to",
+      "selectProject": "Select project...",
+      "selectLead": "Select lead...",
+      "selectClient": "Select client...",
+      "noItems": "No items available",
+      "dueDate": "Due Date & Time",
+      "priority": "Priority",
+      "assignee": "Assign to (optional)",
+      "noAssignee": "Unassigned",
+      "description": "Description (optional)",
+      "descPlaceholder": "Add description...",
+      "creating": "Creating...",
+      "create": "Create Task",
+      "nameRequired": "Task name is required",
+      "toastSuccess": "Task created successfully",
+      "toastError": "Error creating task"
+    },
+    "edit": {
+      "title": "Edit Task",
+      "name": "Task Name",
+      "namePlaceholder": "Task name...",
+      "status": "Status",
+      "priority": "Priority",
+      "dueDate": "Due Date & Time",
+      "description": "Description (optional)",
+      "descPlaceholder": "Add description...",
+      "saving": "Saving...",
+      "save": "Save Changes",
+      "nameRequired": "Task name is required",
+      "toastSuccess": "Task updated successfully",
+      "toastError": "Error updating task"
+    },
+    "deleteConfirm": {
+      "title": "Delete Task",
+      "description": "This action cannot be undone. The task will be permanently deleted.",
+      "action": "Delete",
+      "toastSuccess": "Task deleted",
+      "toastError": "Error deleting task"
+    }
+  },
+  "subcontractors": {
+    "title": "Vendors & Subcontractors",
+    "subtitle": "Manage vendors, subcontractors and their ratings",
+    "type": {
+      "SUBCONTRACTOR": "Subcontractor",
+      "SUPPLIER": "Vendor"
+    },
+    "filter": {
+      "ALL": "All",
+      "SUBCONTRACTOR": "Subcontractors",
+      "SUPPLIER": "Vendors"
+    },
+    "searchPlaceholder": "Search by name, contact, phone...",
+    "add": "Add Vendor / Sub",
+    "count": "Showing {visible} of {total} records",
+    "table": {
+      "name": "Name",
+      "type": "Type",
+      "contact": "Contact",
+      "contactInfo": "Contact Info",
+      "rating": "Rating",
+      "contracts": "Contracts",
+      "actions": "Actions"
+    },
+    "empty": {
+      "title": "No vendors or subcontractors found",
+      "hint": "Click \"Add Vendor / Sub\" to get started"
+    },
+    "form": {
+      "addTitle": "Add Vendor / Subcontractor",
+      "editTitle": "Edit Vendor / Sub — {name}",
+      "typeFld": "Type *",
+      "companyName": "Company / Individual Name *",
+      "namePlaceholder": "Vendor name...",
+      "contact": "Contact Person",
+      "contactPlaceholder": "Full name",
+      "phone": "Phone",
+      "email": "Email",
+      "address": "Address",
+      "addressPlaceholder": "Street, City",
+      "notes": "Notes",
+      "notesPlaceholder": "Specialty, payment terms...",
+      "addBtn": "Add",
+      "saveBtn": "Save Changes"
+    },
+    "delete": {
+      "title": "Are you sure?",
+      "description": "This will permanently delete the record. Vendors with associated contracts cannot be deleted."
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "toast": {
+      "addSuccess": "Added successfully",
+      "addError": "Error adding record",
+      "updateSuccess": "Updated successfully",
+      "updateError": "Error updating record",
+      "deleteSuccess": "Record deleted successfully"
+    }
+  },
+  "catalog": {
+    "title": "Item Catalog",
+    "subtitle": "Manage price list, units of measure and categories",
+    "itemCount": "{count} active items",
+    "catItemCount": "{count} items",
+    "defaultCategory": "General",
+    "toolbar": {
+      "seed": "Load Demo Data",
+      "downloadTemplate": "Download Template",
+      "export": "Export CSV",
+      "import": "Import CSV",
+      "newItem": "New Item"
+    },
+    "empty": "Catalog is empty — add items manually, import CSV, or load demo data",
+    "table": {
+      "name": "Item Name",
+      "sku": "SKU",
+      "unit": "Unit",
+      "unitCost": "Unit Cost",
+      "description": "Description"
+    },
+    "form": {
+      "addTitle": "New Item",
+      "editTitle": "Edit Item",
+      "name": "Item Name *",
+      "namePlaceholder": "60×60 Granite Tile",
+      "sku": "SKU",
+      "category": "Category",
+      "categoryPlaceholder": "Flooring, Labour...",
+      "unit": "Unit *",
+      "unitCost": "Unit Cost (₪)",
+      "description": "Description",
+      "descPlaceholder": "Brief description...",
+      "save": "Save"
+    },
+    "import": {
+      "title": "Import Items from CSV",
+      "dropTitle": "Drag a CSV / Excel file here",
+      "dropHint": "or click to select a file",
+      "preview": "Preview ({count} rows)",
+      "importBtn": "Import",
+      "toastEmpty": "File is empty or invalid",
+      "toastSuccess": "Imported {count} items successfully",
+      "toastError": "Error importing file"
+    },
+    "csvHeaders": {
+      "name": "Product Name",
+      "sku": "SKU",
+      "category": "Category",
+      "unit": "Unit",
+      "unitCost": "Unit Cost"
+    },
+    "toast": {
+      "exportEmpty": "Catalog is empty",
+      "exportSuccess": "Exported {count} items",
+      "templateSuccess": "Template file downloaded"
+    }
+  },
+  "finance": {
+    "title": "Financial Management",
+    "subtitle": "Revenue, costs and profitability · Company-wide ledger",
+    "kpi": {
+      "revenue": "Collected Revenue",
+      "outstanding": "Receivables (Open)",
+      "cost": "Actual Costs",
+      "costSub": "Labour + Materials + Subs",
+      "grossProfit": "Gross Profit",
+      "projects": "{count} projects",
+      "margin": "Margin {pct}%"
+    },
+    "tabs": {
+      "dashboard": "Analytics Dashboard",
+      "ledger": "Transaction Ledger"
+    },
+    "chart": {
+      "title": "Revenue vs Expenses — 12 Months",
+      "subtitle": "Bars = Collected Revenue · Line = Actual Expenses",
+      "overallMargin": "Overall margin {pct}%",
+      "empty": "No revenue/expense data yet — will appear once invoices and field reports are entered",
+      "legendRevenue": "Revenue",
+      "legendCost": "Expenses",
+      "tooltipProfit": "Profit"
+    },
+    "projectPL": {
+      "title": "P&L by Project",
+      "empty": "No projects yet",
+      "colProject": "Project",
+      "colContract": "Contract Value",
+      "colCost": "Actual Cost",
+      "colGrossProfit": "Gross Profit",
+      "colOutstanding": "Receivables",
+      "colMargin": "Margin"
+    },
+    "projectStatus": {
+      "PLANNING": "Planning",
+      "ACTIVE": "Active",
+      "ON_HOLD": "On Hold",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    },
+    "ledger": {
+      "title": "Transaction Ledger — Company-Wide",
+      "subtitle": "Receipts from clients (green) and payments to subs/expenses (red) — in one view",
+      "summary": {
+        "inbound": "Receipts",
+        "outbound": "Payments",
+        "net": "Net"
+      },
+      "filters": {
+        "search": "Search...",
+        "typeAll": "All Transactions",
+        "typeInbound": "Receipts Only",
+        "typeOutbound": "Payments Only",
+        "allProjects": "All Projects",
+        "fromDate": "From Date",
+        "toDate": "To Date"
+      },
+      "table": {
+        "date": "Date",
+        "type": "Type",
+        "description": "Description",
+        "project": "Project",
+        "reference": "Reference",
+        "amount": "Amount"
+      },
+      "types": {
+        "INBOUND": "Receipt",
+        "OUTBOUND_SUPPLIER": "Sub/Vendor",
+        "OUTBOUND_EXPENSE": "Expense"
+      },
+      "empty": "No matching transactions found",
+      "entryCount": "{count} transactions"
+    }
+  },
+  "quotes": {
+    "title": "Quotes",
+    "subtitle": "{count} quotes",
+    "newQuote": "New Quote",
+    "lead": "Lead",
+    "empty": "No quotes yet",
+    "status": {
+      "DRAFT": "Draft",
+      "SENT": "Sent",
+      "ACCEPTED": "Accepted",
+      "REJECTED": "Rejected",
+      "EXPIRED": "Expired"
+    },
+    "table": {
+      "number": "Quote No.",
+      "client": "Client / Lead",
+      "date": "Date",
+      "validUntil": "Valid Until",
+      "status": "Status",
+      "items": "Items",
+      "total": "Total"
+    },
+    "actions": {
+      "open": "Open Quote",
+      "delete": "Delete"
+    },
+    "dialog": {
+      "title": "New Quote",
+      "modeClient": "Client",
+      "modeLead": "Lead",
+      "clientLabel": "Client *",
+      "leadLabel": "Lead *",
+      "clientPlaceholder": "Select client...",
+      "leadPlaceholder": "Select lead...",
+      "clientSearch": "Search clients...",
+      "leadSearch": "Search leads...",
+      "noClients": "No clients found",
+      "noLeads": "No leads found",
+      "errorSelectClient": "Select a client",
+      "errorSelectLead": "Select a lead",
+      "create": "Create Quote"
+    },
+    "header": {
+      "client": "Client",
+      "date": "Quote Date",
+      "validUntil": "Valid Until",
+      "status": "Status",
+      "notes": "Notes",
+      "notesPlaceholder": "Notes for this quote...",
+      "selectClient": "Select client"
+    },
+    "detail": {
+      "breadcrumb": "Quotes",
+      "newQuoteLabel": "New Quote",
+      "noAssignment": "Unassigned",
+      "headerSection": "Quote Details",
+      "itemsSection": "Quote Items"
+    },
+    "calc": {
+      "viewInternal": "Internal View",
+      "viewClient": "Client View",
+      "colDesc": "Description / Catalog",
+      "colUnit": "Unit",
+      "colDim1": "Dim 1",
+      "colDim2": "Dim 2 (cm)",
+      "colQty": "Qty",
+      "colUnitPrice": "Sell Price",
+      "colCost": "Cost",
+      "colMarginPct": "Margin%",
+      "colEstProfit": "Profit ₪",
+      "colProfit": "Profit%",
+      "colTotal": "Total",
+      "colCatalog": "Catalog",
+      "itemPlaceholder": "Item name",
+      "emptyCategory": "No items in this chapter — click «Add Row» below",
+      "addRow": "Add Row to Chapter",
+      "catSubtotal": "Chapter Total {name}",
+      "noCategory": "Uncategorized",
+      "emptyUncategorized": "No items — click «Add Row» to start",
+      "addRowUncategorized": "Add Row",
+      "addCategory": "Add Chapter",
+      "save": "Save Quote",
+      "saving": "Saving...",
+      "saved": "Saved!",
+      "subtotal": "Subtotal",
+      "contingency": "Contingency",
+      "contingencyPct": "Contingency %",
+      "contingencyAmount": "Contingency Amount",
+      "totalBeforeVat": "Total Before VAT",
+      "internalProfitLabel": "Total Profit (internal)",
+      "internalMarginLabel": "Margin (internal)",
+      "tax": "VAT {pct}%",
+      "grandTotal": "Grand Total",
+      "noItemName": "Unnamed",
+      "additionalItems": "Additional Items",
+      "additionalSubtotal": "Additional Items Total",
+      "subtotalBeforeTax": "Subtotal (before VAT)",
+      "notesLabel": "Notes",
+      "docDate": "Date",
+      "docValidUntil": "Valid Until",
+      "chapterPrefix": "Chapter",
+      "selectCatalog": "Select",
+      "renameCategory": "Rename Chapter",
+      "deleteCategory": "Delete Chapter",
+      "newChapterName": "New Chapter",
+      "toastNewChapter": "New chapter created: {name}",
+      "noChapter": "Uncategorized",
+      "forClient": "For",
+      "docTitle": "Quote {number}"
+    }
+  },
+  "hardDelete": {
+    "title": "Critical Warning: Permanent Data Deletion",
+    "warning": "This will permanently delete the {itemKind} \"{itemName}\" and all associated data.",
+    "cantUndo": "This action cannot be undone.",
+    "willBeDeleted": "What will be permanently deleted:",
+    "typeToConfirm": "To confirm, type the exact name:",
+    "nameMismatch": "Name does not match — exact match required including spaces",
+    "cancel": "Cancel",
+    "deleting": "Deleting...",
+    "deleteForever": "Delete Permanently"
+  },
+  "language": {
+    "he": "עברית",
+    "en": "English",
+    "switchTo": "Switch to {lang}"
+  },
+  "settings": {
+    "title": "System Settings",
+    "subtitle": "Company details, personal preferences and user management",
+    "tabs": {
+      "company": "Company",
+      "financials": "Financials",
+      "documents": "Documents",
+      "preferences": "Preferences",
+      "users": "Users & Roles",
+      "appearance": "Appearance"
+    },
+    "roles": {
+      "ADMIN": "System Admin",
+      "OFFICE_MANAGER": "Office Manager",
+      "PROJECT_MANAGER": "Project Manager",
+      "FIELD_WORKER": "Field Worker"
+    },
+    "save": "Save",
+    "saved": "Settings saved",
+    "noteLabel": "Note",
+    "company": {
+      "title": "Company Details",
+      "subtitle": "These details appear on quotes, invoices and documents.",
+      "fields": {
+        "company_name": "Company Name",
+        "company_phone": "Phone",
+        "company_email": "Email",
+        "company_address": "Address",
+        "company_vat": "Tax ID / Reg. No."
+      },
+      "placeholders": {
+        "company_name": "BuildPro Construction Ltd.",
+        "company_phone": "03-1234567",
+        "company_email": "office@company.co.il",
+        "company_address": "1 Herzl St, Tel Aviv",
+        "company_vat": "123456789"
+      },
+      "logo": {
+        "title": "Company Logo",
+        "subtitle": "The logo appears on quotes and official documents.",
+        "upload": "Upload Logo",
+        "hint": "PNG, JPG up to 2 MB",
+        "placeholder": "Logo"
+      },
+      "systemInfo": {
+        "title": "System Info",
+        "version": "System Version",
+        "db": "Database",
+        "currency": "Currency",
+        "lang": "Language",
+        "versionValue": "BuildPro v1.0",
+        "dbValue": "SQLite (dev)",
+        "currencyValue": "Israeli Shekel (₪ ILS)",
+        "langValue": "Hebrew (HE)",
+        "langValueEn": "English (EN)"
+      },
+      "save": "Save",
+      "saved": "Settings saved"
+    },
+    "preferences": {
+      "title": "Notifications & Interface",
+      "subtitle": "These settings apply to your personal account.",
+      "saved": "Preferences saved",
+      "save": "Save Preferences",
+      "toggles": {
+        "notif_tasks": {
+          "label": "Task Notifications",
+          "description": "Get notified when a task is assigned to you or changes status"
+        },
+        "notif_invoices": {
+          "label": "Invoice Notifications",
+          "description": "Get notified when an invoice due date is approaching"
+        },
+        "notif_leads": {
+          "label": "New Lead Alerts",
+          "description": "Get notified when a new lead is received"
+        },
+        "notif_daily": {
+          "label": "Daily Log Reminder",
+          "description": "Daily morning reminder to submit your work log"
+        },
+        "notif_safety": {
+          "label": "Urgent Safety Events",
+          "description": "Immediate alert for every safety report"
+        },
+        "compact_view": {
+          "label": "Compact View",
+          "description": "Show tables with denser rows"
+        }
+      }
+    },
+    "users": {
+      "title": "System Users",
+      "subtitle": "Assign roles and control access. Role changes take effect immediately.",
+      "colUser": "User",
+      "colEmail": "Email",
+      "colRole": "Role",
+      "colActive": "Active",
+      "note": "Setting a role to \"Field Worker\" restricts access to financial data and contract amounts. ADMIN is the only role with full access to profit/loss reports."
+    },
+    "financials": {
+      "title": "Financial Settings",
+      "subtitle": "These values are used for VAT calculations and currency display on documents.",
+      "vatLabel": "VAT Rate (%)",
+      "vatDefault": "(default: 17%)",
+      "currencyLabel": "Default Currency",
+      "currencies": {
+        "ILS": "Israeli Shekel (₪ ILS)",
+        "USD": "US Dollar ($ USD)",
+        "EUR": "Euro (€ EUR)"
+      },
+      "save": "Save",
+      "saved": "Settings saved",
+      "note": "Changing the VAT rate affects calculations on new quotes and invoices only. Existing documents are not affected.",
+      "measurementLabel": "Measurement System",
+      "measurementOptions": {
+        "AUTO": "Auto (By Language)",
+        "METRIC": "Metric (m, sqm)",
+        "IMPERIAL": "Imperial (ft, sq ft)"
+      }
+    },
+    "documents": {
+      "title": "Document Footers",
+      "subtitle": "Text that appears at the bottom of your quotes and invoices.",
+      "quoteFooterLabel": "Quote Footer",
+      "quoteFooterHint": "E.g.: payment terms, legal notes, warranties.",
+      "quoteFooterPlaceholder": "Payment: 30% deposit, balance on completion.\nValidity: 30 days.\nThis quote is not binding until signed by the client.",
+      "invoiceFooterLabel": "Invoice Footer",
+      "invoiceFooterHint": "E.g.: bank details, account number, payment terms.",
+      "invoiceFooterPlaceholder": "Bank: Bank Leumi, Branch 900, Account 12345678.\nPayment due 30 days from invoice date.\nEnquiries: office@company.co.il",
+      "charCount": "{count} / 1000 characters",
+      "save": "Save",
+      "saved": "Settings saved"
+    },
+    "appearance": {
+      "title": "Color Scheme",
+      "subtitle": "Choose your preferred interface look. The selection is saved locally in the browser.",
+      "activeTheme": "Active theme:",
+      "animations": {
+        "title": "Animations",
+        "subtitle": "Control motion effects. Disabling is recommended for motion-sensitive users.",
+        "label": "Disable background animations",
+        "description": "Remove blob animations from the main background"
+      },
+      "themes": {
+        "light": "Light",
+        "dark": "Dark",
+        "teal": "Dark Teal",
+        "slate": "Steel",
+        "indigo": "Indigo",
+        "blue": "Ocean Blue",
+        "green": "Fresh Green",
+        "purple": "Royal Purple",
+        "rose": "Rose",
+        "orange": "Sunset Orange",
+        "amber": "Amber"
+      }
+    }
+  }
+}

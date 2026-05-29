@@ -1,14 +1,34 @@
 import { z } from "zod";
 
-export const clientSchema = z.object({
-  name: z.string().min(2, "שם חייב להכיל לפחות 2 תווים"),
-  contactName: z.string().optional(),
-  phone: z.string().optional(),
-  phone2: z.string().optional(),
-  email: z.string().email("כתובת אימייל לא תקינה").optional().or(z.literal("")),
-  address: z.string().optional(),
-  companyNumber: z.string().optional(),
-  notes: z.string().optional(),
-});
+// ─── Validation message overrides ────────────────────────────────────────────
 
-export type ClientInput = z.infer<typeof clientSchema>;
+export type ClientValidationMessages = {
+  nameTooShort?: string;
+  invalidEmail?: string;
+};
+
+const DEFAULT_MSGS = {
+  nameTooShort: "שם חייב להכיל לפחות 2 תווים",
+  invalidEmail: "כתובת אימייל לא תקינה",
+};
+
+// ─── Schema factory ───────────────────────────────────────────────────────────
+
+export function buildClientSchema(msgs: ClientValidationMessages = {}) {
+  const m = { ...DEFAULT_MSGS, ...msgs };
+  return z.object({
+    name:          z.string().min(2, m.nameTooShort),
+    contactName:   z.string().optional(),
+    phone:         z.string().optional(),
+    phone2:        z.string().optional(),
+    email:         z.string().email(m.invalidEmail).optional().or(z.literal("")),
+    address:       z.string().optional(),
+    companyNumber: z.string().optional(),
+    notes:         z.string().optional(),
+  });
+}
+
+// ─── Default export (used by server actions — stays Hebrew) ───────────────────
+
+export const clientSchema = buildClientSchema();
+export type ClientInput = z.infer<ReturnType<typeof buildClientSchema>>;

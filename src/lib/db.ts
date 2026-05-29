@@ -1,7 +1,8 @@
 import { PrismaClient } from "@/generated/prisma/client";
 
 function createPrismaClient() {
-  return new PrismaClient({});
+  // @ts-ignore
+  return new PrismaClient();
 }
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };

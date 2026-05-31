@@ -1,20 +1,33 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useCurrency } from "@/lib/currency-context";
 import { ChevronLeft, AlertCircle, Clock } from "lucide-react";
 import type { DashboardData } from "./types";
 
-const STATUS_CFG: Record<string, { label: string; dot: string }> = {
-  SENT:           { label: "נשלחה",       dot: "bg-blue-400" },
-  PARTIALLY_PAID: { label: "שולמה חלקית", dot: "bg-orange-400" },
-  OVERDUE:        { label: "בפיגור",       dot: "bg-red-500" },
-};
-
 export function InvoicesDueWidget({ data }: { data: DashboardData }) {
+  const t = useTranslations("widgets.invoicesDue");
   const { fmtCompact } = useCurrency();
   const invoices = data.invoicesDue;
   const totalDue = invoices.reduce((s, inv) => s + (inv.total - inv.paidAmount), 0);
+
+  const STATUS_DOT: Record<string, string> = {
+    SENT:           "bg-blue-400",
+    PARTIALLY_PAID: "bg-orange-400",
+    OVERDUE:        "bg-red-500",
+  };
+
+  function getDueDateText(inv: (typeof invoices)[number]): string {
+    if (!inv.dueDate) return "";
+    const d = new Date(inv.dueDate);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const diff = Math.round((d.getTime() - today.getTime()) / 86_400_000);
+    if (diff < 0)   return t("daysOverdue", { n: Math.abs(diff) });
+    if (diff === 0) return t("today");
+    if (diff === 1) return t("tomorrow");
+    return t("daysLeft", { n: diff });
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -22,7 +35,7 @@ export function InvoicesDueWidget({ data }: { data: DashboardData }) {
       {invoices.length > 0 && (
         <div className="px-4 pt-3 pb-2 border-b border-border/40 shrink-0">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">{invoices.length} חשבוניות פתוחות</span>
+            <span className="text-xs text-muted-foreground">{t("openCount", { count: invoices.length })}</span>
             <span className="text-sm font-bold text-orange-600">{fmtCompact(totalDue)}</span>
           </div>
         </div>
@@ -31,29 +44,19 @@ export function InvoicesDueWidget({ data }: { data: DashboardData }) {
       {invoices.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
           <AlertCircle className="h-8 w-8 text-emerald-400/60" />
-          <p className="text-sm text-muted-foreground">אין חשבוניות פתוחות</p>
+          <p className="text-sm text-muted-foreground">{t("noOpenInvoices")}</p>
         </div>
       ) : (
         <ul className="flex-1 divide-y divide-border overflow-auto">
           {invoices.map((inv) => {
             const balance = inv.total - inv.paidAmount;
-            const cfg = STATUS_CFG[inv.status] ?? STATUS_CFG.SENT;
+            const dot = STATUS_DOT[inv.status] ?? STATUS_DOT.SENT;
             const isOverdue = inv.status === "OVERDUE";
-
-            let dueDateText = "";
-            if (inv.dueDate) {
-              const d = new Date(inv.dueDate);
-              const today = new Date(); today.setHours(0,0,0,0);
-              const diff = Math.round((d.getTime() - today.getTime()) / 86_400_000);
-              if (diff < 0)   dueDateText = `${Math.abs(diff)}י׳ פיגור`;
-              else if (diff === 0) dueDateText = "היום";
-              else if (diff === 1) dueDateText = "מחר";
-              else             dueDateText = `${diff} ימים`;
-            }
+            const dueDateText = getDueDateText(inv);
 
             return (
               <li key={inv.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors">
-                <div className={`h-2 w-2 rounded-full shrink-0 ${cfg.dot}`} />
+                <div className={`h-2 w-2 rounded-full shrink-0 ${dot}`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <Link
@@ -89,7 +92,7 @@ export function InvoicesDueWidget({ data }: { data: DashboardData }) {
           href="/finance"
           className="flex items-center justify-end gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
         >
-          לכל החשבוניות <ChevronLeft className="h-3.5 w-3.5" />
+          {t("allInvoices")} <ChevronLeft className="h-3.5 w-3.5" />
         </Link>
       </div>
     </div>

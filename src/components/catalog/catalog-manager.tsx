@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { useCurrency } from "@/lib/currency-context";
@@ -27,7 +27,7 @@ import {
   createCatalogItem, updateCatalogItem, deleteCatalogItem,
   seedCatalogItems, bulkImportCatalogItems,
 } from "@/actions/catalog";
-import { catalogItemSchema, type CatalogItemInput } from "@/lib/schemas/catalog-schema";
+import { buildCatalogItemSchema, type CatalogItemInput } from "@/lib/schemas/catalog-schema";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -96,9 +96,17 @@ function ItemDialog({
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  const schema = useMemo(
+    () => buildCatalogItemSchema({
+      nameRequired: t("validation.nameRequired"),
+      unitRequired: t("validation.unitRequired"),
+    }),
+    [t],
+  );
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm<CatalogItemInput>({
-    resolver: zodResolver(catalogItemSchema),
-    defaultValues: { unit: "יח'", ...defaultValues },
+    resolver: zodResolver(schema),
+    defaultValues: { unit: t("unitDefault"), ...defaultValues },
   });
 
   function submit(data: CatalogItemInput) {
@@ -216,7 +224,7 @@ function ImportDialog({ onDone }: { onDone: () => void }) {
         name:     r[0] ?? "",
         sku:      r[1] ?? "",
         category: r[2] ?? "",
-        unit:     r[3] ?? "יח'",
+        unit:     r[3] ?? t("unitDefault"),
         unitCost: parseFloat(r[4] ?? "0") || 0,
       }))
       .filter((r) => r.name.trim() && r.unit.trim());
@@ -368,8 +376,8 @@ export function CatalogManager({ initialItems }: Props) {
 
   function handleDownloadTemplate() {
     downloadCsv("catalog-template.csv", csvHeaders, [
-      [locale === "he" ? "שם לדוגמה" : "Sample Item", "SKU-001", locale === "he" ? "ריצוף" : "Flooring", areaUnit, "65"],
-      [locale === "he" ? "שם לדוגמה 2" : "Sample Item 2", "LAB-001", locale === "he" ? "עבודה" : "Labour", locale === "he" ? "שעה" : "hr", "120"],
+      [t("templateRows.name1"), "SKU-001", t("templateRows.category1"), areaUnit, "65"],
+      [t("templateRows.name2"), "LAB-001", t("templateRows.category2"), t("templateRows.unit2"), "120"],
     ]);
     toast.success(t("toast.templateSuccess"));
   }

@@ -1,14 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
-const HE_DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
-const HE_MONTHS_FULL = [
-  "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
-  "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
-];
+import { useTranslations, useLocale } from "next-intl";
 
 export function ClockWidget() {
+  const t = useTranslations("widgets.clock");
+  const locale = useLocale();
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -30,8 +27,12 @@ export function ClockWidget() {
   const hh  = String(now.getHours()).padStart(2, "0");
   const mm  = String(now.getMinutes()).padStart(2, "0");
   const ss  = String(now.getSeconds()).padStart(2, "0");
-  const day = HE_DAYS[now.getDay()];
-  const date = `${now.getDate()} ${HE_MONTHS_FULL[now.getMonth()]} ${now.getFullYear()}`;
+
+  const intlLocale = locale === "he" ? "he-IL" : "en-US";
+  const dayName = new Intl.DateTimeFormat(intlLocale, { weekday: "long" }).format(now);
+  const dateStr = new Intl.DateTimeFormat(intlLocale, {
+    day: "numeric", month: "long", year: "numeric",
+  }).format(now);
 
   // Progress of day: 0–100
   const dayPct = Math.round(
@@ -75,9 +76,9 @@ export function ClockWidget() {
 
       {/* Date row */}
       <div className="text-center space-y-0.5">
-        <p className="text-sm font-semibold text-foreground">יום {day}</p>
-        <p className="text-xs text-muted-foreground">{date}</p>
-        <p className="text-[11px] text-muted-foreground/60">{dayPct}% מהיום חלף</p>
+        <p className="text-sm font-semibold text-foreground">{t("dayPrefix")} {dayName}</p>
+        <p className="text-xs text-muted-foreground">{dateStr}</p>
+        <p className="text-[11px] text-muted-foreground/60">{t("dayProgress", { pct: dayPct })}</p>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import {
   Archive, Ruler, ShieldCheck, Folder, Upload, Trash2,
   ExternalLink, FolderOpen, Loader2, X, CheckCircle2,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -41,17 +42,17 @@ type Props = {
   canDelete?: boolean;
 };
 
-// ─── Category Config ──────────────────────────────────────────────────────────
+// ─── Category Meta (no Hebrew labels here) ───────────────────────────────────
 
-const CATEGORY_CONFIG: Record<
+const CATEGORY_META: Record<
   FileCategory,
-  { label: string; icon: React.ElementType; color: string; bg: string; border: string }
+  { icon: React.ElementType; color: string; bg: string; border: string }
 > = {
-  PLANS:     { label: "תוכניות",  icon: Ruler,       color: "text-blue-600",    bg: "bg-blue-50",    border: "border-blue-200"   },
-  CONTRACTS: { label: "חוזים",    icon: FileText,     color: "text-violet-600",  bg: "bg-violet-50",  border: "border-violet-200" },
-  PERMITS:   { label: "היתרים",   icon: ShieldCheck,  color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200"},
-  PHOTOS:    { label: "תמונות",   icon: ImageIcon,    color: "text-orange-600",  bg: "bg-orange-50",  border: "border-orange-200" },
-  OTHER:     { label: "אחר",      icon: Folder,       color: "text-slate-600",   bg: "bg-slate-50",   border: "border-slate-200"  },
+  PLANS:     { icon: Ruler,       color: "text-blue-600",    bg: "bg-blue-50",    border: "border-blue-200"   },
+  CONTRACTS: { icon: FileText,    color: "text-violet-600",  bg: "bg-violet-50",  border: "border-violet-200" },
+  PERMITS:   { icon: ShieldCheck, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
+  PHOTOS:    { icon: ImageIcon,   color: "text-orange-600",  bg: "bg-orange-50",  border: "border-orange-200" },
+  OTHER:     { icon: Folder,      color: "text-slate-600",   bg: "bg-slate-50",   border: "border-slate-200"  },
 };
 
 const CATEGORY_ORDER: FileCategory[] = ["PLANS", "CONTRACTS", "PERMITS", "PHOTOS", "OTHER"];
@@ -66,21 +67,21 @@ function formatBytes(bytes: number | null): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("he-IL", {
+  return new Date(iso).toLocaleDateString(undefined, {
     day: "2-digit", month: "2-digit", year: "numeric",
   });
 }
 
 function FileTypeIcon({ mimeType }: { mimeType: string | null }) {
-  const t = (mimeType ?? "").toLowerCase();
+  const m = (mimeType ?? "").toLowerCase();
   const cls = "h-5 w-5 shrink-0";
-  if (t.includes("pdf") || t.includes("msword") || t.includes("wordprocessingml"))
+  if (m.includes("pdf") || m.includes("msword") || m.includes("wordprocessingml"))
     return <FileText className={`${cls} text-red-500`} />;
-  if (t.startsWith("image/"))
+  if (m.startsWith("image/"))
     return <ImageIcon className={`${cls} text-orange-500`} />;
-  if (t.includes("spreadsheet") || t.includes("excel") || t.includes("csv"))
+  if (m.includes("spreadsheet") || m.includes("excel") || m.includes("csv"))
     return <FileSpreadsheet className={`${cls} text-green-600`} />;
-  if (t.includes("zip") || t.includes("rar") || t.includes("tar") || t.includes("gz"))
+  if (m.includes("zip") || m.includes("rar") || m.includes("tar") || m.includes("gz"))
     return <Archive className={`${cls} text-yellow-600`} />;
   return <File className={`${cls} text-slate-400`} />;
 }
@@ -88,6 +89,7 @@ function FileTypeIcon({ mimeType }: { mimeType: string | null }) {
 // ─── Upload Zone ──────────────────────────────────────────────────────────────
 
 function UploadZone({ entity }: { entity: Entity }) {
+  const t = useTranslations("crmFiles");
   const router = useRouter();
   const [isDragging, setIsDragging] = useState(false);
   const [category, setCategory] = useState<FileCategory>("OTHER");
@@ -136,7 +138,7 @@ function UploadZone({ entity }: { entity: Entity }) {
         }, 800);
       } else {
         setStatus("error");
-        setErrorMsg((res as { error?: string }).error ?? "שגיאה לא ידועה");
+        setErrorMsg((res as { error?: string }).error ?? t("unknownError"));
       }
     });
   };
@@ -182,8 +184,8 @@ function UploadZone({ entity }: { entity: Entity }) {
           </div>
         ) : (
           <>
-            <p className="text-sm font-medium">גרור קובץ לכאן, או לחץ לבחירה</p>
-            <p className="text-xs text-muted-foreground">PDF, Word, Excel, תמונות, ועוד</p>
+            <p className="text-sm font-medium">{t("dragHint")}</p>
+            <p className="text-xs text-muted-foreground">{t("fileTypes")}</p>
           </>
         )}
       </div>
@@ -191,17 +193,17 @@ function UploadZone({ entity }: { entity: Entity }) {
       <div className="flex items-center gap-3" dir="rtl">
         <Select value={category} onValueChange={(v) => setCategory(v as FileCategory)} disabled={uploading}>
           <SelectTrigger className="w-44">
-            <SelectValue placeholder="קטגוריה" />
+            <SelectValue placeholder={t("categoryPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
             {CATEGORY_ORDER.map((cat) => {
-              const cfg = CATEGORY_CONFIG[cat];
-              const Icon = cfg.icon;
+              const meta = CATEGORY_META[cat];
+              const Icon = meta.icon;
               return (
                 <SelectItem key={cat} value={cat}>
                   <div className="flex items-center gap-2">
-                    <Icon className={`h-3.5 w-3.5 ${cfg.color}`} />
-                    {cfg.label}
+                    <Icon className={`h-3.5 w-3.5 ${meta.color}`} />
+                    {t(`categoryLabels.${cat}` as Parameters<typeof t>[0])}
                   </div>
                 </SelectItem>
               );
@@ -217,7 +219,7 @@ function UploadZone({ entity }: { entity: Entity }) {
           ) : (
             <Upload className="h-4 w-4" />
           )}
-          {uploading ? "מעלה..." : status === "success" ? "הועלה!" : "העלה קובץ"}
+          {uploading ? t("uploading") : status === "success" ? t("uploaded") : t("upload")}
         </Button>
 
         {status === "error" && (
@@ -238,6 +240,7 @@ function FileCard({
   canDelete: boolean;
   onDeleted: (id: string) => void;
 }) {
+  const t = useTranslations("crmFiles");
   const [deleting, startDelete] = useTransition();
 
   const handleDelete = () => {
@@ -277,18 +280,17 @@ function FileCard({
                 {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent dir="rtl">
+            <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>מחיקת קובץ</AlertDialogTitle>
+                <AlertDialogTitle>{t("deleteTitle")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  האם למחוק את הקובץ <span className="font-medium">{file.name}</span>?
-                  פעולה זו אינה ניתנת לביטול.
+                  {t("deleteDesc", { name: file.name })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="flex-row-reverse gap-2">
-                <AlertDialogCancel>ביטול</AlertDialogCancel>
+                <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                  מחק
+                  {t("delete")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -310,14 +312,17 @@ function CategorySection({
   canDelete: boolean;
   onDeleted: (id: string) => void;
 }) {
-  const cfg = CATEGORY_CONFIG[category];
-  const Icon = cfg.icon;
+  const t = useTranslations("crmFiles");
+  const meta = CATEGORY_META[category];
+  const Icon = meta.icon;
 
   return (
     <div>
-      <div className={`flex items-center gap-2 rounded-lg border px-4 py-2 mb-3 ${cfg.bg} ${cfg.border}`}>
-        <Icon className={`h-4 w-4 ${cfg.color}`} />
-        <span className={`text-sm font-semibold ${cfg.color}`}>{cfg.label}</span>
+      <div className={`flex items-center gap-2 rounded-lg border px-4 py-2 mb-3 ${meta.bg} ${meta.border}`}>
+        <Icon className={`h-4 w-4 ${meta.color}`} />
+        <span className={`text-sm font-semibold ${meta.color}`}>
+          {t(`categoryLabels.${category}` as Parameters<typeof t>[0])}
+        </span>
         <Badge variant="secondary" className="mr-auto text-xs h-5">{files.length}</Badge>
       </div>
       <div className="space-y-1.5">
@@ -332,6 +337,7 @@ function CategorySection({
 // ─── Main Client ──────────────────────────────────────────────────────────────
 
 export function CrmFilesClient({ entity, files: initialFiles, canDelete = false }: Props) {
+  const t = useTranslations("crmFiles");
   const [files, setFiles] = useState<CrmFile[]>(initialFiles);
 
   const handleDeleted = useCallback((id: string) => {
@@ -348,11 +354,11 @@ export function CrmFilesClient({ entity, files: initialFiles, canDelete = false 
   return (
     <div className="p-6 max-w-4xl mx-auto" dir="rtl">
       <div className="mb-6">
-        <h2 className="text-xl font-bold">ניהול קבצים ומסמכים</h2>
+        <h2 className="text-xl font-bold">{t("title")}</h2>
         <p className="text-sm text-muted-foreground mt-1">
           {files.length > 0
-            ? `${files.length} קבצים · ${populated.length} קטגוריות`
-            : "טרם הועלו קבצים"}
+            ? t("filesCount", { count: files.length, cats: populated.length })
+            : t("noFiles")}
         </p>
       </div>
 
@@ -363,15 +369,15 @@ export function CrmFilesClient({ entity, files: initialFiles, canDelete = false 
           {CATEGORY_ORDER.map((cat) => {
             const count = grouped[cat].length;
             if (count === 0) return null;
-            const cfg = CATEGORY_CONFIG[cat];
-            const Icon = cfg.icon;
+            const meta = CATEGORY_META[cat];
+            const Icon = meta.icon;
             return (
               <span
                 key={cat}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${cfg.bg} ${cfg.border} ${cfg.color}`}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${meta.bg} ${meta.border} ${meta.color}`}
               >
                 <Icon className="h-3 w-3" />
-                {cfg.label}
+                {t(`categoryLabels.${cat}` as Parameters<typeof t>[0])}
                 <span className="opacity-70">({count})</span>
               </span>
             );
@@ -384,8 +390,8 @@ export function CrmFilesClient({ entity, files: initialFiles, canDelete = false 
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/50 mb-3">
             <FolderOpen className="h-7 w-7 text-muted-foreground/40" />
           </div>
-          <p className="text-sm font-medium text-muted-foreground">אין קבצים עדיין</p>
-          <p className="text-xs text-muted-foreground mt-1">גרור קובץ לאזור למעלה כדי להעלות</p>
+          <p className="text-sm font-medium text-muted-foreground">{t("noFilesYet")}</p>
+          <p className="text-xs text-muted-foreground mt-1">{t("dragToUpload")}</p>
         </div>
       ) : (
         <div className="space-y-8">

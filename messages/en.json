@@ -12,6 +12,7 @@
     "demoHint": "Demo user: admin@buildpro.co.il | Password: Admin@123"
   },
   "nav": {
+    "tagline": "Construction Management",
     "groups": {
       "management": "Management",
       "field": "Field & Resources",
@@ -49,7 +50,14 @@
     "systemSettings": "System Settings",
     "backToList": "Back to list",
     "closePanel": "Close panel",
-    "details": "Details"
+    "details": "Details",
+    "relativeTime": {
+      "justNow": "just now",
+      "minutesAgo": "{min}m ago",
+      "hoursAgo": "{hrs}h ago",
+      "yesterday": "yesterday",
+      "daysAgo": "{days}d ago"
+    }
   },
   "header": {
     "searchPlaceholder": "Global search...",
@@ -72,6 +80,86 @@
     }
   },
   "dashboard": {
+    "greeting": {
+      "night": "Good night",
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "edit": {
+      "title": "Edit Dashboard",
+      "hint": "Drag widgets to a new position · Resize from the corner · Click ✕ to remove",
+      "editModeActive": "Edit mode active",
+      "editModeDesc": "Drag by the header · Resize from the bottom-right corner · Place widgets freely side by side",
+      "saveBtn": "Save Dashboard",
+      "editBtn": "Edit",
+      "addWidget": "Add Widget",
+      "reset": "Reset",
+      "toastAdded": "{label} added to dashboard",
+      "toastSaved": "Dashboard saved successfully ✓",
+      "toastSaveError": "Error saving dashboard",
+      "toastReset": "Dashboard reset to default"
+    },
+    "widgetGallery": {
+      "title": "Widget Gallery",
+      "available": "{count} available",
+      "allCategory": "✨ All",
+      "allInCategory": "All widgets in this category are already on the dashboard",
+      "colCount": "{w}×{h} columns"
+    },
+    "categoryLabels": {
+      "finance": "💰 Finance",
+      "projects": "🏗️ Projects",
+      "crm": "🤝 CRM",
+      "tools": "🛠️ Tools"
+    },
+    "widgetDefs": {
+      "kpis": {
+        "label": "Key Metrics",
+        "description": "Leads, projects, tasks, monthly revenue"
+      },
+      "finance": {
+        "label": "Revenue",
+        "description": "Revenue chart — last 6 months"
+      },
+      "leads": {
+        "label": "Leads",
+        "description": "Leads pipeline and numbers"
+      },
+      "tasks": {
+        "label": "Upcoming Tasks",
+        "description": "Open tasks by due date"
+      },
+      "projects": {
+        "label": "Active Projects",
+        "description": "Status and progress percentage"
+      },
+      "payments": {
+        "label": "Recent Payments",
+        "description": "Last 5 recorded payments"
+      },
+      "clock": {
+        "label": "Clock",
+        "description": "Time, date and day progress"
+      },
+      "milestones": {
+        "label": "Milestones",
+        "description": "Upcoming milestones from all projects"
+      },
+      "invoices_due": {
+        "label": "Invoices Due",
+        "description": "Invoices not yet fully paid"
+      },
+      "activity": {
+        "label": "Recent Activity",
+        "description": "Action log of system events"
+      },
+      "quick_actions": {
+        "label": "Quick Actions",
+        "description": "Shortcuts to common actions"
+      }
+    },
+    "unknownWidget": "Unknown widget",
     "kpi": {
       "activeLeads": "Active Leads",
       "newLeads": "{count, plural, =0 {none new} one {1 new} other {# new}}",
@@ -252,7 +340,9 @@
       "saveChanges": "Save Changes",
       "toastUpdated": "Lead details updated",
       "toastError": "Error saving"
-    }
+    },
+    "defaultCities": ["תל אביב", "ירושלים", "חיפה", "ראשון לציון", "פתח תקווה", "אשדוד", "נתניה", "באר שבע", "בני ברק", "רמת גן", "הרצליה", "רעננה", "כפר סבא", "מודיעין", "אשקלון", "רחובות", "בת ים", "בית שמש", "הוד השרון", "חולון", "אילת", "טבריה", "נצרת", "עכו", "נהריה", "קריית שמונה", "לוד", "רמלה", "יהוד", "גבעתיים"],
+    "defaultConstructionTypes": ["בנייה חדשה", "שיפוץ", "תוספת בנייה", "הריסה ובנייה", "שיקום מבנה", "עבודות פנים", "עבודות חוץ", "בנייה מסחרית", "בנייה תעשייתית", "בנייה ציבורית / מוסדית", "תשתיות"]
   },
   "clients": {
     "page": {
@@ -611,7 +701,8 @@
         "descPlaceholder": "Additional details...",
         "namePlaceholder": "Pour walls, lay flooring...",
         "addTask": "Add Task",
-        "saveChanges": "Save Changes"
+        "saveChanges": "Save Changes",
+        "nameRequired": "Task name is required"
       },
       "card": {
         "edit": "Edit",
@@ -695,7 +786,11 @@
       "reopen": "Reopen",
       "markDone": "Done",
       "deleteMilestone": "Delete",
-      "seedDemo": "Add Demo Data"
+      "seedDemo": "Add Demo Data",
+      "validation": {
+        "nameRequired": "Name must be at least 2 characters",
+        "dateRequired": "Date is required"
+      }
     },
     "qc": {
       "empty": "No quality control data yet.",
@@ -1395,6 +1490,18 @@
       "exportEmpty": "Catalog is empty",
       "exportSuccess": "Exported {count} items",
       "templateSuccess": "Template file downloaded"
+    },
+    "templateRows": {
+      "name1": "Sample Item",
+      "name2": "Sample Item 2",
+      "category1": "Flooring",
+      "category2": "Labour",
+      "unit2": "hr"
+    },
+    "unitDefault": "pcs",
+    "validation": {
+      "nameRequired": "Item name must be at least 2 characters",
+      "unitRequired": "Unit is required"
     }
   },
   "finance": {
@@ -1513,6 +1620,7 @@
       "noLeads": "No leads found",
       "errorSelectClient": "Select a client",
       "errorSelectLead": "Select a lead",
+      "errorSelectClientOrLead": "Please select a client or lead",
       "create": "Create Quote"
     },
     "header": {
@@ -1581,7 +1689,68 @@
       "toastNewChapter": "New chapter created: {name}",
       "noChapter": "Uncategorized",
       "forClient": "For",
-      "docTitle": "Quote {number}"
+      "docTitle": "Quote {number}",
+      "unitDefault": "pcs",
+      "totalCost": "Total Cost"
+    }
+  },
+  "widgets": {
+    "clock": {
+      "dayPrefix": "Day",
+      "dayProgress": "{pct}% of day elapsed"
+    },
+    "activity": {
+      "noActivity": "No recent activity"
+    },
+    "finance": {
+      "thisMonth": "This Month",
+      "vsLastMonth": "{change}% vs last month",
+      "monthlyAvg": "Monthly Average",
+      "last6months": "Last 6 months total: {amount}"
+    },
+    "invoicesDue": {
+      "openCount": "{count} open invoices",
+      "noOpenInvoices": "No open invoices",
+      "daysOverdue": "{n}d overdue",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "daysLeft": "{n} days",
+      "allInvoices": "All Invoices"
+    },
+    "milestones": {
+      "daysOverdue": "{n} days overdue",
+      "today": "Today!",
+      "tomorrow": "Tomorrow",
+      "days": "{n} days",
+      "noUpcoming": "No upcoming milestones",
+      "allProjects": "All Projects"
+    },
+    "payments": {
+      "noPayments": "No payments recorded yet",
+      "toFinance": "Finance",
+      "methodBankTransfer": "Transfer",
+      "methodCheck": "Check",
+      "methodCash": "Cash",
+      "methodCreditCard": "Credit",
+      "methodOther": "Other"
+    },
+    "projects": {
+      "noActiveProjects": "No active projects",
+      "allProjects": "All Projects",
+      "statusActive": "Active",
+      "statusPlanning": "Planning",
+      "statusOnHold": "On Hold",
+      "statusCompleted": "Completed"
+    },
+    "tasks": {
+      "noTasks": "No open tasks with a due date",
+      "allTasks": "All Tasks",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "priorityUrgent": "Very Urgent",
+      "priorityHigh": "Urgent",
+      "priorityMedium": "Medium",
+      "priorityLow": "Low"
     }
   },
   "hardDelete": {
@@ -1618,7 +1787,382 @@
     "errorPasswordMatch": "Passwords do not match",
     "errorExpired": "This invitation has expired. Please request a new one.",
     "errorUserExists": "An account with this email already exists.",
-    "errorGeneric": "Something went wrong. Please try again."
+    "errorGeneric": "Something went wrong. Please try again.",
+    "roleLabels": {
+      "ADMIN": "System Admin",
+      "OFFICE_MANAGER": "Office Manager",
+      "PROJECT_MANAGER": "Project Manager",
+      "FIELD_WORKER": "Field Worker"
+    }
+  },
+  "fieldClient": {
+    "todayLog": "Today's Log",
+    "createLog": "Create Log",
+    "noLogToday": "No work log opened for today.",
+    "pastLogs": "Past Logs",
+    "workHours": "Work Hours",
+    "hoursTotal": "{hours} hrs · {cost}",
+    "addHours": "Add Hours",
+    "noHours": "No time entries yet. Click \"Add Hours\" to add.",
+    "expenses": "Field Expenses",
+    "totalExpenses": "Total {amount}",
+    "addExpense": "Add Expense",
+    "noExpenses": "No field expenses yet. Click \"Add Expense\" to add.",
+    "tableEmployee": "Employee",
+    "tableDate": "Date",
+    "tableHours": "Hours",
+    "tableCost": "Cost",
+    "tableCategory": "Category",
+    "tableDescription": "Description",
+    "tableAmount": "Amount",
+    "logForm": {
+      "date": "Date",
+      "weather": "Weather Conditions",
+      "weatherPlaceholder": "e.g. ☀️ Sunny, 28°C",
+      "autoFill": "Auto-fill",
+      "attendance": "Attendance ({present}/{total})",
+      "safetyIncidents": "Safety Incidents",
+      "safetyPlaceholder": "Describe incidents (leave empty if none)",
+      "notes": "Notes",
+      "notesPlaceholder": "Write notes for end of day...",
+      "photoBtn": "Take Photo",
+      "uploading": "Uploading...",
+      "photosSavedHint": "Photos will be saved in the Files tab",
+      "saving": "Saving...",
+      "create": "Create Log",
+      "update": "Update Log",
+      "editLog": "Edit Log",
+      "noDetails": "No additional details for this log.",
+      "toastPhotoSuccess": "Photo uploaded successfully",
+      "toastPhotoError": "Error uploading photo",
+      "toastUpdateError": "Error updating log",
+      "toastUpdateSuccess": "Log updated successfully",
+      "toastCreateError": "Error creating log",
+      "toastCreateSuccess": "Log created successfully"
+    },
+    "timeForm": {
+      "title": "Add Work Hours",
+      "employee": "Employee *",
+      "noEmployees": "No employees registered in the system",
+      "selectEmployee": "Select employee",
+      "date": "Date *",
+      "hours": "Number of Hours *",
+      "rate": "Hourly Rate *",
+      "description": "Description (optional)",
+      "descPlaceholder": "Brief description of work...",
+      "cost": "Cost: {amount}",
+      "cancel": "Cancel",
+      "submit": "Add Hours",
+      "saving": "Saving...",
+      "toastSuccess": "Work hours added",
+      "toastError": "Error saving work hours",
+      "validEmployee": "Please select an employee",
+      "validDate": "Please select a date",
+      "validHours": "Please enter number of hours",
+      "validRate": "Please enter hourly rate"
+    },
+    "expenseForm": {
+      "title": "Add Field Expense",
+      "date": "Date *",
+      "amount": "Amount *",
+      "category": "Category *",
+      "selectCategory": "Select category",
+      "description": "Description (optional)",
+      "descPlaceholder": "Expense details...",
+      "cancel": "Cancel",
+      "submit": "Add Expense",
+      "saving": "Saving...",
+      "toastSuccess": "Expense added",
+      "toastError": "Error saving expense",
+      "validDate": "Please select a date",
+      "validAmount": "Please enter a valid amount",
+      "validCategory": "Please select a category"
+    },
+    "expenseCategories": {
+      "MATERIALS": "Building Materials",
+      "FUEL": "Fuel",
+      "TOOLS": "Tools",
+      "MEALS": "Food",
+      "TRANSPORT": "Transport",
+      "OTHER": "Other"
+    }
+  },
+  "filesClient": {
+    "title": "File & Document Management",
+    "filesCount": "{count} files • {cats} categories",
+    "noFiles": "No files uploaded yet for this project",
+    "dragHint": "Drag a file here, or click to select",
+    "fileTypes": "PDF, Word, Excel, images, and more",
+    "categoryPlaceholder": "Category",
+    "upload": "Upload File",
+    "uploading": "Uploading...",
+    "uploaded": "Uploaded!",
+    "noFilesYet": "No files yet",
+    "dragToUpload": "Drag a file to the area above to upload",
+    "deleteTitle": "Delete File",
+    "deleteDesc": "Delete the file {name}? This action cannot be undone.",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "unknownError": "Unknown error",
+    "categoryLabels": {
+      "PLANS": "Plans",
+      "CONTRACTS": "Contracts",
+      "PERMITS": "Permits",
+      "PHOTOS": "Photos",
+      "OTHER": "Other"
+    }
+  },
+  "financialsClient": {
+    "approvedBudget": "Approved Budget",
+    "notDefined": "Not defined",
+    "includesChanges": "Includes changes {amount}",
+    "baseContractValue": "Base contract value",
+    "actualCosts": "Actual Costs",
+    "laborFieldSubs": "Labour + Field + Subs",
+    "grossProfit": "Gross Profit",
+    "margin": "Margin {pct}%",
+    "defineContract": "Define contract value",
+    "costBreakdown": "Cost Breakdown",
+    "labor": "Labour",
+    "fieldExpenses": "Field Expenses",
+    "subContractors": "Sub-contractors",
+    "cashFlow": "Cash Flow",
+    "arLabel": "Receipts from Clients (AR)",
+    "apLabel": "Payments to Subs (AP)",
+    "received": "Received",
+    "remaining": "Balance due",
+    "paid": "Paid",
+    "remainingToPay": "Balance to pay",
+    "settledFull": "✓ Fully settled",
+    "netCashPosition": "Net Cash Position (AR − AP)",
+    "positiveCash": "Positive — collection balance exceeds sub-contractor payment balance",
+    "negativeCash": "Negative — sub-contractor payment balance exceeds collection balance",
+    "surplus": "Surplus",
+    "deficit": "Deficit",
+    "invoicesAndReceipts": "Invoices & Receipts",
+    "billed": "Billed",
+    "totalLabel": "Total",
+    "balanceLabel": "Balance",
+    "subContracts": "Sub-contractor Contracts",
+    "noInvoices": "No invoices yet for this project.",
+    "colInvoiceNo": "Invoice No.",
+    "colDate": "Date",
+    "colStatus": "Status",
+    "colAmount": "Amount",
+    "colPaid": "Paid",
+    "colBalance": "Balance",
+    "colAction": "Action",
+    "colSupplier": "Supplier / Contractor",
+    "colContractValue": "Contract Value",
+    "colRetention": "Retention %",
+    "paidFull": "Paid in full",
+    "settled": "Settled",
+    "payment": "Payment",
+    "paymentForm": {
+      "title": "Record Receipt — Invoice #{number} · Balance: {balance}",
+      "supplierTitle": "Record Payment — {name} · Balance: {balance}",
+      "amount": "Amount *",
+      "date": "Date *",
+      "method": "Payment Method",
+      "reference": "Reference",
+      "refPlaceholder": "Check no. / reference",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional note",
+      "save": "Save Receipt",
+      "savePayment": "Save Payment",
+      "cancel": "Cancel",
+      "validAmount": "Enter a valid amount",
+      "amountExceedsBalance": "Amount exceeds balance ({balance})",
+      "error": "Error"
+    },
+    "methodLabels": {
+      "BANK_TRANSFER": "Bank Transfer",
+      "CHECK": "Check",
+      "CASH": "Cash",
+      "CREDIT_CARD": "Credit Card",
+      "OTHER": "Other"
+    },
+    "invoiceStatus": {
+      "DRAFT": "Draft",
+      "SENT": "Sent",
+      "PARTIALLY_PAID": "Partially Paid",
+      "PAID": "Paid",
+      "OVERDUE": "Overdue",
+      "CANCELLED": "Cancelled"
+    },
+    "contractStatus": {
+      "DRAFT": "Draft",
+      "ACTIVE": "Active",
+      "COMPLETED": "Completed",
+      "TERMINATED": "Terminated"
+    }
+  },
+  "prefabClient": {
+    "title": "Production & Prefab Tracking",
+    "noElements": "No elements yet",
+    "elementsCount": "{total} elements · {active} in progress · {installed} installed",
+    "addElement": "Add Element",
+    "close": "Close",
+    "emptyDesc": "Add prefab components to the project to track the production process from factory to installation.",
+    "addFirst": "Add First Element",
+    "statusDistribution": "Status Distribution",
+    "empty": "Empty",
+    "completed": "Completed",
+    "addForm": {
+      "title": "New Element",
+      "name": "Element Name *",
+      "namePlaceholder": "e.g. \"Wall A3 - Floor 2\"",
+      "type": "Type",
+      "customType": "Describe the type",
+      "customTypePlaceholder": "Custom type",
+      "linkTask": "Link to Task",
+      "noLink": "No link",
+      "startDate": "Production Start Date",
+      "deliveryDate": "Target Delivery Date",
+      "notes": "Notes",
+      "notesPlaceholder": "Additional details...",
+      "cancel": "Cancel",
+      "submit": "Add Element",
+      "toastSuccess": "Element added",
+      "toastError": "Error adding"
+    },
+    "card": {
+      "advanceTo": "Advance to {status}",
+      "toastAdvanced": "Moved to {status}",
+      "toastAdvanceError": "Error updating status",
+      "toastDeleted": "Element deleted",
+      "toastDeleteError": "Error deleting"
+    },
+    "elementTypes": {
+      "concreteWall": "Concrete Wall",
+      "floorSlab": "Floor Slab",
+      "beam": "Beam",
+      "column": "Column",
+      "stairs": "Stairs",
+      "balcony": "Balcony",
+      "facadeCladding": "Facade Cladding",
+      "structuralComponent": "Structural Component",
+      "other": "Other"
+    },
+    "statusLabels": {
+      "PLANNED": "Planned",
+      "IN_PRODUCTION": "In Production",
+      "QUALITY_CHECK": "Quality Check",
+      "READY_FOR_DISPATCH": "Ready for Dispatch",
+      "SHIPPED": "Shipped",
+      "DELIVERED": "Delivered to Site",
+      "INSTALLED": "Installed"
+    }
+  },
+  "projectOverview": {
+    "cannotLoad": "Cannot load overview data.",
+    "openTasks": "Open Tasks",
+    "completedTasks": "Completed Tasks",
+    "teamMembers": "Team Members",
+    "files": "Files",
+    "recentTasks": "Recent Tasks",
+    "upcomingMilestones": "Upcoming Milestones",
+    "projectTeam": "Project Team",
+    "activityLog": "Activity Log",
+    "noActivity": "No activity recorded yet for this project.",
+    "emptyProject": "New project — no data yet.",
+    "emptySubtitle": "Go to the Tasks tab to add tasks.",
+    "taskStatus": {
+      "TODO": "To Do",
+      "IN_PROGRESS": "In Progress",
+      "BLOCKED": "Blocked",
+      "DONE": "Completed"
+    },
+    "memberRole": {
+      "MANAGER": "Manager",
+      "ENGINEER": "Engineer",
+      "FOREMAN": "Foreman",
+      "VIEWER": "Viewer"
+    },
+    "relativeTime": {
+      "now": "Just now",
+      "minutesAgo": "{n} minutes ago",
+      "hoursAgo": "{n} hours ago",
+      "yesterday": "Yesterday",
+      "daysAgo": "{n} days ago"
+    }
+  },
+  "profilePage": {
+    "title": "My Profile",
+    "subtitle": "Manage personal details and password"
+  },
+  "profileClient": {
+    "personalInfo": "Personal Details",
+    "personalInfoSub": "Changes will be saved to the database.",
+    "fullName": "Full Name",
+    "email": "Email",
+    "phone": "Phone",
+    "role": "Role",
+    "changeRoleHint": "To change your role, contact the system administrator.",
+    "saveBtn": "Save Details",
+    "savedMsg": "Details saved",
+    "changePassword": "Change Password",
+    "changePasswordSub": "Minimum 6 characters required.",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "updatePasswordBtn": "Update Password",
+    "passwordUpdated": "Password updated",
+    "errorCurrentRequired": "Please enter your current password.",
+    "errorTooShort": "New password must be at least 6 characters.",
+    "errorMismatch": "Passwords do not match.",
+    "namePlaceholder": "John Smith",
+    "rolePlaceholder": "Israeli Israeli",
+    "roleLabels": {
+      "ADMIN": "System Admin",
+      "OFFICE_MANAGER": "Office Manager",
+      "PROJECT_MANAGER": "Project Manager",
+      "FIELD_WORKER": "Field Worker"
+    }
+  },
+  "offlineIndicator": {
+    "message": "⚠️ You are currently offline. Changes will not be saved until the connection is restored."
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAll": "Mark all",
+    "empty": "No notifications",
+    "markRead": "Mark as read",
+    "newNotifications": "BuildPro — {count} new notification{plural}",
+    "clickForDetails": "Click the notification bell for details"
+  },
+  "crmFiles": {
+    "title": "File & Document Management",
+    "filesCount": "{count} files · {cats} categories",
+    "noFiles": "No files uploaded",
+    "dragHint": "Drag a file here, or click to select",
+    "fileTypes": "PDF, Word, Excel, images, and more",
+    "categoryPlaceholder": "Category",
+    "upload": "Upload File",
+    "uploading": "Uploading...",
+    "uploaded": "Uploaded!",
+    "noFilesYet": "No files yet",
+    "dragToUpload": "Drag a file to the area above to upload",
+    "deleteTitle": "Delete File",
+    "deleteDesc": "Delete the file {name}? This action cannot be undone.",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "unknownError": "Unknown error",
+    "categoryLabels": {
+      "PLANS": "Plans",
+      "CONTRACTS": "Contracts",
+      "PERMITS": "Permits",
+      "PHOTOS": "Photos",
+      "OTHER": "Other"
+    }
+  },
+  "combobox": {
+    "placeholder": "Select...",
+    "searchPlaceholder": "Search...",
+    "emptyText": "No results found"
+  },
+  "appHeader": {
+    "openMenu": "Open menu"
   },
   "language": {
     "he": "עברית",

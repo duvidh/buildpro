@@ -1,32 +1,35 @@
+"use client";
+
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Flag, ChevronLeft, CheckCircle2, Clock } from "lucide-react";
 import type { DashboardData } from "./types";
 
-function daysUntil(date: Date): { text: string; urgent: boolean; past: boolean } {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const d = new Date(date); d.setHours(0, 0, 0, 0);
-  const diff = Math.round((d.getTime() - today.getTime()) / 86_400_000);
-  if (diff < 0)  return { text: `${Math.abs(diff)} ימים בפיגור`, urgent: true, past: true };
-  if (diff === 0) return { text: "היום!", urgent: true, past: false };
-  if (diff === 1) return { text: "מחר", urgent: true, past: false };
-  if (diff <= 7)  return { text: `${diff} ימים`, urgent: true, past: false };
-  return { text: `${diff} ימים`, urgent: false, past: false };
-}
-
 export function MilestonesWidget({ data }: { data: DashboardData }) {
+  const t = useTranslations("widgets.milestones");
   const milestones = data.upcomingMilestones;
+
+  function getDueInfo(date: Date): { text: string; urgent: boolean; past: boolean } {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const d = new Date(date); d.setHours(0, 0, 0, 0);
+    const diff = Math.round((d.getTime() - today.getTime()) / 86_400_000);
+    if (diff < 0)  return { text: t("daysOverdue", { n: Math.abs(diff) }), urgent: true, past: true };
+    if (diff === 0) return { text: t("today"), urgent: true, past: false };
+    if (diff === 1) return { text: t("tomorrow"), urgent: true, past: false };
+    return { text: t("days", { n: diff }), urgent: diff <= 7, past: false };
+  }
 
   return (
     <div className="flex flex-col h-full">
       {milestones.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
           <CheckCircle2 className="h-8 w-8 text-emerald-400/60" />
-          <p className="text-sm text-muted-foreground">אין אבני דרך קרובות</p>
+          <p className="text-sm text-muted-foreground">{t("noUpcoming")}</p>
         </div>
       ) : (
         <ul className="flex-1 divide-y divide-border overflow-auto">
           {milestones.map((m) => {
-            const due = daysUntil(m.date);
+            const due = getDueInfo(m.date);
             return (
               <li key={m.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors">
                 <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full
@@ -66,7 +69,7 @@ export function MilestonesWidget({ data }: { data: DashboardData }) {
           href="/projects"
           className="flex items-center justify-end gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
         >
-          כל הפרויקטים <ChevronLeft className="h-3.5 w-3.5" />
+          {t("allProjects")} <ChevronLeft className="h-3.5 w-3.5" />
         </Link>
       </div>
     </div>

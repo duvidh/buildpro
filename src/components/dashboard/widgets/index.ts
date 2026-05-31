@@ -22,9 +22,9 @@ export type { DashboardData, WidgetLayoutItem } from "./types";
 // ─── Widget definitions ───────────────────────────────────────────────────────
 
 export type WidgetDef = {
-  label: string;
+  labelKey: string;
   icon: React.ElementType;
-  description: string;
+  descriptionKey: string;
   category: "finance" | "projects" | "crm" | "tools";
   accentColor: string;   // Tailwind bg class for top border accent
   defaultSize: Omit<WidgetLayoutItem, "i" | "x" | "y">;
@@ -32,89 +32,89 @@ export type WidgetDef = {
 
 export const WIDGET_DEFS: Record<string, WidgetDef> = {
   kpis: {
-    label: "מדדי מפתח",
+    labelKey: "dashboard.widgetDefs.kpis.label",
     icon: LayoutDashboard,
-    description: "לידים, פרויקטים, משימות, הכנסה חודשית",
+    descriptionKey: "dashboard.widgetDefs.kpis.description",
     category: "tools",
     accentColor: "from-indigo-500 to-purple-500",
     defaultSize: { w: 12, h: 2, minW: 6, minH: 2 },
   },
   finance: {
-    label: "הכנסות",
+    labelKey: "dashboard.widgetDefs.finance.label",
     icon: BarChart3,
-    description: "גרף הכנסות 6 חודשים אחרונים",
+    descriptionKey: "dashboard.widgetDefs.finance.description",
     category: "finance",
     accentColor: "from-emerald-500 to-teal-500",
     defaultSize: { w: 8, h: 5, minW: 4, minH: 4 },
   },
   leads: {
-    label: "לידים",
+    labelKey: "dashboard.widgetDefs.leads.label",
     icon: TrendingUp,
-    description: "פייפליין לידים ומספרים",
+    descriptionKey: "dashboard.widgetDefs.leads.description",
     category: "crm",
     accentColor: "from-sky-500 to-blue-500",
     defaultSize: { w: 4, h: 5, minW: 3, minH: 4 },
   },
   tasks: {
-    label: "משימות קרובות",
+    labelKey: "dashboard.widgetDefs.tasks.label",
     icon: CheckSquare,
-    description: "משימות פתוחות לפי תאריך יעד",
+    descriptionKey: "dashboard.widgetDefs.tasks.description",
     category: "projects",
     accentColor: "from-orange-500 to-amber-500",
     defaultSize: { w: 6, h: 4, minW: 3, minH: 3 },
   },
   projects: {
-    label: "פרויקטים פעילים",
+    labelKey: "dashboard.widgetDefs.projects.label",
     icon: FolderKanban,
-    description: "סטטוס ואחוז התקדמות",
+    descriptionKey: "dashboard.widgetDefs.projects.description",
     category: "projects",
     accentColor: "from-violet-500 to-purple-500",
     defaultSize: { w: 6, h: 4, minW: 3, minH: 3 },
   },
   payments: {
-    label: "תשלומים אחרונים",
+    labelKey: "dashboard.widgetDefs.payments.label",
     icon: CreditCard,
-    description: "5 תשלומים שנרשמו לאחרונה",
+    descriptionKey: "dashboard.widgetDefs.payments.description",
     category: "finance",
     accentColor: "from-green-500 to-emerald-500",
     defaultSize: { w: 5, h: 4, minW: 3, minH: 3 },
   },
   clock: {
-    label: "שעון",
+    labelKey: "dashboard.widgetDefs.clock.label",
     icon: Clock,
-    description: "שעה, תאריך ואחוז היום שחלף",
+    descriptionKey: "dashboard.widgetDefs.clock.description",
     category: "tools",
     accentColor: "from-cyan-500 to-sky-500",
     defaultSize: { w: 3, h: 4, minW: 2, minH: 3 },
   },
   milestones: {
-    label: "אבני דרך",
+    labelKey: "dashboard.widgetDefs.milestones.label",
     icon: Flag,
-    description: "אבני דרך קרובות מכל הפרויקטים",
+    descriptionKey: "dashboard.widgetDefs.milestones.description",
     category: "projects",
     accentColor: "from-amber-500 to-yellow-500",
     defaultSize: { w: 4, h: 4, minW: 3, minH: 3 },
   },
   invoices_due: {
-    label: "חשבוניות לגבייה",
+    labelKey: "dashboard.widgetDefs.invoices_due.label",
     icon: FileText,
-    description: "חשבוניות שטרם שולמו במלואן",
+    descriptionKey: "dashboard.widgetDefs.invoices_due.description",
     category: "finance",
     accentColor: "from-rose-500 to-red-500",
     defaultSize: { w: 4, h: 4, minW: 3, minH: 3 },
   },
   activity: {
-    label: "פעילות אחרונה",
+    labelKey: "dashboard.widgetDefs.activity.label",
     icon: Activity,
-    description: "לוג פעולות שבוצעו במערכת",
+    descriptionKey: "dashboard.widgetDefs.activity.description",
     category: "tools",
     accentColor: "from-slate-500 to-gray-500",
     defaultSize: { w: 4, h: 4, minW: 3, minH: 3 },
   },
   quick_actions: {
-    label: "פעולות מהירות",
+    labelKey: "dashboard.widgetDefs.quick_actions.label",
     icon: Zap,
-    description: "קיצורי דרך לפעולות נפוצות",
+    descriptionKey: "dashboard.widgetDefs.quick_actions.description",
     category: "tools",
     accentColor: "from-fuchsia-500 to-purple-500",
     defaultSize: { w: 4, h: 4, minW: 3, minH: 3 },

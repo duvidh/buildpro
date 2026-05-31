@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import {
   Factory, Plus, ChevronRight, Trash2, Loader2,
   CalendarClock, Tag, Link2, ChevronUp,
@@ -42,39 +43,35 @@ type PrefabElement = {
   task: { id: string; name: string } | null;
 };
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+// ─── Config (no Hebrew labels) ────────────────────────────────────────────────
 
-const STATUS_CONFIG: Record<
+const STATUS_STYLE: Record<
   PrefabStatus,
-  { label: string; color: string; bg: string; border: string; icon: React.ElementType }
+  { color: string; bg: string; border: string; icon: React.ElementType }
 > = {
-  PLANNED:             { label: "מתוכנן",           color: "text-slate-600",   bg: "bg-slate-50",    border: "border-slate-200",  icon: ClipboardList },
-  IN_PRODUCTION:       { label: "בייצור",            color: "text-blue-700",    bg: "bg-blue-50",     border: "border-blue-200",   icon: Factory },
-  QUALITY_CHECK:       { label: "בדיקת איכות",       color: "text-violet-700",  bg: "bg-violet-50",   border: "border-violet-200", icon: FlaskConical },
-  READY_FOR_DISPATCH:  { label: "מוכן למשלוח",       color: "text-amber-700",   bg: "bg-amber-50",    border: "border-amber-200",  icon: Package },
-  SHIPPED:             { label: "נשלח",              color: "text-orange-700",  bg: "bg-orange-50",   border: "border-orange-200", icon: Send },
-  DELIVERED:           { label: "נמסר לאתר",         color: "text-cyan-700",    bg: "bg-cyan-50",     border: "border-cyan-200",   icon: Truck },
-  INSTALLED:           { label: "הותקן",             color: "text-emerald-700", bg: "bg-emerald-50",  border: "border-emerald-200",icon: CheckCircle2 },
+  PLANNED:             { color: "text-slate-600",   bg: "bg-slate-50",    border: "border-slate-200",  icon: ClipboardList },
+  IN_PRODUCTION:       { color: "text-blue-700",    bg: "bg-blue-50",     border: "border-blue-200",   icon: Factory },
+  QUALITY_CHECK:       { color: "text-violet-700",  bg: "bg-violet-50",   border: "border-violet-200", icon: FlaskConical },
+  READY_FOR_DISPATCH:  { color: "text-amber-700",   bg: "bg-amber-50",    border: "border-amber-200",  icon: Package },
+  SHIPPED:             { color: "text-orange-700",  bg: "bg-orange-50",   border: "border-orange-200", icon: Send },
+  DELIVERED:           { color: "text-cyan-700",    bg: "bg-cyan-50",     border: "border-cyan-200",   icon: Truck },
+  INSTALLED:           { color: "text-emerald-700", bg: "bg-emerald-50",  border: "border-emerald-200", icon: CheckCircle2 },
 };
 
-const ELEMENT_TYPES = [
-  "קיר בטון",
-  "לוח רצפה",
-  "קורה",
-  "עמוד",
-  "מדרגות",
-  "מרפסת",
-  "חיפוי חזית",
-  "רכיב מבני",
-  "אחר",
-];
+// Element type keys (translation keys under prefabClient.elementTypes)
+const ELEMENT_TYPE_KEYS = [
+  "concreteWall",
+  "floorSlab",
+  "beam",
+  "column",
+  "stairs",
+  "balcony",
+  "facadeCladding",
+  "structuralComponent",
+  "other",
+] as const;
 
-function formatDate(iso: string | null) {
-  if (!iso) return null;
-  return new Intl.DateTimeFormat("he-IL", {
-    day: "2-digit", month: "2-digit", year: "numeric",
-  }).format(new Date(iso));
-}
+type ElementTypeKey = typeof ELEMENT_TYPE_KEYS[number];
 
 // ─── Add Form ─────────────────────────────────────────────────────────────────
 
@@ -87,9 +84,10 @@ function AddElementForm({
   tasks: Task[];
   onClose: () => void;
 }) {
+  const t = useTranslations("prefabClient");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [elementType, setElementType] = useState(ELEMENT_TYPES[0]);
+  const [elementTypeKey, setElementTypeKey] = useState<ElementTypeKey>("concreteWall");
   const [taskId, setTaskId] = useState<string>("none");
 
   const nameRef = useRef<HTMLInputElement>(null);
@@ -101,8 +99,11 @@ function AddElementForm({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const name = nameRef.current?.value.trim() ?? "";
-    const type = elementType === "אחר" ? (customTypeRef.current?.value.trim() ?? "אחר") : elementType;
-    if (!name) { toast.error("נדרש שם אלמנט"); return; }
+    const isOther = elementTypeKey === "other";
+    const type = isOther
+      ? (customTypeRef.current?.value.trim() || t("elementTypes.other"))
+      : t(`elementTypes.${elementTypeKey}` as Parameters<typeof t>[0]);
+    if (!name) { toast.error(t("addForm.name")); return; }
 
     startTransition(async () => {
       const res = await createPrefabElement(projectId, {
@@ -114,11 +115,11 @@ function AddElementForm({
         taskId: taskId === "none" ? undefined : taskId,
       });
       if (res.success) {
-        toast.success("אלמנט נוסף");
+        toast.success(t("addForm.toastSuccess"));
         onClose();
         router.refresh();
       } else {
-        toast.error(res.error ?? "שגיאה בהוספה");
+        toast.error(res.error ?? t("addForm.toastError"));
       }
     });
   }
@@ -130,48 +131,50 @@ function AddElementForm({
     >
       <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
         <Plus className="h-4 w-4 text-primary" />
-        אלמנט חדש
+        {t("addForm.title")}
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Name */}
         <div className="sm:col-span-2">
-          <Label className="text-xs mb-1 block">שם האלמנט *</Label>
-          <Input ref={nameRef} placeholder='לדוג׳ "קיר A3 - קומה 2"' className="h-8 text-sm" required />
+          <Label className="text-xs mb-1 block">{t("addForm.name")}</Label>
+          <Input ref={nameRef} placeholder={t("addForm.namePlaceholder")} className="h-8 text-sm" required />
         </div>
 
         {/* Type */}
         <div>
-          <Label className="text-xs mb-1 block">סוג</Label>
-          <Select value={elementType} onValueChange={setElementType}>
+          <Label className="text-xs mb-1 block">{t("addForm.type")}</Label>
+          <Select value={elementTypeKey} onValueChange={(v) => setElementTypeKey(v as ElementTypeKey)}>
             <SelectTrigger className="h-8 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {ELEMENT_TYPES.map((t) => (
-                <SelectItem key={t} value={t}>{t}</SelectItem>
+              {ELEMENT_TYPE_KEYS.map((key) => (
+                <SelectItem key={key} value={key}>
+                  {t(`elementTypes.${key}` as Parameters<typeof t>[0])}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        {elementType === "אחר" && (
+        {elementTypeKey === "other" && (
           <div>
-            <Label className="text-xs mb-1 block">תאר את הסוג</Label>
-            <Input ref={customTypeRef} placeholder="סוג מותאם" className="h-8 text-sm" />
+            <Label className="text-xs mb-1 block">{t("addForm.customType")}</Label>
+            <Input ref={customTypeRef} placeholder={t("addForm.customTypePlaceholder")} className="h-8 text-sm" />
           </div>
         )}
 
         {/* Task link */}
         {tasks.length > 0 && (
           <div>
-            <Label className="text-xs mb-1 block">קישור למשימה</Label>
+            <Label className="text-xs mb-1 block">{t("addForm.linkTask")}</Label>
             <Select value={taskId} onValueChange={setTaskId}>
               <SelectTrigger className="h-8 text-sm">
-                <SelectValue placeholder="ללא קישור" />
+                <SelectValue placeholder={t("addForm.noLink")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">ללא קישור</SelectItem>
-                {tasks.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                <SelectItem value="none">{t("addForm.noLink")}</SelectItem>
+                {tasks.map((task) => (
+                  <SelectItem key={task.id} value={task.id}>{task.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -180,28 +183,28 @@ function AddElementForm({
 
         {/* Dates */}
         <div>
-          <Label className="text-xs mb-1 block">תאריך התחלת ייצור</Label>
+          <Label className="text-xs mb-1 block">{t("addForm.startDate")}</Label>
           <Input ref={startDateRef} type="date" className="h-8 text-sm" />
         </div>
         <div>
-          <Label className="text-xs mb-1 block">תאריך יעד למסירה</Label>
+          <Label className="text-xs mb-1 block">{t("addForm.deliveryDate")}</Label>
           <Input ref={deliveryDateRef} type="date" className="h-8 text-sm" />
         </div>
 
         {/* Notes */}
         <div className="sm:col-span-2">
-          <Label className="text-xs mb-1 block">הערות</Label>
-          <Textarea ref={notesRef} rows={2} placeholder="פרטים נוספים..." className="text-sm resize-none" />
+          <Label className="text-xs mb-1 block">{t("addForm.notes")}</Label>
+          <Textarea ref={notesRef} rows={2} placeholder={t("addForm.notesPlaceholder")} className="text-sm resize-none" />
         </div>
       </div>
 
       <div className="flex justify-end gap-2 mt-4">
         <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={isPending}>
-          ביטול
+          {t("addForm.cancel")}
         </Button>
         <Button type="submit" size="sm" disabled={isPending}>
           {isPending && <Loader2 className="h-3.5 w-3.5 me-1.5 animate-spin" />}
-          הוסף אלמנט
+          {t("addForm.submit")}
         </Button>
       </div>
     </form>
@@ -217,22 +220,33 @@ function ElementCard({
   element: PrefabElement;
   projectId: string;
 }) {
+  const t = useTranslations("prefabClient");
+  const locale = useLocale();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const cfg = STATUS_CONFIG[element.status];
+  const cfg = STATUS_STYLE[element.status];
   const statusIdx = PREFAB_STATUSES.indexOf(element.status);
   const nextStatus = PREFAB_STATUSES[statusIdx + 1] as PrefabStatus | undefined;
-  const nextCfg = nextStatus ? STATUS_CONFIG[nextStatus] : null;
+  const nextCfg = nextStatus ? STATUS_STYLE[nextStatus] : null;
+
+  function formatDate(iso: string | null) {
+    if (!iso) return null;
+    return new Intl.DateTimeFormat(locale === "he" ? "he-IL" : "en-US", {
+      day: "2-digit", month: "2-digit", year: "numeric",
+    }).format(new Date(iso));
+  }
 
   function handleAdvance() {
     if (!nextStatus) return;
     startTransition(async () => {
       const res = await updatePrefabElementStatus(element.id, nextStatus, projectId);
       if (res.success) {
-        toast.success(`עבר ל${STATUS_CONFIG[nextStatus].label}`);
+        toast.success(t("card.toastAdvanced", {
+          status: t(`statusLabels.${nextStatus}` as Parameters<typeof t>[0]),
+        }));
         router.refresh();
       } else {
-        toast.error("שגיאה בעדכון סטטוס");
+        toast.error(t("card.toastAdvanceError"));
       }
     });
   }
@@ -241,10 +255,10 @@ function ElementCard({
     startTransition(async () => {
       const res = await deletePrefabElement(element.id, projectId);
       if (res.success) {
-        toast.success("אלמנט נמחק");
+        toast.success(t("card.toastDeleted"));
         router.refresh();
       } else {
-        toast.error("שגיאה במחיקה");
+        toast.error(t("card.toastDeleteError"));
       }
     });
   }
@@ -300,14 +314,14 @@ function ElementCard({
           {isPending
             ? <Loader2 className="h-3 w-3 animate-spin" />
             : <ChevronRight className="h-3 w-3" />}
-          {nextCfg.label}
+          {t("card.advanceTo", { status: t(`statusLabels.${nextStatus}` as Parameters<typeof t>[0]) })}
         </button>
       )}
 
       {element.status === "INSTALLED" && (
         <span className="mt-1 flex items-center justify-center gap-1 text-[11px] font-medium text-emerald-600">
           <CheckCircle2 className="h-3 w-3" />
-          הושלם
+          {t("completed")}
         </span>
       )}
     </div>
@@ -325,15 +339,17 @@ function KanbanColumn({
   elements: PrefabElement[];
   projectId: string;
 }) {
-  const cfg = STATUS_CONFIG[status];
+  const t = useTranslations("prefabClient");
+  const cfg = STATUS_STYLE[status];
   const Icon = cfg.icon;
+  const label = t(`statusLabels.${status}` as Parameters<typeof t>[0]);
 
   return (
     <div className={`flex flex-col rounded-2xl border ${cfg.border} ${cfg.bg} min-w-[220px] w-[220px] shrink-0`}>
       {/* Column header */}
       <div className={`flex items-center gap-2 px-3 py-2.5 border-b ${cfg.border}`}>
         <Icon className={`h-4 w-4 ${cfg.color}`} />
-        <span className={`text-xs font-semibold ${cfg.color}`}>{cfg.label}</span>
+        <span className={`text-xs font-semibold ${cfg.color}`}>{label}</span>
         {elements.length > 0 && (
           <span className={`ms-auto text-[10px] font-medium ${cfg.color} opacity-70`}>
             {elements.length}
@@ -344,7 +360,7 @@ function KanbanColumn({
       {/* Cards */}
       <div className="flex flex-col gap-2 p-2 flex-1">
         {elements.length === 0 && (
-          <p className="text-[11px] text-muted-foreground/50 text-center py-6">ריק</p>
+          <p className="text-[11px] text-muted-foreground/50 text-center py-6">{t("empty")}</p>
         )}
         {elements.map((el) => (
           <ElementCard key={el.id} element={el} projectId={projectId} />
@@ -365,6 +381,7 @@ export function PrefabClient({
   elements: PrefabElement[];
   tasks: Task[];
 }) {
+  const t = useTranslations("prefabClient");
   const [showAddForm, setShowAddForm] = useState(false);
 
   const byStatus = PREFAB_STATUSES.reduce<Record<PrefabStatus, PrefabElement[]>>(
@@ -385,12 +402,12 @@ export function PrefabClient({
         <div>
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <Factory className="h-5 w-5 text-primary" />
-            מעקב ייצור ופרפאב
+            {t("title")}
           </h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             {elements.length === 0
-              ? "אין אלמנטים עדיין"
-              : `${elements.length} אלמנטים · ${totalActive} בתהליך · ${totalInstalled} הותקנו`}
+              ? t("noElements")
+              : t("elementsCount", { total: elements.length, active: totalActive, installed: totalInstalled })}
           </p>
         </div>
         <Button
@@ -400,8 +417,8 @@ export function PrefabClient({
           className="gap-1.5"
         >
           {showAddForm
-            ? <><ChevronUp className="h-4 w-4" /> סגור</>
-            : <><Plus className="h-4 w-4" /> הוסף אלמנט</>}
+            ? <><ChevronUp className="h-4 w-4" /> {t("close")}</>
+            : <><Plus className="h-4 w-4" /> {t("addElement")}</>}
         </Button>
       </div>
 
@@ -420,13 +437,13 @@ export function PrefabClient({
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mb-4">
             <Wrench className="h-7 w-7 text-primary" />
           </div>
-          <p className="text-base font-semibold text-foreground">אין אלמנטים עדיין</p>
+          <p className="text-base font-semibold text-foreground">{t("noElements")}</p>
           <p className="text-sm text-muted-foreground mt-1 mb-5 max-w-xs">
-            הוסף רכיבי פרפאב לפרויקט כדי לעקוב אחר תהליך הייצור מהמפעל עד ההתקנה.
+            {t("emptyDesc")}
           </p>
           <Button size="sm" onClick={() => setShowAddForm(true)} className="gap-1.5">
             <Plus className="h-4 w-4" />
-            הוסף אלמנט ראשון
+            {t("addFirst")}
           </Button>
         </div>
       )}
@@ -450,20 +467,21 @@ export function PrefabClient({
       {/* Progress summary bar */}
       {elements.length > 0 && (
         <div className="rounded-2xl border border-border/50 bg-white/90 shadow-sm p-4">
-          <p className="text-xs font-medium text-muted-foreground mb-3">התפלגות סטטוסים</p>
+          <p className="text-xs font-medium text-muted-foreground mb-3">{t("statusDistribution")}</p>
           <div className="flex gap-2 flex-wrap">
             {PREFAB_STATUSES.map((status) => {
               const count = byStatus[status as PrefabStatus].length;
               if (count === 0) return null;
-              const cfg = STATUS_CONFIG[status as PrefabStatus];
+              const cfg = STATUS_STYLE[status as PrefabStatus];
               const Icon = cfg.icon;
+              const label = t(`statusLabels.${status}` as Parameters<typeof t>[0]);
               return (
                 <div
                   key={status}
                   className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 ${cfg.bg} border ${cfg.border}`}
                 >
                   <Icon className={`h-3.5 w-3.5 ${cfg.color}`} />
-                  <span className={`text-xs font-medium ${cfg.color}`}>{cfg.label}</span>
+                  <span className={`text-xs font-medium ${cfg.color}`}>{label}</span>
                   <span className={`text-xs font-bold ${cfg.color}`}>{count}</span>
                 </div>
               );

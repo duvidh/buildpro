@@ -43,7 +43,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { createTask, updateTask, updateTaskStatus, deleteTask, seedProjectTasks } from "@/actions/tasks";
 import { seedProjectMilestones } from "@/actions/milestones";
-import { createTaskSchema, type CreateTaskInput } from "@/lib/schemas/task-schema";
+import { buildCreateTaskSchema, type CreateTaskInput } from "@/lib/schemas/task-schema";
 import { TASK_PRIORITY_VALUES, TASK_STATUS_VALUES } from "@/lib/constants/task-enums";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -428,9 +428,14 @@ function NewTaskDialog({
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  const schema = useMemo(
+    () => buildCreateTaskSchema({ nameRequired: t("tasks.form.nameRequired") }),
+    [t],
+  );
+
   const { register, handleSubmit, setValue, reset, formState: { errors } } =
     useForm<CreateTaskInput>({
-      resolver: zodResolver(createTaskSchema),
+      resolver: zodResolver(schema),
       defaultValues: { projectId, status: "TODO", priority: "MEDIUM" },
     });
 

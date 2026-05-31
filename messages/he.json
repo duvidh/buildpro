@@ -12,6 +12,7 @@
     "demoHint": "משתמש דמו: admin@buildpro.co.il | סיסמה: Admin@123"
   },
   "nav": {
+    "tagline": "ניהול קבלנות",
     "groups": {
       "management": "ניהול",
       "field": "שטח ומשאבים",
@@ -49,7 +50,14 @@
     "systemSettings": "הגדרות מערכת",
     "backToList": "חזור לרשימה",
     "closePanel": "סגור פאנל",
-    "details": "פרטים"
+    "details": "פרטים",
+    "relativeTime": {
+      "justNow": "עכשיו",
+      "minutesAgo": "לפני {min} דקות",
+      "hoursAgo": "לפני {hrs} שעות",
+      "yesterday": "אתמול",
+      "daysAgo": "לפני {days} ימים"
+    }
   },
   "header": {
     "searchPlaceholder": "חיפוש גלובלי...",
@@ -72,6 +80,86 @@
     }
   },
   "dashboard": {
+    "greeting": {
+      "night": "לילה טוב",
+      "morning": "בוקר טוב",
+      "afternoon": "צהריים טובים",
+      "evening": "ערב טוב"
+    },
+    "edit": {
+      "title": "עריכת לוח בקרה",
+      "hint": "גרור ווידג׳טים למיקום חדש · שנה גודל מהפינה · לחץ ✕ להסרה",
+      "editModeActive": "מצב עריכה פעיל",
+      "editModeDesc": "גרור לפי הכותרת · שנה גודל מפינה ימין-למטה · מקם ווידג׳טים זה ליד זה בחופשיות",
+      "saveBtn": "שמור לוח בקרה",
+      "editBtn": "עריכה",
+      "addWidget": "הוסף ווידג׳ט",
+      "reset": "איפוס",
+      "toastAdded": "{label} נוסף לדשבורד",
+      "toastSaved": "לוח הבקרה נשמר בהצלחה ✓",
+      "toastSaveError": "שגיאה בשמירת לוח הבקרה",
+      "toastReset": "לוח הבקרה אופס לברירת מחדל"
+    },
+    "widgetGallery": {
+      "title": "גלריית ווידג׳טים",
+      "available": "{count} זמינים",
+      "allCategory": "✨ הכל",
+      "allInCategory": "כל הווידג׳טים בקטגוריה זו כבר נמצאים בדשבורד",
+      "colCount": "עמודות {w}×{h}"
+    },
+    "categoryLabels": {
+      "finance": "💰 כספים",
+      "projects": "🏗️ פרויקטים",
+      "crm": "🤝 CRM",
+      "tools": "🛠️ כלים"
+    },
+    "widgetDefs": {
+      "kpis": {
+        "label": "מדדים מרכזיים",
+        "description": "לידים, פרויקטים, משימות, הכנסה חודשית"
+      },
+      "finance": {
+        "label": "הכנסות",
+        "description": "גרף הכנסות — 6 חודשים אחרונים"
+      },
+      "leads": {
+        "label": "לידים",
+        "description": "פייפליין לידים ונתונים"
+      },
+      "tasks": {
+        "label": "משימות קרובות",
+        "description": "משימות פתוחות לפי תאריך יעד"
+      },
+      "projects": {
+        "label": "פרויקטים פעילים",
+        "description": "סטטוס ואחוז התקדמות"
+      },
+      "payments": {
+        "label": "תשלומים אחרונים",
+        "description": "5 תשלומים אחרונים שנרשמו"
+      },
+      "clock": {
+        "label": "שעון",
+        "description": "שעה, תאריך והתקדמות היום"
+      },
+      "milestones": {
+        "label": "אבני דרך",
+        "description": "אבני דרך קרובות מכל הפרויקטים"
+      },
+      "invoices_due": {
+        "label": "חשבוניות לתשלום",
+        "description": "חשבוניות שטרם שולמו במלואן"
+      },
+      "activity": {
+        "label": "פעילות אחרונה",
+        "description": "יומן פעולות אירועי המערכת"
+      },
+      "quick_actions": {
+        "label": "פעולות מהירות",
+        "description": "קיצורי דרך לפעולות נפוצות"
+      }
+    },
+    "unknownWidget": "ווידג׳ט לא מזוהה",
     "kpi": {
       "activeLeads": "לידים פעילים",
       "newLeads": "{count, plural, =0 {אין חדשים} one {1 חדש} other {# חדשים}}",
@@ -252,7 +340,9 @@
       "saveChanges": "שמור שינויים",
       "toastUpdated": "פרטי הליד עודכנו",
       "toastError": "שגיאה בשמירה"
-    }
+    },
+    "defaultCities": ["תל אביב", "ירושלים", "חיפה", "ראשון לציון", "פתח תקווה", "אשדוד", "נתניה", "באר שבע", "בני ברק", "רמת גן", "הרצליה", "רעננה", "כפר סבא", "מודיעין", "אשקלון", "רחובות", "בת ים", "בית שמש", "הוד השרון", "חולון", "אילת", "טבריה", "נצרת", "עכו", "נהריה", "קריית שמונה", "לוד", "רמלה", "יהוד", "גבעתיים"],
+    "defaultConstructionTypes": ["בנייה חדשה", "שיפוץ", "תוספת בנייה", "הריסה ובנייה", "שיקום מבנה", "עבודות פנים", "עבודות חוץ", "בנייה מסחרית", "בנייה תעשייתית", "בנייה ציבורית / מוסדית", "תשתיות"]
   },
   "clients": {
     "page": {
@@ -611,7 +701,8 @@
         "descPlaceholder": "פרטים נוספים...",
         "namePlaceholder": "יציקת קירות, הנחת ריצוף...",
         "addTask": "הוסף משימה",
-        "saveChanges": "שמור שינויים"
+        "saveChanges": "שמור שינויים",
+        "nameRequired": "שם המשימה נדרש"
       },
       "card": {
         "edit": "ערוך",
@@ -695,7 +786,11 @@
       "reopen": "פתח מחדש",
       "markDone": "הושלם",
       "deleteMilestone": "מחק",
-      "seedDemo": "הוסף נתוני דמו"
+      "seedDemo": "הוסף נתוני דמו",
+      "validation": {
+        "nameRequired": "שם חייב להכיל לפחות 2 תווים",
+        "dateRequired": "תאריך חובה"
+      }
     },
     "qc": {
       "empty": "אין נתוני בקרת איכות עדיין.",
@@ -1395,6 +1490,18 @@
       "exportEmpty": "הקטלוג ריק",
       "exportSuccess": "יוצאו {count} פריטים",
       "templateSuccess": "קובץ תבנית הורד"
+    },
+    "templateRows": {
+      "name1": "שם לדוגמה",
+      "name2": "שם לדוגמה 2",
+      "category1": "ריצוף",
+      "category2": "עבודה",
+      "unit2": "שעה"
+    },
+    "unitDefault": "יח'",
+    "validation": {
+      "nameRequired": "שם חייב להכיל לפחות 2 תווים",
+      "unitRequired": "יחידה חובה"
     }
   },
   "finance": {
@@ -1513,6 +1620,7 @@
       "noLeads": "לא נמצאו לידים",
       "errorSelectClient": "בחר לקוח",
       "errorSelectLead": "בחר ליד",
+      "errorSelectClientOrLead": "בחר לקוח או ליד",
       "create": "צור הצעה"
     },
     "header": {
@@ -1581,7 +1689,9 @@
       "toastNewChapter": "פרק חדש נוצר: {name}",
       "noChapter": "ללא פרק",
       "forClient": "ללקוח",
-      "docTitle": "הצעת מחיר {number}"
+      "docTitle": "הצעת מחיר {number}",
+      "unitDefault": "יח'",
+      "totalCost": "עלות כוללת"
     }
   },
   "hardDelete": {
@@ -1618,7 +1728,441 @@
     "errorPasswordMatch": "הסיסמאות אינן תואמות",
     "errorExpired": "תוקף ההזמנה פג. אנא בקש הזמנה חדשה.",
     "errorUserExists": "חשבון עם מייל זה כבר קיים במערכת.",
-    "errorGeneric": "משהו השתבש. אנא נסה שוב."
+    "errorGeneric": "משהו השתבש. אנא נסה שוב.",
+    "roleLabels": {
+      "ADMIN": "מנהל מערכת",
+      "OFFICE_MANAGER": "מנהל/ת משרד",
+      "PROJECT_MANAGER": "מנהל פרויקטים",
+      "FIELD_WORKER": "איש שטח"
+    }
+  },
+  "widgets": {
+    "clock": {
+      "dayPrefix": "יום",
+      "dayProgress": "{pct}% מהיום חלף"
+    },
+    "activity": {
+      "noActivity": "אין פעילות אחרונה"
+    },
+    "finance": {
+      "thisMonth": "החודש",
+      "vsLastMonth": "{change}% מחודש קודם",
+      "monthlyAvg": "ממוצע חודשי",
+      "last6months": "סך 6 חודשים: {amount}"
+    },
+    "invoicesDue": {
+      "openCount": "{count} חשבוניות פתוחות",
+      "noOpenInvoices": "אין חשבוניות פתוחות",
+      "daysOverdue": "{n}י בפיגור",
+      "today": "היום",
+      "tomorrow": "מחר",
+      "daysLeft": "{n} ימים",
+      "allInvoices": "כל החשבוניות"
+    },
+    "milestones": {
+      "daysOverdue": "{n} ימים בפיגור",
+      "today": "היום!",
+      "tomorrow": "מחר",
+      "days": "{n} ימים",
+      "noUpcoming": "אין אבני דרך קרובות",
+      "allProjects": "כל הפרויקטים"
+    },
+    "payments": {
+      "noPayments": "אין תשלומים עדיין",
+      "toFinance": "לכספים",
+      "methodBankTransfer": "העברה",
+      "methodCheck": "צ׳ק",
+      "methodCash": "מזומן",
+      "methodCreditCard": "אשראי",
+      "methodOther": "אחר"
+    },
+    "projects": {
+      "noActiveProjects": "אין פרויקטים פעילים",
+      "allProjects": "כל הפרויקטים",
+      "statusActive": "פעיל",
+      "statusPlanning": "תכנון",
+      "statusOnHold": "מושהה",
+      "statusCompleted": "הושלם"
+    },
+    "tasks": {
+      "noTasks": "אין משימות פתוחות עם תאריך יעד",
+      "allTasks": "כל המשימות",
+      "today": "היום",
+      "tomorrow": "מחר",
+      "priorityUrgent": "דחוף מאוד",
+      "priorityHigh": "דחוף",
+      "priorityMedium": "בינוני",
+      "priorityLow": "נמוך"
+    }
+  },
+  "fieldClient": {
+    "todayLog": "יומן היום",
+    "createLog": "צור יומן",
+    "noLogToday": "לא נפתח יומן עבודה להיום.",
+    "pastLogs": "יומנים קודמים",
+    "workHours": "שעות עבודה",
+    "hoursTotal": "{hours} שע׳ · {cost}",
+    "addHours": "הוסף שעות",
+    "noHours": "אין רשומות שעות עדיין. לחץ על \"הוסף שעות\" להוספה.",
+    "expenses": "הוצאות שטח",
+    "totalExpenses": "סה״כ {amount}",
+    "addExpense": "הוסף הוצאה",
+    "noExpenses": "אין הוצאות שטח עדיין. לחץ על \"הוסף הוצאה\" להוספה.",
+    "tableEmployee": "עובד",
+    "tableDate": "תאריך",
+    "tableHours": "שעות",
+    "tableCost": "עלות",
+    "tableCategory": "קטגוריה",
+    "tableDescription": "תיאור",
+    "tableAmount": "סכום",
+    "logForm": {
+      "date": "תאריך",
+      "weather": "תנאי מזג אוויר",
+      "weatherPlaceholder": "לדוגמה ☀️ שמשי, 28°",
+      "autoFill": "מילוי אוטומטי",
+      "attendance": "נוכחות ({present}/{total})",
+      "safetyIncidents": "אירועי בטיחות",
+      "safetyPlaceholder": "תאר אירועים (השאר ריק אם אין)",
+      "notes": "הערות",
+      "notesPlaceholder": "כתוב הערות לסוף יום...",
+      "photoBtn": "צלם תמונה",
+      "uploading": "מעלה...",
+      "photosSavedHint": "תמונות יישמרו בלשונית קבצים",
+      "saving": "שומר...",
+      "create": "צור יומן",
+      "update": "עדכן יומן",
+      "editLog": "ערוך יומן",
+      "noDetails": "אין פרטים נוספים ליומן זה.",
+      "toastPhotoSuccess": "תמונה הועלתה בהצלחה",
+      "toastPhotoError": "שגיאה בהעלאת תמונה",
+      "toastUpdateError": "שגיאה בעדכון היומן",
+      "toastUpdateSuccess": "היומן עודכן בהצלחה",
+      "toastCreateError": "שגיאה ביצירת היומן",
+      "toastCreateSuccess": "היומן נוצר בהצלחה"
+    },
+    "timeForm": {
+      "title": "הוספת שעות עבודה",
+      "employee": "עובד *",
+      "noEmployees": "אין עובדים רשומים במערכת",
+      "selectEmployee": "בחר עובד",
+      "date": "תאריך *",
+      "hours": "מספר שעות *",
+      "rate": "תעריף שעתי *",
+      "description": "תיאור (אופציונלי)",
+      "descPlaceholder": "תיאור קצר של העבודה...",
+      "cost": "עלות: {amount}",
+      "cancel": "ביטול",
+      "submit": "הוסף שעות",
+      "saving": "שומר...",
+      "toastSuccess": "שעות עבודה נוספו",
+      "toastError": "שגיאה בשמירת שעות עבודה",
+      "validEmployee": "אנא בחר עובד",
+      "validDate": "אנא בחר תאריך",
+      "validHours": "אנא הזן מספר שעות",
+      "validRate": "אנא הזן תעריף שעתי"
+    },
+    "expenseForm": {
+      "title": "הוספת הוצאת שטח",
+      "date": "תאריך *",
+      "amount": "סכום *",
+      "category": "קטגוריה *",
+      "selectCategory": "בחר קטגוריה",
+      "description": "תיאור (אופציונלי)",
+      "descPlaceholder": "פרטי ההוצאה...",
+      "cancel": "ביטול",
+      "submit": "הוסף הוצאה",
+      "saving": "שומר...",
+      "toastSuccess": "הוצאה נוספה",
+      "toastError": "שגיאה בשמירת הוצאה",
+      "validDate": "אנא בחר תאריך",
+      "validAmount": "אנא הזן סכום תקין",
+      "validCategory": "אנא בחר קטגוריה"
+    },
+    "expenseCategories": {
+      "MATERIALS": "חומרי בנייה",
+      "FUEL": "דלק",
+      "TOOLS": "כלים",
+      "MEALS": "אוכל",
+      "TRANSPORT": "הסעות",
+      "OTHER": "אחר"
+    }
+  },
+  "filesClient": {
+    "title": "ניהול קבצים ומסמכים",
+    "filesCount": "{count} קבצים • {cats} קטגוריות",
+    "noFiles": "לא הועלו קבצים עדיין לפרויקט זה",
+    "dragHint": "גרור קובץ לכאן, או לחץ לבחירה",
+    "fileTypes": "PDF, Word, Excel, תמונות ועוד",
+    "categoryPlaceholder": "קטגוריה",
+    "upload": "העלה קובץ",
+    "uploading": "מעלה...",
+    "uploaded": "הועלה!",
+    "noFilesYet": "אין קבצים עדיין",
+    "dragToUpload": "גרור קובץ לאזור למעלה להעלאה",
+    "deleteTitle": "מחיקת קובץ",
+    "deleteDesc": "למחוק את הקובץ {name}? פעולה זו אינה הפיכה.",
+    "cancel": "ביטול",
+    "delete": "מחק",
+    "unknownError": "שגיאה לא ידועה",
+    "categoryLabels": {
+      "PLANS": "תוכניות",
+      "CONTRACTS": "חוזים",
+      "PERMITS": "היתרים",
+      "PHOTOS": "תמונות",
+      "OTHER": "אחר"
+    }
+  },
+  "financialsClient": {
+    "approvedBudget": "תקציב מאושר",
+    "notDefined": "לא הוגדר",
+    "includesChanges": "כולל שינויים {amount}",
+    "baseContractValue": "ערך חוזה בסיסי",
+    "actualCosts": "עלויות בפועל",
+    "laborFieldSubs": "עבודה + שטח + קבלני משנה",
+    "grossProfit": "רווח גולמי",
+    "margin": "מרווח {pct}%",
+    "defineContract": "הגדר ערך חוזה",
+    "costBreakdown": "פירוט עלויות",
+    "labor": "עבודה",
+    "fieldExpenses": "הוצאות שטח",
+    "subContractors": "קבלני משנה",
+    "cashFlow": "תזרים מזומנים",
+    "arLabel": "גבייה מלקוחות (חו״ל)",
+    "apLabel": "תשלומים לקבלנים (ח׳ נשים)",
+    "received": "התקבל",
+    "remaining": "יתרה לגבייה",
+    "paid": "שולם",
+    "remainingToPay": "יתרה לתשלום",
+    "settledFull": "✓ סולק במלואו",
+    "netCashPosition": "יתרת מזומן נטו (גבייה − תשלום)",
+    "positiveCash": "חיובי — יתרת הגבייה גדולה מיתרת התשלום לקבלנים",
+    "negativeCash": "שלילי — יתרת התשלום לקבלנים גדולה מיתרת הגבייה",
+    "surplus": "עודף",
+    "deficit": "גירעון",
+    "invoicesAndReceipts": "חשבוניות וקבלות",
+    "billed": "חויב",
+    "totalLabel": "סה״כ",
+    "balanceLabel": "יתרה",
+    "subContracts": "חוזי קבלני משנה",
+    "noInvoices": "אין חשבוניות עדיין לפרויקט זה.",
+    "colInvoiceNo": "מס׳ חשבונית",
+    "colDate": "תאריך",
+    "colStatus": "סטטוס",
+    "colAmount": "סכום",
+    "colPaid": "שולם",
+    "colBalance": "יתרה",
+    "colAction": "פעולה",
+    "colSupplier": "ספק / קבלן",
+    "colContractValue": "ערך חוזה",
+    "colRetention": "אחוז עיכבון",
+    "paidFull": "שולם במלואו",
+    "settled": "סולק",
+    "payment": "תשלום",
+    "paymentForm": {
+      "title": "רשום קבלה — חשבונית #{number} · יתרה: {balance}",
+      "supplierTitle": "רשום תשלום — {name} · יתרה: {balance}",
+      "amount": "סכום *",
+      "date": "תאריך *",
+      "method": "אמצעי תשלום",
+      "reference": "אסמכתה",
+      "refPlaceholder": "מס׳ צ׳ק / אסמכתה",
+      "notes": "הערות",
+      "notesPlaceholder": "הערה אופציונלית",
+      "save": "שמור קבלה",
+      "savePayment": "שמור תשלום",
+      "cancel": "ביטול",
+      "validAmount": "הזן סכום תקין",
+      "amountExceedsBalance": "הסכום עולה על היתרה ({balance})",
+      "error": "שגיאה"
+    },
+    "methodLabels": {
+      "BANK_TRANSFER": "העברה בנקאית",
+      "CHECK": "צ׳ק",
+      "CASH": "מזומן",
+      "CREDIT_CARD": "כרטיס אשראי",
+      "OTHER": "אחר"
+    },
+    "invoiceStatus": {
+      "DRAFT": "טיוטה",
+      "SENT": "נשלחה",
+      "PARTIALLY_PAID": "שולמה חלקית",
+      "PAID": "שולמה",
+      "OVERDUE": "בפיגור",
+      "CANCELLED": "בוטלה"
+    },
+    "contractStatus": {
+      "DRAFT": "טיוטה",
+      "ACTIVE": "פעיל",
+      "COMPLETED": "הושלם",
+      "TERMINATED": "הופסק"
+    }
+  },
+  "prefabClient": {
+    "title": "מעקב ייצור ופרפאב",
+    "noElements": "אין אלמנטים עדיין",
+    "elementsCount": "{total} אלמנטים · {active} בייצור · {installed} הותקנו",
+    "addElement": "הוסף אלמנט",
+    "close": "סגור",
+    "emptyDesc": "הוסף רכיבי פרפאב לפרויקט כדי לעקוב אחר תהליך הייצור מהמפעל ועד להתקנה.",
+    "addFirst": "הוסף אלמנט ראשון",
+    "statusDistribution": "התפלגות סטטוסים",
+    "empty": "ריק",
+    "completed": "הושלם",
+    "addForm": {
+      "title": "אלמנט חדש",
+      "name": "שם אלמנט *",
+      "namePlaceholder": "לדוגמה \"קיר A3 - קומה 2\"",
+      "type": "סוג",
+      "customType": "תאר את הסוג",
+      "customTypePlaceholder": "סוג מותאם אישית",
+      "linkTask": "קשר למשימה",
+      "noLink": "ללא קישור",
+      "startDate": "תאריך התחלת ייצור",
+      "deliveryDate": "תאריך אספקה מתוכנן",
+      "notes": "הערות",
+      "notesPlaceholder": "פרטים נוספים...",
+      "cancel": "ביטול",
+      "submit": "הוסף אלמנט",
+      "toastSuccess": "אלמנט נוסף",
+      "toastError": "שגיאה בהוספה"
+    },
+    "card": {
+      "advanceTo": "קדם ל{status}",
+      "toastAdvanced": "הועבר ל{status}",
+      "toastAdvanceError": "שגיאה בעדכון סטטוס",
+      "toastDeleted": "אלמנט נמחק",
+      "toastDeleteError": "שגיאה במחיקה"
+    },
+    "elementTypes": {
+      "concreteWall": "קיר בטון",
+      "floorSlab": "לוח רצפה",
+      "beam": "קורה",
+      "column": "עמוד",
+      "stairs": "מדרגות",
+      "balcony": "מרפסת",
+      "facadeCladding": "חיפוי חזית",
+      "structuralComponent": "רכיב מבני",
+      "other": "אחר"
+    },
+    "statusLabels": {
+      "PLANNED": "מתוכנן",
+      "IN_PRODUCTION": "בייצור",
+      "QUALITY_CHECK": "בדיקת איכות",
+      "READY_FOR_DISPATCH": "מוכן למשלוח",
+      "SHIPPED": "נשלח",
+      "DELIVERED": "נמסר לאתר",
+      "INSTALLED": "הותקן"
+    }
+  },
+  "projectOverview": {
+    "cannotLoad": "לא ניתן לטעון נתוני סקירה.",
+    "openTasks": "משימות פתוחות",
+    "completedTasks": "משימות שהושלמו",
+    "teamMembers": "חברי צוות",
+    "files": "קבצים",
+    "recentTasks": "משימות אחרונות",
+    "upcomingMilestones": "אבני דרך קרובות",
+    "projectTeam": "צוות הפרויקט",
+    "activityLog": "יומן פעילות",
+    "noActivity": "אין פעילות רשומה עדיין לפרויקט זה.",
+    "emptyProject": "פרויקט חדש — אין נתונים עדיין.",
+    "emptySubtitle": "עבור ללשונית משימות להוספת משימות.",
+    "taskStatus": {
+      "TODO": "לביצוע",
+      "IN_PROGRESS": "בביצוע",
+      "BLOCKED": "חסום",
+      "DONE": "הושלם"
+    },
+    "memberRole": {
+      "MANAGER": "מנהל",
+      "ENGINEER": "מהנדס",
+      "FOREMAN": "פורמן",
+      "VIEWER": "צופה"
+    },
+    "relativeTime": {
+      "now": "כרגע",
+      "minutesAgo": "לפני {n} דקות",
+      "hoursAgo": "לפני {n} שעות",
+      "yesterday": "אתמול",
+      "daysAgo": "לפני {n} ימים"
+    }
+  },
+  "profilePage": {
+    "title": "פרופיל אישי",
+    "subtitle": "ניהול פרטים אישיים וסיסמה"
+  },
+  "profileClient": {
+    "personalInfo": "פרטים אישיים",
+    "personalInfoSub": "שינויים יישמרו במסד הנתונים.",
+    "fullName": "שם מלא",
+    "email": "אימייל",
+    "phone": "טלפון",
+    "role": "תפקיד",
+    "changeRoleHint": "לשינוי תפקיד, פנה למנהל המערכת.",
+    "saveBtn": "שמור פרטים",
+    "savedMsg": "פרטים נשמרו",
+    "changePassword": "שינוי סיסמה",
+    "changePasswordSub": "נדרש מינימום 6 תווים.",
+    "currentPassword": "סיסמה נוכחית",
+    "newPassword": "סיסמה חדשה",
+    "confirmPassword": "אימות סיסמה",
+    "updatePasswordBtn": "עדכן סיסמה",
+    "passwordUpdated": "הסיסמה עודכנה",
+    "errorCurrentRequired": "אנא הזן את הסיסמה הנוכחית.",
+    "errorTooShort": "הסיסמה החדשה חייבת להכיל לפחות 6 תווים.",
+    "errorMismatch": "הסיסמאות אינן תואמות.",
+    "namePlaceholder": "ישראל ישראלי",
+    "rolePlaceholder": "ישראל ישראלי",
+    "roleLabels": {
+      "ADMIN": "מנהל מערכת",
+      "OFFICE_MANAGER": "מנהל/ת משרד",
+      "PROJECT_MANAGER": "מנהל פרויקטים",
+      "FIELD_WORKER": "איש שטח"
+    }
+  },
+  "offlineIndicator": {
+    "message": "⚠️ אתה נמצא כרגע במצב לא מקוון. שינויים לא יישמרו עד לחזרת החיבור."
+  },
+  "notifications": {
+    "title": "התראות",
+    "markAll": "סמן הכל",
+    "empty": "אין התראות",
+    "markRead": "סמן כנקרא",
+    "newNotifications": "BuildPro — {count} התראה{plural} חדשה",
+    "clickForDetails": "לחץ על פעמון ההתראות לפרטים"
+  },
+  "crmFiles": {
+    "title": "ניהול קבצים ומסמכים",
+    "filesCount": "{count} קבצים · {cats} קטגוריות",
+    "noFiles": "לא הועלו קבצים",
+    "dragHint": "גרור קובץ לכאן, או לחץ לבחירה",
+    "fileTypes": "PDF, Word, Excel, תמונות ועוד",
+    "categoryPlaceholder": "קטגוריה",
+    "upload": "העלה קובץ",
+    "uploading": "מעלה...",
+    "uploaded": "הועלה!",
+    "noFilesYet": "אין קבצים עדיין",
+    "dragToUpload": "גרור קובץ לאזור למעלה להעלאה",
+    "deleteTitle": "מחיקת קובץ",
+    "deleteDesc": "למחוק את הקובץ {name}? פעולה זו אינה הפיכה.",
+    "cancel": "ביטול",
+    "delete": "מחק",
+    "unknownError": "שגיאה לא ידועה",
+    "categoryLabels": {
+      "PLANS": "תוכניות",
+      "CONTRACTS": "חוזים",
+      "PERMITS": "היתרים",
+      "PHOTOS": "תמונות",
+      "OTHER": "אחר"
+    }
+  },
+  "combobox": {
+    "placeholder": "בחר...",
+    "searchPlaceholder": "חיפוש...",
+    "emptyText": "לא נמצאו תוצאות"
+  },
+  "appHeader": {
+    "openMenu": "פתח תפריט"
   },
   "language": {
     "he": "עברית",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,7 +31,7 @@ import {
   deleteMilestone,
   seedProjectMilestones,
 } from "@/actions/milestones";
-import { createMilestoneSchema, type CreateMilestoneInput } from "@/lib/schemas/milestone-schema";
+import { buildCreateMilestoneSchema, type CreateMilestoneInput } from "@/lib/schemas/milestone-schema";
 import { fmtDate } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -72,9 +72,17 @@ function NewMilestoneDialog({
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  const schema = useMemo(
+    () => buildCreateMilestoneSchema({
+      nameRequired: t("milestones.validation.nameRequired"),
+      dateRequired: t("milestones.validation.dateRequired"),
+    }),
+    [t],
+  );
+
   const { register, handleSubmit, reset, formState: { errors } } =
     useForm<CreateMilestoneInput>({
-      resolver: zodResolver(createMilestoneSchema),
+      resolver: zodResolver(schema),
       defaultValues: { projectId, weight: "1" },
     });
 

@@ -53,7 +53,7 @@ type Employee = {
 type CertStatus = "valid" | "expired" | "pending";
 
 function getCertStatus(employee: Employee): CertStatus {
-  if (employee.trade?.includes("בטיחות")) return "valid";
+  if (employee.trade?.toLowerCase().includes("safety")) return "valid";
   const hash = employee.id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
   return (["valid", "expired", "pending"] as const)[hash % 3];
 }

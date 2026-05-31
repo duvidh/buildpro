@@ -101,7 +101,7 @@ export function ClientHeader({
         setShowEditDialog(false);
         router.refresh();
       } else {
-        toast.error(res.error ?? t("header.toastUpdateError"));
+        toast.error(t("header.toastUpdateError"));
       }
     });
   }
@@ -113,7 +113,7 @@ export function ClientHeader({
         toast.success(t("header.toastDeleted"));
         router.push("/clients");
       } else {
-        toast.error(res.error ?? t("header.toastDeleteError"));
+        toast.error(t("header.toastDeleteError"));
         setShowDeleteDialog(false);
       }
     });

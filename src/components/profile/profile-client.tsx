@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { Camera, CheckCircle, Save, ShieldCheck } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,14 +20,15 @@ type User = {
   avatarUrl: string | null;
 };
 
-const ROLE_LABELS: Record<string, { label: string; cls: string }> = {
-  ADMIN:           { label: "מנהל מערכת",    cls: "bg-red-100 text-red-700 border-red-200" },
-  OFFICE_MANAGER:  { label: "מנהל משרד",     cls: "bg-violet-100 text-violet-700 border-violet-200" },
-  PROJECT_MANAGER: { label: "מנהל פרויקט",   cls: "bg-blue-100 text-blue-700 border-blue-200" },
-  FIELD_WORKER:    { label: "עובד שטח",       cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+const ROLE_CLS: Record<string, string> = {
+  ADMIN:           "bg-red-100 text-red-700 border-red-200",
+  OFFICE_MANAGER:  "bg-violet-100 text-violet-700 border-violet-200",
+  PROJECT_MANAGER: "bg-blue-100 text-blue-700 border-blue-200",
+  FIELD_WORKER:    "bg-emerald-100 text-emerald-700 border-emerald-200",
 };
 
 export function ProfileClient({ user }: { user: User }) {
+  const t = useTranslations("profileClient");
   const [form, setForm] = useState({
     name: user.name,
     email: user.email,
@@ -40,7 +42,8 @@ export function ProfileClient({ user }: { user: User }) {
   const [, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const roleCfg = ROLE_LABELS[user.role] ?? { label: user.role, cls: "" };
+  const roleLabel = t(`roleLabels.${user.role}` as Parameters<typeof t>[0], undefined, { fallback: user.role });
+  const roleCls = ROLE_CLS[user.role] ?? "";
   const initials = user.name
     .split(" ")
     .map((w) => w[0])
@@ -69,10 +72,9 @@ export function ProfileClient({ user }: { user: User }) {
 
   function handlePasswordChange() {
     setPwError(null);
-    if (!pwForm.current) { setPwError("יש להזין סיסמה נוכחית."); return; }
-    if (pwForm.next.length < 6) { setPwError("הסיסמה החדשה חייבת להכיל לפחות 6 תווים."); return; }
-    if (pwForm.next !== pwForm.confirm) { setPwError("הסיסמאות אינן תואמות."); return; }
-    // Mock: simulate save delay
+    if (!pwForm.current) { setPwError(t("errorCurrentRequired")); return; }
+    if (pwForm.next.length < 6) { setPwError(t("errorTooShort")); return; }
+    if (pwForm.next !== pwForm.confirm) { setPwError(t("errorMismatch")); return; }
     startTransition(async () => {
       await new Promise((r) => setTimeout(r, 600));
       setPwSaved(true);
@@ -111,9 +113,9 @@ export function ProfileClient({ user }: { user: User }) {
             <h2 className="text-lg font-bold text-foreground leading-tight">{user.name}</h2>
             <p className="text-sm text-muted-foreground">{user.email}</p>
             <div className="mt-1.5 flex items-center gap-2">
-              <Badge variant="outline" className={`text-xs px-2 py-0.5 ${roleCfg.cls}`}>
+              <Badge variant="outline" className={`text-xs px-2 py-0.5 ${roleCls}`}>
                 <ShieldCheck className="h-3 w-3 me-1" />
-                {roleCfg.label}
+                {roleLabel}
               </Badge>
             </div>
           </div>
@@ -123,22 +125,22 @@ export function ProfileClient({ user }: { user: User }) {
       {/* ── Personal Info ──────────────────────────────────────────────────────── */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-4">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">פרטים אישיים</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">השינויים ישמרו בבסיס הנתונים.</p>
+          <h3 className="text-sm font-semibold text-foreground">{t("personalInfo")}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("personalInfoSub")}</p>
         </div>
         <Separator />
         <div className="space-y-3">
           <div className="grid grid-cols-3 items-center gap-4">
-            <Label className="text-end text-sm text-muted-foreground">שם מלא</Label>
+            <Label className="text-end text-sm text-muted-foreground">{t("fullName")}</Label>
             <Input
               className="col-span-2"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="ישראל ישראלי"
+              placeholder={t("namePlaceholder")}
             />
           </div>
           <div className="grid grid-cols-3 items-center gap-4">
-            <Label className="text-end text-sm text-muted-foreground">דוא״ל</Label>
+            <Label className="text-end text-sm text-muted-foreground">{t("email")}</Label>
             <Input
               className="col-span-2"
               type="email"
@@ -148,7 +150,7 @@ export function ProfileClient({ user }: { user: User }) {
             />
           </div>
           <div className="grid grid-cols-3 items-center gap-4">
-            <Label className="text-end text-sm text-muted-foreground">טלפון</Label>
+            <Label className="text-end text-sm text-muted-foreground">{t("phone")}</Label>
             <Input
               className="col-span-2"
               value={form.phone}
@@ -157,13 +159,13 @@ export function ProfileClient({ user }: { user: User }) {
             />
           </div>
           <div className="grid grid-cols-3 items-center gap-4">
-            <Label className="text-end text-sm text-muted-foreground">תפקיד</Label>
+            <Label className="text-end text-sm text-muted-foreground">{t("role")}</Label>
             <div className="col-span-2">
-              <Badge variant="outline" className={`text-xs px-2.5 py-1 ${roleCfg.cls}`}>
-                {roleCfg.label}
+              <Badge variant="outline" className={`text-xs px-2.5 py-1 ${roleCls}`}>
+                {roleLabel}
               </Badge>
               <p className="text-[11px] text-muted-foreground mt-1">
-                לשינוי תפקיד פנה למנהל המערכת.
+                {t("changeRoleHint")}
               </p>
             </div>
           </div>
@@ -172,12 +174,12 @@ export function ProfileClient({ user }: { user: User }) {
           {profileSaved && (
             <span className="flex items-center gap-1.5 text-sm text-emerald-600">
               <CheckCircle className="h-4 w-4" />
-              פרטים נשמרו
+              {t("savedMsg")}
             </span>
           )}
           <Button onClick={handleProfileSave}>
             <Save className="h-4 w-4 me-1.5" />
-            שמור פרטים
+            {t("saveBtn")}
           </Button>
         </div>
       </div>
@@ -185,13 +187,13 @@ export function ProfileClient({ user }: { user: User }) {
       {/* ── Password Change ────────────────────────────────────────────────────── */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-4">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">שינוי סיסמה</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">יש להזין לפחות 6 תווים.</p>
+          <h3 className="text-sm font-semibold text-foreground">{t("changePassword")}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("changePasswordSub")}</p>
         </div>
         <Separator />
         <div className="space-y-3">
           <div className="grid grid-cols-3 items-center gap-4">
-            <Label className="text-end text-sm text-muted-foreground">סיסמה נוכחית</Label>
+            <Label className="text-end text-sm text-muted-foreground">{t("currentPassword")}</Label>
             <Input
               className="col-span-2"
               type="password"
@@ -201,7 +203,7 @@ export function ProfileClient({ user }: { user: User }) {
             />
           </div>
           <div className="grid grid-cols-3 items-center gap-4">
-            <Label className="text-end text-sm text-muted-foreground">סיסמה חדשה</Label>
+            <Label className="text-end text-sm text-muted-foreground">{t("newPassword")}</Label>
             <Input
               className="col-span-2"
               type="password"
@@ -211,7 +213,7 @@ export function ProfileClient({ user }: { user: User }) {
             />
           </div>
           <div className="grid grid-cols-3 items-center gap-4">
-            <Label className="text-end text-sm text-muted-foreground">אישור סיסמה</Label>
+            <Label className="text-end text-sm text-muted-foreground">{t("confirmPassword")}</Label>
             <Input
               className="col-span-2"
               type="password"
@@ -226,11 +228,11 @@ export function ProfileClient({ user }: { user: User }) {
           {pwSaved && (
             <span className="flex items-center gap-1.5 text-sm text-emerald-600">
               <CheckCircle className="h-4 w-4" />
-              סיסמה עודכנה
+              {t("passwordUpdated")}
             </span>
           )}
           <Button variant="outline" onClick={handlePasswordChange}>
-            עדכן סיסמה
+            {t("updatePasswordBtn")}
           </Button>
         </div>
       </div>

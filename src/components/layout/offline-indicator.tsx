@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { WifiOff } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -31,6 +32,7 @@ function useIsOnline(): boolean {
 // ─── Banner component ─────────────────────────────────────────────────────────
 
 export function OfflineIndicator() {
+  const t = useTranslations("offlineIndicator");
   const isOnline = useIsOnline();
 
   if (isOnline) return null;
@@ -52,9 +54,7 @@ export function OfflineIndicator() {
       ].join(" ")}
     >
       <WifiOff className="h-4 w-4 shrink-0" aria-hidden="true" />
-      <span dir="rtl">
-        ⚠️ אתה נמצא כרגע במצב לא מקוון (Offline). שינויים לא יישמרו עד לחידוש הרשת.
-      </span>
+      <span>{t("message")}</span>
     </div>
   );
 }

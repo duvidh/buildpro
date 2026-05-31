@@ -91,8 +91,8 @@ export function AppSidebar({
 
   /**
    * When the app is in English and the stored name contains Hebrew characters
-   * (e.g. the seeded "מנהל מערכת"), substitute the translated role label so
-   * no Hebrew text leaks into the English UI.
+   * (e.g. a seeded role name stored in Hebrew), substitute the translated role
+   * label so no Hebrew text leaks into the English UI.
    */
   const isHebrew = (s: string) => /[֐-׿]/.test(s);
   const resolvedName =
@@ -124,7 +124,7 @@ export function AppSidebar({
         {/* Text — fades in on hover */}
         <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-100 whitespace-nowrap overflow-hidden pe-3">
           <p className="text-sm font-bold text-sidebar-foreground leading-none">{displayName}</p>
-          <p className="text-[11px] text-sidebar-foreground/50 mt-0.5">{APP_CONFIG.companyTagline}</p>
+          <p className="text-[11px] text-sidebar-foreground/50 mt-0.5">{t("tagline")}</p>
         </div>
       </div>
 

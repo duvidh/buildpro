@@ -1,8 +1,12 @@
+"use client";
+
+import { useTranslations, useLocale } from "next-intl";
 import {
   FileText, FolderKanban, CreditCard, CheckSquare,
   TrendingUp, AlertCircle, Wrench, User,
 } from "lucide-react";
 import type { DashboardData, DashboardActivity } from "./types";
+import type React from "react";
 
 // Map entityType → icon + colour
 const ENTITY_CFG: Record<string, { icon: React.ElementType; bg: string; text: string }> = {
@@ -25,21 +29,23 @@ function getDescription(a: DashboardActivity): string {
   }
 }
 
-function timeAgo(date: Date): string {
-  const diff = Date.now() - new Date(date).getTime();
-  const min  = Math.floor(diff / 60_000);
-  const hr   = Math.floor(diff / 3_600_000);
-  const day  = Math.floor(diff / 86_400_000);
-  if (min < 1)  return "עכשיו";
-  if (min < 60) return `לפני ${min} דק׳`;
-  if (hr  < 24) return `לפני ${hr} שע׳`;
-  if (day < 7)  return `לפני ${day} ימים`;
-  return new Intl.DateTimeFormat("he-IL", { day: "2-digit", month: "2-digit" }).format(new Date(date));
-}
-
-import type React from "react";
-
 export function ActivityWidget({ data }: { data: DashboardData }) {
+  const t = useTranslations("widgets.activity");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+
+  function timeAgo(date: Date): string {
+    const intlLocale = locale === "he" ? "he-IL" : "en-US";
+    const diff = Date.now() - new Date(date).getTime();
+    const min  = Math.floor(diff / 60_000);
+    const hr   = Math.floor(diff / 3_600_000);
+    const day  = Math.floor(diff / 86_400_000);
+    if (min < 1)  return tCommon("relativeTime.justNow");
+    if (min < 60) return tCommon("relativeTime.minutesAgo", { min });
+    if (hr  < 24) return tCommon("relativeTime.hoursAgo", { hrs: hr });
+    if (day < 7)  return tCommon("relativeTime.daysAgo", { days: day });
+    return new Intl.DateTimeFormat(intlLocale, { day: "2-digit", month: "2-digit" }).format(new Date(date));
+  }
   const activity = data.recentActivity;
 
   return (
@@ -47,7 +53,7 @@ export function ActivityWidget({ data }: { data: DashboardData }) {
       {activity.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
           <User className="h-8 w-8 text-muted-foreground/40" />
-          <p className="text-sm text-muted-foreground">אין פעילות אחרונה</p>
+          <p className="text-sm text-muted-foreground">{t("noActivity")}</p>
         </div>
       ) : (
         <ul className="flex-1 overflow-auto divide-y divide-border/50">

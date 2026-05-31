@@ -1,13 +1,17 @@
 export const dynamic = "force-dynamic";
 
 import { User } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { seedUsers, getCurrentUser } from "@/actions/users";
 import { ProfileClient } from "@/components/profile/profile-client";
 import { notFound } from "next/navigation";
 
 export default async function ProfilePage() {
   if (process.env.NODE_ENV !== "production") await seedUsers();
-  const user = await getCurrentUser();
+  const [user, t] = await Promise.all([
+    getCurrentUser(),
+    getTranslations("profilePage"),
+  ]);
   if (!user) notFound();
 
   return (
@@ -17,9 +21,9 @@ export default async function ProfilePage() {
           <User className="h-5 w-5 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">פרופיל אישי</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            ניהול פרטים אישיים וסיסמה
+            {t("subtitle")}
           </p>
         </div>
       </div>

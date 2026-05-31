@@ -15,17 +15,17 @@ interface MeasurementContextValue {
   system: "METRIC" | "IMPERIAL";
   /** Short unit labels ready for use in the UI. */
   units: MeasurementUnits;
-  /** Shortcut: units.area  — e.g. "מ״ר" / "sq ft" */
+  /** Shortcut: units.area  — e.g. "m²" / "sq ft" */
   areaUnit: string;
-  /** Shortcut: units.length — e.g. "מ׳" / "ft" */
+  /** Shortcut: units.length — e.g. "m" / "ft" */
   lengthUnit: string;
 }
 
 const MeasurementContext = createContext<MeasurementContextValue>({
   system: "METRIC",
-  units:  { area: 'מ״ר', length: "מ׳" },
-  areaUnit:   'מ״ר',
-  lengthUnit: "מ׳",
+  units:  { area: "m²", length: "m" },
+  areaUnit:   "m²",
+  lengthUnit: "m",
 });
 
 // ─── Provider ─────────────────────────────────────────────────────────────────

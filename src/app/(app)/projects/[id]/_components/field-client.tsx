@@ -2,6 +2,7 @@
 
 import { useCurrency } from "@/lib/currency-context";
 import { useState, useTransition, useRef } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import {
   Clock,
   Receipt,
@@ -89,33 +90,29 @@ export type FieldData = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const EXPENSE_CATEGORIES = [
-  { value: "MATERIALS", label: "חומרי בניין" },
-  { value: "FUEL",      label: "דלק" },
-  { value: "TOOLS",     label: "כלים" },
-  { value: "MEALS",     label: "אוכל" },
-  { value: "TRANSPORT", label: "תחבורה" },
-  { value: "OTHER",     label: "אחר" },
+const EXPENSE_CATEGORY_KEYS = [
+  "MATERIALS",
+  "FUEL",
+  "TOOLS",
+  "MEALS",
+  "TRANSPORT",
+  "OTHER",
 ] as const;
-
-const EXPENSE_CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
-  EXPENSE_CATEGORIES.map(({ value, label }) => [value, label])
-);
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** Mock weather suggestions based on Hebrew month */
+/** Season-based weather suggestions (locale-neutral strings with emoji) */
 function mockWeatherSuggestions(): string[] {
   const month = new Date().getMonth(); // 0-indexed
   if (month >= 5 && month <= 8)
-    return ["☀️ חם וצח, ~32°C", "🌡 חם מאוד, ~36°C", "⛅ חם עם עננים, ~30°C"];
+    return ["☀️ ~32°C", "🌡️ ~36°C", "⛅ ~30°C"];
   if (month === 9 || month === 10)
-    return ["🌤 מעונן חלקית, ~22°C", "⛅ מעונן, ~18°C", "🌧 גשום, ~16°C"];
+    return ["🌤️ ~22°C", "⛅ ~18°C", "🌧️ ~16°C"];
   if (month === 11 || month <= 1)
-    return ["🌧 גשום וקר, ~12°C", "🌦 גשמים קלים, ~14°C", "☁️ מעונן, ~10°C"];
-  return ["🌸 נעים ומתון, ~20°C", "☀️ שמשי, ~24°C", "🌤 חצי מעונן, ~18°C"];
+    return ["🌧️ ~12°C", "🌦️ ~14°C", "☁️ ~10°C"];
+  return ["🌸 ~20°C", "☀️ ~24°C", "🌤️ ~18°C"];
 }
 
 // ─── Inline Daily-Log Form ─────────────────────────────────────────────────────
@@ -130,6 +127,7 @@ interface LogFormProps {
 }
 
 function LogForm({ projectId, members, existing, defaultDate, onDone, onCancel }: LogFormProps) {
+  const t = useTranslations("fieldClient");
   const [date, setDate] = useState(existing?.date?.slice(0, 10) ?? defaultDate ?? todayIso());
   const [weather, setWeather] = useState(existing?.weatherConditions ?? "");
   const [showWeatherPicker, setShowWeatherPicker] = useState(false);
@@ -169,12 +167,12 @@ function LogForm({ projectId, members, existing, defaultDate, onDone, onCancel }
       fd.append("category", "PHOTOS");
       const result = await uploadProjectFile(projectId, fd);
       if (result.success) {
-        toast.success("תמונה הועלתה בהצלחה");
+        toast.success(t("logForm.toastPhotoSuccess"));
       } else {
-        toast.error("שגיאה בהעלאת תמונה");
+        toast.error(t("logForm.toastPhotoError"));
       }
     } catch {
-      toast.error("שגיאה בהעלאת תמונה");
+      toast.error(t("logForm.toastPhotoError"));
     } finally {
       setPhotoUploading(false);
       if (photoRef.current) photoRef.current.value = "";
@@ -193,10 +191,10 @@ function LogForm({ projectId, members, existing, defaultDate, onDone, onCancel }
       if (existing) {
         const result = await updateDailyLog(existing.id, projectId, payload);
         if (!result.success) {
-          toast.error((result as { error?: string }).error ?? "שגיאה בעדכון יומן");
+          toast.error(t("logForm.toastUpdateError"));
           return;
         }
-        toast.success("יומן עודכן בהצלחה");
+        toast.success(t("logForm.toastUpdateSuccess"));
         onDone({
           ...existing,
           weatherConditions: weather || null,
@@ -207,10 +205,10 @@ function LogForm({ projectId, members, existing, defaultDate, onDone, onCancel }
       } else {
         const result = await createDailyLog({ projectId, date, ...payload });
         if (!result.success) {
-          toast.error((result as { error?: string }).error ?? "שגיאה ביצירת יומן");
+          toast.error(t("logForm.toastCreateError"));
           return;
         }
-        toast.success("יומן נוצר בהצלחה");
+        toast.success(t("logForm.toastCreateSuccess"));
         // Use the real record returned from the server (has real id + serialised date)
         const created = result.log;
         onDone({
@@ -231,7 +229,7 @@ function LogForm({ projectId, members, existing, defaultDate, onDone, onCancel }
       {/* Date row */}
       {!existing && (
         <div className="flex items-center gap-3">
-          <Label className="text-xs text-muted-foreground w-16 shrink-0">תאריך</Label>
+          <Label className="text-xs text-muted-foreground w-16 shrink-0">{t("logForm.date")}</Label>
           <Input
             type="date"
             value={date}
@@ -246,13 +244,13 @@ function LogForm({ projectId, members, existing, defaultDate, onDone, onCancel }
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
           <CloudSun className="h-3.5 w-3.5" />
-          תנאי מזג אויר
+          {t("logForm.weather")}
         </Label>
         <div className="flex gap-2">
           <Input
             value={weather}
             onChange={(e) => setWeather(e.target.value)}
-            placeholder="לדוגמה: ☀️ שמשי, 28°C"
+            placeholder={t("logForm.weatherPlaceholder")}
             className="h-8 text-sm flex-1"
           />
           <Button
@@ -262,7 +260,7 @@ function LogForm({ projectId, members, existing, defaultDate, onDone, onCancel }
             className="h-8 shrink-0 text-xs"
             onClick={() => setShowWeatherPicker((v) => !v)}
           >
-            מלא אוטומטי
+            {t("logForm.autoFill")}
           </Button>
         </div>
         {showWeatherPicker && (
@@ -289,7 +287,10 @@ function LogForm({ projectId, members, existing, defaultDate, onDone, onCancel }
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
             <Users className="h-3.5 w-3.5" />
-            נוכחות ({members.filter((m) => attendance[m.user.id]).length}/{members.length})
+            {t("logForm.attendance", {
+              present: members.filter((m) => attendance[m.user.id]).length,
+              total: members.length,
+            })}
           </Label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
             {members.map((m) => (
@@ -317,12 +318,12 @@ function LogForm({ projectId, members, existing, defaultDate, onDone, onCancel }
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
           <AlertTriangle className="h-3.5 w-3.5" />
-          אירועי בטיחות
+          {t("logForm.safetyIncidents")}
         </Label>
         <Input
           value={safetyIncidents}
           onChange={(e) => setSafetyIncidents(e.target.value)}
-          placeholder="תאר אירועים (אם לא היו — השאר ריק)"
+          placeholder={t("logForm.safetyPlaceholder")}
           className="h-8 text-sm"
         />
       </div>
@@ -331,12 +332,12 @@ function LogForm({ projectId, members, existing, defaultDate, onDone, onCancel }
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
           <FileText className="h-3.5 w-3.5" />
-          הערות
+          {t("logForm.notes")}
         </Label>
         <Textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="רשום הערות לסיום יום העבודה..."
+          placeholder={t("logForm.notesPlaceholder")}
           rows={3}
           className="text-sm resize-none"
         />
@@ -361,9 +362,9 @@ function LogForm({ projectId, members, existing, defaultDate, onDone, onCancel }
           onClick={() => photoRef.current?.click()}
         >
           <Camera className="h-3.5 w-3.5" />
-          {photoUploading ? "מעלה..." : "צלם תמונה"}
+          {photoUploading ? t("logForm.uploading") : t("logForm.photoBtn")}
         </Button>
-        <span className="text-xs text-muted-foreground">תמונות יישמרו בלשונית קבצים</span>
+        <span className="text-xs text-muted-foreground">{t("logForm.photosSavedHint")}</span>
       </div>
 
       {/* Action buttons */}
@@ -377,7 +378,7 @@ function LogForm({ projectId, members, existing, defaultDate, onDone, onCancel }
             onClick={onCancel}
           >
             <X className="h-3.5 w-3.5 ml-1" />
-            ביטול
+            {t("expenseForm.cancel")}
           </Button>
         )}
         <Button
@@ -388,7 +389,7 @@ function LogForm({ projectId, members, existing, defaultDate, onDone, onCancel }
           onClick={handleSubmit}
         >
           <Check className="h-3.5 w-3.5 ml-1" />
-          {isPending ? "שומר..." : existing ? "עדכן יומן" : "צור יומן"}
+          {isPending ? t("logForm.saving") : existing ? t("logForm.update") : t("logForm.create")}
         </Button>
       </div>
     </div>
@@ -408,6 +409,7 @@ function LogCard({
   members: Member[];
   onUpdated: (updated: DailyLog) => void;
 }) {
+  const t = useTranslations("fieldClient");
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
 
@@ -488,7 +490,7 @@ function LogCard({
             </div>
           )}
           {!log.weatherConditions && !log.visitors && !log.safetyIncidents && !log.notes && (
-            <p className="text-xs text-muted-foreground">אין פרטים נוספים ליומן זה.</p>
+            <p className="text-xs text-muted-foreground">{t("logForm.noDetails")}</p>
           )}
           <div className="flex justify-end pt-1">
             <Button
@@ -498,7 +500,7 @@ function LogCard({
               onClick={() => setEditing(true)}
             >
               <Pencil className="h-3 w-3" />
-              ערוך יומן
+              {t("logForm.editLog")}
             </Button>
           </div>
         </div>
@@ -520,6 +522,7 @@ function TimeEntryForm({
   onDone: (entry: TimeEntry) => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("fieldClient");
   const { fmtCompact } = useCurrency();
   const [employeeId, setEmployeeId] = useState("");
   const [date, setDate]             = useState(todayIso());
@@ -536,12 +539,12 @@ function TimeEntryForm({
   }
 
   function handleSubmit() {
-    if (!employeeId)                { toast.error("נא לבחור עובד");          return; }
-    if (!date)                      { toast.error("נא לבחור תאריך");         return; }
+    if (!employeeId)                { toast.error(t("timeForm.validEmployee")); return; }
+    if (!date)                      { toast.error(t("timeForm.validDate"));     return; }
     const h = parseFloat(hours);
     const r = parseFloat(rate);
-    if (!h || h <= 0)               { toast.error("נא להזין מספר שעות");    return; }
-    if (!r || r <= 0)               { toast.error("נא להזין תעריף לשעה");   return; }
+    if (!h || h <= 0)               { toast.error(t("timeForm.validHours"));   return; }
+    if (!r || r <= 0)               { toast.error(t("timeForm.validRate"));    return; }
 
     startTx(async () => {
       const res = await createTimeEntry({
@@ -552,8 +555,8 @@ function TimeEntryForm({
         hourlyRate: r,
         description: description || undefined,
       });
-      if (!res.success) { toast.error("שגיאה בשמירת שעות עבודה"); return; }
-      toast.success("שעות עבודה נוספו");
+      if (!res.success) { toast.error(t("timeForm.toastError")); return; }
+      toast.success(t("timeForm.toastSuccess"));
       const emp = employees.find((e) => e.id === employeeId)!;
       onDone({
         id: Date.now().toString(), // optimistic — list will refresh from server on next load
@@ -569,18 +572,18 @@ function TimeEntryForm({
 
   return (
     <div className="rounded-lg border border-blue-200 bg-blue-50/40 dark:bg-blue-950/20 dark:border-blue-900 p-4 space-y-3">
-      <p className="text-xs font-semibold text-blue-700 dark:text-blue-400">הוסף שעות עבודה</p>
+      <p className="text-xs font-semibold text-blue-700 dark:text-blue-400">{t("timeForm.title")}</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Employee */}
         <div className="space-y-1">
-          <Label className="text-xs">עובד *</Label>
+          <Label className="text-xs">{t("timeForm.employee")}</Label>
           {employees.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-1">אין עובדים רשומים במערכת</p>
+            <p className="text-xs text-muted-foreground py-1">{t("timeForm.noEmployees")}</p>
           ) : (
             <Select value={employeeId} onValueChange={handleEmployeeChange}>
               <SelectTrigger className="h-8 text-sm">
-                <SelectValue placeholder="בחר עובד" />
+                <SelectValue placeholder={t("timeForm.selectEmployee")} />
               </SelectTrigger>
               <SelectContent>
                 {employees.map((e) => (
@@ -593,7 +596,7 @@ function TimeEntryForm({
 
         {/* Date */}
         <div className="space-y-1">
-          <Label className="text-xs">תאריך *</Label>
+          <Label className="text-xs">{t("timeForm.date")}</Label>
           <Input
             type="date"
             value={date}
@@ -605,7 +608,7 @@ function TimeEntryForm({
 
         {/* Hours */}
         <div className="space-y-1">
-          <Label className="text-xs">מספר שעות *</Label>
+          <Label className="text-xs">{t("timeForm.hours")}</Label>
           <Input
             type="number"
             min="0.5"
@@ -620,7 +623,7 @@ function TimeEntryForm({
 
         {/* Hourly rate */}
         <div className="space-y-1">
-          <Label className="text-xs">תעריף לשעה *</Label>
+          <Label className="text-xs">{t("timeForm.rate")}</Label>
           <Input
             type="number"
             min="1"
@@ -637,15 +640,15 @@ function TimeEntryForm({
       {/* Cost preview */}
       {parseFloat(hours) > 0 && parseFloat(rate) > 0 && (
         <p className="text-xs text-muted-foreground">
-          עלות: {fmtCompact(parseFloat(hours) * parseFloat(rate))}
+          {t("timeForm.cost", { amount: fmtCompact(parseFloat(hours) * parseFloat(rate)) })}
         </p>
       )}
 
       {/* Description */}
       <div className="space-y-1">
-        <Label className="text-xs">תיאור (אופציונלי)</Label>
+        <Label className="text-xs">{t("timeForm.description")}</Label>
         <Input
-          placeholder="תיאור קצר של העבודה..."
+          placeholder={t("timeForm.descPlaceholder")}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="h-8 text-sm"
@@ -655,11 +658,11 @@ function TimeEntryForm({
       <div className="flex justify-end gap-2 pt-1">
         <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onCancel}>
           <X className="h-3 w-3 ml-1" />
-          ביטול
+          {t("timeForm.cancel")}
         </Button>
         <Button size="sm" className="h-7 text-xs" disabled={isPending} onClick={handleSubmit}>
           <Check className="h-3 w-3 ml-1" />
-          {isPending ? "שומר..." : "הוסף שעות"}
+          {isPending ? t("timeForm.saving") : t("timeForm.submit")}
         </Button>
       </div>
     </div>
@@ -677,6 +680,7 @@ function ExpenseForm({
   onDone: (entry: ExpenseEntry) => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("fieldClient");
   const [date, setDate]         = useState(todayIso());
   const [amount, setAmount]     = useState("");
   const [category, setCategory] = useState<string>("");
@@ -684,10 +688,10 @@ function ExpenseForm({
   const [isPending, startTx]    = useTransition();
 
   function handleSubmit() {
-    if (!date)                      { toast.error("נא לבחור תאריך");         return; }
+    if (!date)                      { toast.error(t("expenseForm.validDate"));     return; }
     const a = parseFloat(amount);
-    if (!a || a <= 0)               { toast.error("נא להזין סכום תקין");    return; }
-    if (!category)                  { toast.error("נא לבחור קטגוריה");       return; }
+    if (!a || a <= 0)               { toast.error(t("expenseForm.validAmount"));   return; }
+    if (!category)                  { toast.error(t("expenseForm.validCategory")); return; }
 
     startTx(async () => {
       const res = await createExpense({
@@ -697,8 +701,8 @@ function ExpenseForm({
         category,
         description: description || undefined,
       });
-      if (!res.success) { toast.error("שגיאה בשמירת הוצאה"); return; }
-      toast.success("הוצאה נוספה");
+      if (!res.success) { toast.error(t("expenseForm.toastError")); return; }
+      toast.success(t("expenseForm.toastSuccess"));
       onDone({
         id: Date.now().toString(),
         date,
@@ -712,12 +716,12 @@ function ExpenseForm({
 
   return (
     <div className="rounded-lg border border-orange-200 bg-orange-50/40 dark:bg-orange-950/20 dark:border-orange-900 p-4 space-y-3">
-      <p className="text-xs font-semibold text-orange-700 dark:text-orange-400">הוסף הוצאת שטח</p>
+      <p className="text-xs font-semibold text-orange-700 dark:text-orange-400">{t("expenseForm.title")}</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Date */}
         <div className="space-y-1">
-          <Label className="text-xs">תאריך *</Label>
+          <Label className="text-xs">{t("expenseForm.date")}</Label>
           <Input
             type="date"
             value={date}
@@ -729,7 +733,7 @@ function ExpenseForm({
 
         {/* Amount */}
         <div className="space-y-1">
-          <Label className="text-xs">סכום *</Label>
+          <Label className="text-xs">{t("expenseForm.amount")}</Label>
           <Input
             type="number"
             min="0"
@@ -744,14 +748,16 @@ function ExpenseForm({
 
         {/* Category */}
         <div className="space-y-1 sm:col-span-2">
-          <Label className="text-xs">קטגוריה *</Label>
+          <Label className="text-xs">{t("expenseForm.category")}</Label>
           <Select value={category} onValueChange={setCategory}>
             <SelectTrigger className="h-8 text-sm">
-              <SelectValue placeholder="בחר קטגוריה" />
+              <SelectValue placeholder={t("expenseForm.selectCategory")} />
             </SelectTrigger>
             <SelectContent>
-              {EXPENSE_CATEGORIES.map(({ value, label }) => (
-                <SelectItem key={value} value={value}>{label}</SelectItem>
+              {EXPENSE_CATEGORY_KEYS.map((key) => (
+                <SelectItem key={key} value={key}>
+                  {t(`expenseCategories.${key}` as Parameters<typeof t>[0])}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -760,9 +766,9 @@ function ExpenseForm({
 
       {/* Description */}
       <div className="space-y-1">
-        <Label className="text-xs">תיאור (אופציונלי)</Label>
+        <Label className="text-xs">{t("expenseForm.description")}</Label>
         <Input
-          placeholder="פרטי ההוצאה..."
+          placeholder={t("expenseForm.descPlaceholder")}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="h-8 text-sm"
@@ -772,11 +778,11 @@ function ExpenseForm({
       <div className="flex justify-end gap-2 pt-1">
         <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onCancel}>
           <X className="h-3 w-3 ml-1" />
-          ביטול
+          {t("expenseForm.cancel")}
         </Button>
         <Button size="sm" className="h-7 text-xs" disabled={isPending} onClick={handleSubmit}>
           <Check className="h-3 w-3 ml-1" />
-          {isPending ? "שומר..." : "הוסף הוצאה"}
+          {isPending ? t("expenseForm.saving") : t("expenseForm.submit")}
         </Button>
       </div>
     </div>
@@ -786,6 +792,8 @@ function ExpenseForm({
 // ─── Main Client ──────────────────────────────────────────────────────────────
 
 export function FieldClient({ data }: { data: FieldData }) {
+  const t = useTranslations("fieldClient");
+  const locale = useLocale();
   const { fmtCompact } = useCurrency();
   const { projectId, members, employees } = data;
 
@@ -823,6 +831,11 @@ export function FieldClient({ data }: { data: FieldData }) {
     setLogs((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
   }
 
+  // Expense category lookup using current locale
+  function expenseCategoryLabel(key: string): string {
+    return t(`expenseCategories.${key}` as Parameters<typeof t>[0], undefined, { fallback: key });
+  }
+
   return (
     <div className="space-y-8" dir="rtl">
 
@@ -831,7 +844,7 @@ export function FieldClient({ data }: { data: FieldData }) {
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold flex items-center gap-2">
             <ClipboardList className="h-4 w-4 text-muted-foreground" />
-            יומן היום
+            {t("todayLog")}
           </h3>
           {!showCreateForm && !todayLog && (
             <Button
@@ -841,7 +854,7 @@ export function FieldClient({ data }: { data: FieldData }) {
               onClick={() => setShowCreateForm(true)}
             >
               <Plus className="h-3.5 w-3.5" />
-              צור יומן
+              {t("createLog")}
             </Button>
           )}
         </div>
@@ -867,7 +880,7 @@ export function FieldClient({ data }: { data: FieldData }) {
 
         {!showCreateForm && !todayLog && (
           <p className="text-xs text-muted-foreground px-1">
-            טרם נפתח יומן עבודה להיום.
+            {t("noLogToday")}
           </p>
         )}
       </section>
@@ -875,7 +888,7 @@ export function FieldClient({ data }: { data: FieldData }) {
       {/* ── Past Logs ── */}
       {logs.filter((l) => l.date?.slice(0, 10) !== today).length > 0 && (
         <section className="space-y-2">
-          <h4 className="text-sm font-semibold text-muted-foreground">יומנים קודמים</h4>
+          <h4 className="text-sm font-semibold text-muted-foreground">{t("pastLogs")}</h4>
           {logs
             .filter((l) => l.date?.slice(0, 10) !== today)
             .map((log) => (
@@ -895,13 +908,15 @@ export function FieldClient({ data }: { data: FieldData }) {
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
             <Clock className="h-3.5 w-3.5" />
-            שעות עבודה
+            {t("workHours")}
           </h4>
           <div className="flex items-center gap-3">
             {timeEntries.length > 0 && (
               <span className="text-xs text-muted-foreground">
-                {totalHours.toLocaleString("he-IL", { maximumFractionDigits: 1 })} שעות ·{" "}
-                {fmtCompact(totalCost)}
+                {t("hoursTotal", {
+                  hours: totalHours.toLocaleString(locale === "he" ? "he-IL" : "en-US", { maximumFractionDigits: 1 }),
+                  cost: fmtCompact(totalCost),
+                })}
               </span>
             )}
             {!showTimeForm && (
@@ -912,7 +927,7 @@ export function FieldClient({ data }: { data: FieldData }) {
                 onClick={() => setShowTimeForm(true)}
               >
                 <Plus className="h-3 w-3" />
-                הוסף שעות
+                {t("addHours")}
               </Button>
             )}
           </div>
@@ -934,7 +949,7 @@ export function FieldClient({ data }: { data: FieldData }) {
 
         {timeEntries.length === 0 && !showTimeForm ? (
           <p className="text-xs text-muted-foreground py-3 px-1">
-            אין דיווחי שעות עדיין. לחץ &quot;הוסף שעות&quot; להוספה.
+            {t("noHours")}
           </p>
         ) : timeEntries.length > 0 ? (
           <div className="rounded-lg border border-border overflow-hidden">
@@ -942,10 +957,10 @@ export function FieldClient({ data }: { data: FieldData }) {
               <table className="w-full text-sm">
                 <thead className="bg-muted/40">
                   <tr>
-                    <th className="text-start font-medium text-muted-foreground px-3 py-2 text-xs">עובד</th>
-                    <th className="text-start font-medium text-muted-foreground px-3 py-2 text-xs">תאריך</th>
-                    <th className="text-end font-medium text-muted-foreground px-3 py-2 text-xs">שעות</th>
-                    <th className="text-end font-medium text-muted-foreground px-3 py-2 text-xs">עלות</th>
+                    <th className="text-start font-medium text-muted-foreground px-3 py-2 text-xs">{t("tableEmployee")}</th>
+                    <th className="text-start font-medium text-muted-foreground px-3 py-2 text-xs">{t("tableDate")}</th>
+                    <th className="text-end font-medium text-muted-foreground px-3 py-2 text-xs">{t("tableHours")}</th>
+                    <th className="text-end font-medium text-muted-foreground px-3 py-2 text-xs">{t("tableCost")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -971,12 +986,12 @@ export function FieldClient({ data }: { data: FieldData }) {
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
             <Receipt className="h-3.5 w-3.5" />
-            הוצאות שטח
+            {t("expenses")}
           </h4>
           <div className="flex items-center gap-3">
             {expenses.length > 0 && (
               <span className="text-xs text-muted-foreground">
-                סה״כ {fmtCompact(totalExpenses)}
+                {t("totalExpenses", { amount: fmtCompact(totalExpenses) })}
               </span>
             )}
             {!showExpenseForm && (
@@ -987,7 +1002,7 @@ export function FieldClient({ data }: { data: FieldData }) {
                 onClick={() => setShowExpenseForm(true)}
               >
                 <Plus className="h-3 w-3" />
-                הוסף הוצאה
+                {t("addExpense")}
               </Button>
             )}
           </div>
@@ -1008,7 +1023,7 @@ export function FieldClient({ data }: { data: FieldData }) {
 
         {expenses.length === 0 && !showExpenseForm ? (
           <p className="text-xs text-muted-foreground py-3 px-1">
-            אין הוצאות שטח עדיין. לחץ &quot;הוסף הוצאה&quot; להוספה.
+            {t("noExpenses")}
           </p>
         ) : expenses.length > 0 ? (
           <div className="rounded-lg border border-border overflow-hidden">
@@ -1016,10 +1031,10 @@ export function FieldClient({ data }: { data: FieldData }) {
               <table className="w-full text-sm">
                 <thead className="bg-muted/40">
                   <tr>
-                    <th className="text-start font-medium text-muted-foreground px-3 py-2 text-xs">תאריך</th>
-                    <th className="text-start font-medium text-muted-foreground px-3 py-2 text-xs">קטגוריה</th>
-                    <th className="text-start font-medium text-muted-foreground px-3 py-2 text-xs">תיאור</th>
-                    <th className="text-end font-medium text-muted-foreground px-3 py-2 text-xs">סכום</th>
+                    <th className="text-start font-medium text-muted-foreground px-3 py-2 text-xs">{t("tableDate")}</th>
+                    <th className="text-start font-medium text-muted-foreground px-3 py-2 text-xs">{t("tableCategory")}</th>
+                    <th className="text-start font-medium text-muted-foreground px-3 py-2 text-xs">{t("tableDescription")}</th>
+                    <th className="text-end font-medium text-muted-foreground px-3 py-2 text-xs">{t("tableAmount")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -1027,7 +1042,7 @@ export function FieldClient({ data }: { data: FieldData }) {
                     <tr key={e.id} className="hover:bg-muted/20">
                       <td className="px-3 py-2.5 text-muted-foreground text-xs">{fmtDate(e.date)}</td>
                       <td className="px-3 py-2.5 text-xs">
-                        {EXPENSE_CATEGORY_LABEL[e.category] ?? e.category}
+                        {expenseCategoryLabel(e.category)}
                       </td>
                       <td className="px-3 py-2.5 text-muted-foreground text-xs truncate max-w-[120px]">
                         {e.description ?? "—"}

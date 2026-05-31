@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { getLeadById } from "@/actions/leads";
 import { getEmployees } from "@/actions/hr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,9 +15,10 @@ export default async function LeadDetailPage({
 }) {
   const { id } = await params;
 
-  const [lead, rawEmployees] = await Promise.all([
+  const [lead, rawEmployees, t] = await Promise.all([
     getLeadById(id),
     getEmployees(),
+    getTranslations("leads.detail"),
   ]);
 
   if (!lead) notFound();
@@ -47,7 +49,7 @@ export default async function LeadDetailPage({
     <div className="max-w-3xl">
       <Card className="border-border/60 shadow-sm">
         <CardHeader className="pb-4">
-          <CardTitle className="text-base font-semibold">פרטי ליד</CardTitle>
+          <CardTitle className="text-base font-semibold">{t("title")}</CardTitle>
         </CardHeader>
         <CardContent>
           <LeadEditClient

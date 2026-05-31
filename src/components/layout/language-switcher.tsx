@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { setLocale } from "@/actions/locale";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,14 +15,15 @@ import { cn } from "@/lib/utils";
 // ─── Locale definitions ───────────────────────────────────────────────────────
 
 const LOCALES = [
-  { code: "he", flag: "🇮🇱", label: "עברית",  short: "HE" },
-  { code: "en", flag: "🇺🇸", label: "English", short: "EN" },
+  { code: "he", flag: "🇮🇱", short: "HE" },
+  { code: "en", flag: "🇺🇸", short: "EN" },
 ] as const;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function LanguageSwitcher() {
   const locale               = useLocale();
+  const t                    = useTranslations("language");
   const [isPending, startTx] = useTransition();
 
   const current = LOCALES.find((l) => l.code === locale) ?? LOCALES[0];
@@ -59,7 +60,7 @@ export function LanguageSwitcher() {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-36 min-w-0">
-        {LOCALES.map(({ code, flag, label }) => (
+        {LOCALES.map(({ code, flag }) => (
           <DropdownMenuItem
             key={code}
             onClick={() => handleSwitch(code)}
@@ -71,7 +72,7 @@ export function LanguageSwitcher() {
             <span className="text-base leading-none" aria-hidden>
               {flag}
             </span>
-            <span className="text-sm">{label}</span>
+            <span className="text-sm">{t(code as Parameters<typeof t>[0])}</span>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

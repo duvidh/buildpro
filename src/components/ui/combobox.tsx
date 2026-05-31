@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Check, ChevronDown, Search } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
@@ -26,16 +27,21 @@ export function Combobox({
   options,
   value,
   onValueChange,
-  placeholder = "בחר...",
-  searchPlaceholder = "חיפוש...",
-  emptyText = "לא נמצאו תוצאות",
+  placeholder,
+  searchPlaceholder,
+  emptyText,
   disabled = false,
   className,
   triggerClassName,
 }: ComboboxProps) {
+  const t = useTranslations("combobox")
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
   const inputRef = React.useRef<HTMLInputElement>(null)
+
+  const resolvedPlaceholder = placeholder ?? t("placeholder")
+  const resolvedSearchPlaceholder = searchPlaceholder ?? t("searchPlaceholder")
+  const resolvedEmptyText = emptyText ?? t("emptyText")
 
   const selected = options.find((o) => o.value === value)
 
@@ -66,7 +72,7 @@ export function Combobox({
           data-placeholder={!selected ? "" : undefined}
         >
           <span className={cn("truncate", !selected && "text-muted-foreground")}>
-            {selected ? selected.label : placeholder}
+            {selected ? selected.label : resolvedPlaceholder}
           </span>
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
         </button>
@@ -83,7 +89,7 @@ export function Combobox({
             ref={inputRef}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={searchPlaceholder}
+            placeholder={resolvedSearchPlaceholder}
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
         </div>
@@ -91,7 +97,7 @@ export function Combobox({
         {/* Options list */}
         <div className="max-h-56 overflow-y-auto p-1">
           {filtered.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">{emptyText}</p>
+            <p className="py-4 text-center text-sm text-muted-foreground">{resolvedEmptyText}</p>
           ) : (
             filtered.map((option) => (
               <button

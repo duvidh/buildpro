@@ -60,6 +60,7 @@ export function AppHeader({
   const pathname          = usePathname();
   const title             = usePageTitle(pathname);
   const tCommon           = useTranslations("common");
+  const tAppHeader        = useTranslations("appHeader");
   const [searchValue, setSearchValue] = useState("");
   const tHeader           = useTranslations("header");
   const debounceRef       = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -87,7 +88,7 @@ export function AppHeader({
       {/* Mobile sidebar trigger */}
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="shrink-0 md:hidden" aria-label="פתח תפריט">
+          <Button variant="ghost" size="icon" className="shrink-0 md:hidden" aria-label={tAppHeader("openMenu")}>
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>

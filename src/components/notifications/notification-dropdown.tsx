@@ -5,6 +5,7 @@ import {
   Bell, Check, CheckCheck, CheckSquare2, Factory,
   FileText, Loader2, BellOff,
 } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -35,19 +36,6 @@ type Notification = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatRelative(iso: string): string {
-  const ms  = Date.now() - new Date(iso).getTime();
-  const min = Math.floor(ms / 60_000);
-  if (min < 1)   return "עכשיו";
-  if (min < 60)  return `לפני ${min} דקות`;
-  const hrs = Math.floor(min / 60);
-  if (hrs < 24)  return `לפני ${hrs} שעות`;
-  const days = Math.floor(hrs / 24);
-  if (days === 1) return "אתמול";
-  if (days < 7)  return `לפני ${days} ימים`;
-  return new Date(iso).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" });
-}
-
 function NotificationIcon({ type }: { type: string }) {
   const cls = "h-3.5 w-3.5 shrink-0";
   if (type === "TASK_COMPLETED")   return <CheckSquare2 className={`${cls} text-emerald-500`} />;
@@ -77,6 +65,9 @@ function fireNativeNotification(title: string, body?: string) {
 const POLL_INTERVAL_MS = 45_000;
 
 export function NotificationDropdown({ initialCount }: { initialCount: number }) {
+  const t = useTranslations("notifications");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
   const [open,          setOpen]          = useState(false);
   const [notifications, setNotifications] = useState<Notification[] | null>(null);
   const [unreadCount,   setUnreadCount]   = useState(initialCount);
@@ -100,8 +91,8 @@ export function NotificationDropdown({ initialCount }: { initialCount: number })
           if (fresh > prev) {
             const delta = fresh - prev;
             fireNativeNotification(
-              `BuildPro — ${delta} התראה${delta > 1 ? "ות" : ""} חדש${delta > 1 ? "ות" : "ה"}`,
-              "לחץ על פעמון ההתראות לפרטים",
+              t("newNotifications", { count: delta, plural: delta > 1 ? "s" : "" }),
+              t("clickForDetails"),
             );
 
             // If the dropdown is open, refresh its list too
@@ -123,7 +114,7 @@ export function NotificationDropdown({ initialCount }: { initialCount: number })
 
     const id = setInterval(tick, POLL_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [open]);
+  }, [open, t]);
 
   // ── Fetch on first open ──────────────────────────────────────────────────
   const handleOpenChange = (next: boolean) => {
@@ -160,6 +151,20 @@ export function NotificationDropdown({ initialCount }: { initialCount: number })
 
   const hasUnread = unreadCount > 0;
 
+  function formatRelative(iso: string): string {
+    const intlLocale = locale === "he" ? "he-IL" : "en-US";
+    const ms  = Date.now() - new Date(iso).getTime();
+    const min = Math.floor(ms / 60_000);
+    if (min < 1)    return tCommon("relativeTime.justNow");
+    if (min < 60)   return tCommon("relativeTime.minutesAgo", { min });
+    const hrs = Math.floor(min / 60);
+    if (hrs < 24)   return tCommon("relativeTime.hoursAgo", { hrs });
+    const days = Math.floor(hrs / 24);
+    if (days === 1) return tCommon("relativeTime.yesterday");
+    if (days < 7)   return tCommon("relativeTime.daysAgo", { days });
+    return new Date(iso).toLocaleDateString(intlLocale, { day: "2-digit", month: "2-digit" });
+  }
+
   return (
     <DropdownMenu open={open} onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild>
@@ -167,7 +172,7 @@ export function NotificationDropdown({ initialCount }: { initialCount: number })
           variant="ghost"
           size="icon"
           className="relative shrink-0"
-          aria-label={`${unreadCount} התראות`}
+          aria-label={`${unreadCount} ${t("title")}`}
         >
           <Bell className="h-5 w-5" />
           {hasUnread && (
@@ -181,7 +186,7 @@ export function NotificationDropdown({ initialCount }: { initialCount: number })
       <DropdownMenuContent align="end" className="w-80 max-h-[420px] overflow-hidden flex flex-col">
         {/* Header */}
         <DropdownMenuLabel className="flex items-center justify-between py-2.5 shrink-0" dir="rtl">
-          <span className="font-semibold">התראות</span>
+          <span className="font-semibold">{t("title")}</span>
           {hasUnread && notifications && notifications.some((n) => !n.read) && (
             <Button
               variant="ghost"
@@ -190,7 +195,7 @@ export function NotificationDropdown({ initialCount }: { initialCount: number })
               onClick={handleMarkAll}
             >
               <CheckCheck className="h-3 w-3" />
-              סמן הכל
+              {t("markAll")}
             </Button>
           )}
         </DropdownMenuLabel>
@@ -209,7 +214,7 @@ export function NotificationDropdown({ initialCount }: { initialCount: number })
           {!loading && notifications !== null && notifications.length === 0 && (
             <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
               <BellOff className="h-6 w-6 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">אין התראות</p>
+              <p className="text-sm text-muted-foreground">{t("empty")}</p>
             </div>
           )}
 
@@ -245,7 +250,7 @@ export function NotificationDropdown({ initialCount }: { initialCount: number })
                 {!n.read && (
                   <button
                     onClick={() => handleMarkOne(n.id)}
-                    title="סמן כנקרא"
+                    title={t("markRead")}
                     className="mt-1 shrink-0 rounded p-1 text-muted-foreground/50 hover:bg-muted hover:text-primary transition-colors"
                   >
                     <Check className="h-3 w-3" />

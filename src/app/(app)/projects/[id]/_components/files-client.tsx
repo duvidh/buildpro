@@ -6,6 +6,7 @@ import {
   Archive, Ruler, ShieldCheck, Folder, Upload, Trash2,
   ExternalLink, FolderOpen, Loader2, X, CheckCircle2,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -35,46 +36,40 @@ type ProjectFile = {
 type Props = {
   projectId: string;
   files: ProjectFile[];
-  /** Whether the current user may delete files (ADMIN / OFFICE_MANAGER). */
   canDelete?: boolean;
 };
 
-// ─── Category Config ──────────────────────────────────────────────────────────
+// ─── Category icons & colors (no Hebrew labels here) ─────────────────────────
 
-const CATEGORY_CONFIG: Record<
+const CATEGORY_META: Record<
   FileCategory,
-  { label: string; icon: React.ElementType; color: string; bg: string; border: string }
+  { icon: React.ElementType; color: string; bg: string; border: string }
 > = {
   PLANS: {
-    label: "תוכניות",
     icon: Ruler,
     color: "text-blue-600 dark:text-blue-400",
     bg: "bg-blue-50 dark:bg-blue-950/40",
     border: "border-blue-200 dark:border-blue-800",
   },
   CONTRACTS: {
-    label: "חוזים",
     icon: FileText,
     color: "text-violet-600 dark:text-violet-400",
     bg: "bg-violet-50 dark:bg-violet-950/40",
     border: "border-violet-200 dark:border-violet-800",
   },
   PERMITS: {
-    label: "היתרים",
     icon: ShieldCheck,
     color: "text-emerald-600 dark:text-emerald-400",
     bg: "bg-emerald-50 dark:bg-emerald-950/40",
     border: "border-emerald-200 dark:border-emerald-800",
   },
   PHOTOS: {
-    label: "תמונות",
     icon: ImageIcon,
     color: "text-orange-600 dark:text-orange-400",
     bg: "bg-orange-50 dark:bg-orange-950/40",
     border: "border-orange-200 dark:border-orange-800",
   },
   OTHER: {
-    label: "אחר",
     icon: Folder,
     color: "text-slate-600 dark:text-slate-400",
     bg: "bg-slate-50 dark:bg-slate-950/40",
@@ -94,7 +89,7 @@ function formatBytes(bytes: number): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("he-IL", {
+  return new Date(iso).toLocaleDateString(undefined, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -102,15 +97,15 @@ function formatDate(iso: string): string {
 }
 
 function FileTypeIcon({ mimeType }: { mimeType: string | null }) {
-  const t = (mimeType ?? "").toLowerCase();
+  const m = (mimeType ?? "").toLowerCase();
   const cls = "h-5 w-5 shrink-0";
-  if (t.includes("pdf") || t.includes("msword") || t.includes("wordprocessingml"))
+  if (m.includes("pdf") || m.includes("msword") || m.includes("wordprocessingml"))
     return <FileText className={`${cls} text-red-500`} />;
-  if (t.startsWith("image/"))
+  if (m.startsWith("image/"))
     return <ImageIcon className={`${cls} text-orange-500`} />;
-  if (t.includes("spreadsheet") || t.includes("excel") || t.includes("csv"))
+  if (m.includes("spreadsheet") || m.includes("excel") || m.includes("csv"))
     return <FileSpreadsheet className={`${cls} text-green-600`} />;
-  if (t.includes("zip") || t.includes("rar") || t.includes("tar") || t.includes("gz"))
+  if (m.includes("zip") || m.includes("rar") || m.includes("tar") || m.includes("gz"))
     return <Archive className={`${cls} text-yellow-600`} />;
   return <File className={`${cls} text-slate-400`} />;
 }
@@ -118,6 +113,7 @@ function FileTypeIcon({ mimeType }: { mimeType: string | null }) {
 // ─── Upload Zone ──────────────────────────────────────────────────────────────
 
 function UploadZone({ projectId, onUploaded: _onUploaded }: { projectId: string; onUploaded: (f: ProjectFile) => void }) {
+  const t = useTranslations("filesClient");
   const [isDragging, setIsDragging] = useState(false);
   const [category, setCategory] = useState<FileCategory>("OTHER");
   const [status, setStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
@@ -160,13 +156,10 @@ function UploadZone({ projectId, onUploaded: _onUploaded }: { projectId: string;
         setStatus("success");
         setSelectedFile(null);
         if (inputRef.current) inputRef.current.value = "";
-        // Reload to get the fresh file with DB-assigned id/url
-        setTimeout(() => {
-          window.location.reload();
-        }, 800);
+        setTimeout(() => { window.location.reload(); }, 800);
       } else {
         setStatus("error");
-        setErrorMsg(res.error ?? "שגיאה לא ידועה");
+        setErrorMsg(res.error ?? t("unknownError"));
       }
     });
   };
@@ -175,7 +168,6 @@ function UploadZone({ projectId, onUploaded: _onUploaded }: { projectId: string;
 
   return (
     <div className="mb-8 space-y-3">
-      {/* Drop zone */}
       <div
         onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
         onDragLeave={() => setIsDragging(false)}
@@ -213,13 +205,12 @@ function UploadZone({ projectId, onUploaded: _onUploaded }: { projectId: string;
           </div>
         ) : (
           <>
-            <p className="text-sm font-medium">גרור קובץ לכאן, או לחץ לבחירה</p>
-            <p className="text-xs text-muted-foreground">PDF, Word, Excel, תמונות, ועוד</p>
+            <p className="text-sm font-medium">{t("dragHint")}</p>
+            <p className="text-xs text-muted-foreground">{t("fileTypes")}</p>
           </>
         )}
       </div>
 
-      {/* Category + Upload row */}
       <div className="flex items-center gap-3" dir="rtl">
         <Select
           value={category}
@@ -227,17 +218,17 @@ function UploadZone({ projectId, onUploaded: _onUploaded }: { projectId: string;
           disabled={uploading}
         >
           <SelectTrigger className="w-44">
-            <SelectValue placeholder="קטגוריה" />
+            <SelectValue placeholder={t("categoryPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
             {CATEGORY_ORDER.map((cat) => {
-              const cfg = CATEGORY_CONFIG[cat];
-              const Icon = cfg.icon;
+              const meta = CATEGORY_META[cat];
+              const Icon = meta.icon;
               return (
                 <SelectItem key={cat} value={cat}>
                   <div className="flex items-center gap-2">
-                    <Icon className={`h-3.5 w-3.5 ${cfg.color}`} />
-                    {cfg.label}
+                    <Icon className={`h-3.5 w-3.5 ${meta.color}`} />
+                    {t(`categoryLabels.${cat}` as Parameters<typeof t>[0])}
                   </div>
                 </SelectItem>
               );
@@ -257,7 +248,7 @@ function UploadZone({ projectId, onUploaded: _onUploaded }: { projectId: string;
           ) : (
             <Upload className="h-4 w-4" />
           )}
-          {uploading ? "מעלה..." : status === "success" ? "הועלה!" : "העלה קובץ"}
+          {uploading ? t("uploading") : status === "success" ? t("uploaded") : t("upload")}
         </Button>
 
         {status === "error" && (
@@ -281,6 +272,7 @@ function FileCard({
   canDelete: boolean;
   onDeleted: (id: string) => void;
 }) {
+  const t = useTranslations("filesClient");
   const [deleting, startDelete] = useTransition();
 
   const handleDelete = () => {
@@ -293,66 +285,39 @@ function FileCard({
   return (
     <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3 hover:bg-muted/30 transition-colors">
       <FileTypeIcon mimeType={file.fileType} />
-
-      {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate" title={file.name}>
-          {file.name}
-        </p>
+        <p className="text-sm font-medium truncate" title={file.name}>{file.name}</p>
         <p className="text-xs text-muted-foreground mt-0.5">
           {formatBytes(file.sizeBytes)}
           {" · "}
           {formatDate(file.createdAt)}
-          {file.uploadedBy && (
-            <span> · {file.uploadedBy.name}</span>
-          )}
+          {file.uploadedBy && <span> · {file.uploadedBy.name}</span>}
         </p>
       </div>
-
-      {/* Actions */}
       <div className="flex items-center gap-1 shrink-0">
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-          asChild
-        >
+        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" asChild>
           <a href={file.url} target="_blank" rel="noopener noreferrer">
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
         </Button>
-
         {canDelete && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                disabled={deleting}
-              >
-                {deleting ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="h-3.5 w-3.5" />
-                )}
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" disabled={deleting}>
+                {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent dir="rtl">
+            <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>מחיקת קובץ</AlertDialogTitle>
+                <AlertDialogTitle>{t("deleteTitle")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  האם למחוק את הקובץ <span className="font-medium">{file.name}</span>?
-                  פעולה זו אינה ניתנת לביטול.
+                  {t("deleteDesc", { name: file.name })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="flex-row-reverse gap-2">
-                <AlertDialogCancel>ביטול</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDelete}
-                  className="bg-destructive hover:bg-destructive/90"
-                >
-                  מחק
+                <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                  {t("delete")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -378,17 +343,18 @@ function CategorySection({
   canDelete: boolean;
   onDeleted: (id: string) => void;
 }) {
-  const cfg = CATEGORY_CONFIG[category];
-  const Icon = cfg.icon;
+  const t = useTranslations("filesClient");
+  const meta = CATEGORY_META[category];
+  const Icon = meta.icon;
 
   return (
     <div>
-      <div className={`flex items-center gap-2 rounded-lg border px-4 py-2 mb-3 ${cfg.bg} ${cfg.border}`}>
-        <Icon className={`h-4 w-4 ${cfg.color}`} />
-        <span className={`text-sm font-semibold ${cfg.color}`}>{cfg.label}</span>
-        <Badge variant="secondary" className="mr-auto text-xs h-5">
-          {files.length}
-        </Badge>
+      <div className={`flex items-center gap-2 rounded-lg border px-4 py-2 mb-3 ${meta.bg} ${meta.border}`}>
+        <Icon className={`h-4 w-4 ${meta.color}`} />
+        <span className={`text-sm font-semibold ${meta.color}`}>
+          {t(`categoryLabels.${category}` as Parameters<typeof t>[0])}
+        </span>
+        <Badge variant="secondary" className="mr-auto text-xs h-5">{files.length}</Badge>
       </div>
       <div className="space-y-1.5">
         {files.map((f) => (
@@ -402,6 +368,7 @@ function CategorySection({
 // ─── Main Client ──────────────────────────────────────────────────────────────
 
 export function FilesClient({ projectId, files: initialFiles, canDelete = false }: Props) {
+  const t = useTranslations("filesClient");
   const [files, setFiles] = useState<ProjectFile[]>(initialFiles);
 
   const handleDeleted = useCallback((id: string) => {
@@ -420,34 +387,31 @@ export function FilesClient({ projectId, files: initialFiles, canDelete = false 
 
   return (
     <div className="p-6 max-w-4xl mx-auto" dir="rtl">
-      {/* Header */}
       <div className="mb-6">
-        <h2 className="text-xl font-bold">ניהול קבצים ומסמכים</h2>
+        <h2 className="text-xl font-bold">{t("title")}</h2>
         <p className="text-sm text-muted-foreground mt-1">
           {files.length > 0
-            ? `${files.length} קבצים • ${CATEGORY_ORDER.filter((c) => grouped[c].length > 0).length} קטגוריות`
-            : "טרם הועלו קבצים לפרויקט זה"}
+            ? t("filesCount", { count: files.length, cats: CATEGORY_ORDER.filter((c) => grouped[c].length > 0).length })
+            : t("noFiles")}
         </p>
       </div>
 
-      {/* Upload zone */}
       <UploadZone projectId={projectId} onUploaded={() => {}} />
 
-      {/* Summary chips */}
       {files.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-6">
           {CATEGORY_ORDER.map((cat) => {
             const count = grouped[cat].length;
             if (count === 0) return null;
-            const cfg = CATEGORY_CONFIG[cat];
-            const Icon = cfg.icon;
+            const meta = CATEGORY_META[cat];
+            const Icon = meta.icon;
             return (
               <span
                 key={cat}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${cfg.bg} ${cfg.border} ${cfg.color}`}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${meta.bg} ${meta.border} ${meta.color}`}
               >
                 <Icon className="h-3 w-3" />
-                {cfg.label}
+                {t(`categoryLabels.${cat}` as Parameters<typeof t>[0])}
                 <span className="opacity-70">({count})</span>
               </span>
             );
@@ -455,14 +419,13 @@ export function FilesClient({ projectId, files: initialFiles, canDelete = false 
         </div>
       )}
 
-      {/* File list */}
       {populated.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/50 mb-3">
             <FolderOpen className="h-7 w-7 text-muted-foreground/40" />
           </div>
-          <p className="text-sm font-medium text-muted-foreground">אין קבצים עדיין</p>
-          <p className="text-xs text-muted-foreground mt-1">גרור קובץ לאזור למעלה כדי להעלות</p>
+          <p className="text-sm font-medium text-muted-foreground">{t("noFilesYet")}</p>
+          <p className="text-xs text-muted-foreground mt-1">{t("dragToUpload")}</p>
         </div>
       ) : (
         <div className="space-y-8">

@@ -1,11 +1,13 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCurrency } from "@/lib/currency-context";
 import { Badge } from "@/components/ui/badge";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import type { DashboardData } from "./types";
 
 export function FinanceWidget({ data }: { data: DashboardData }) {
+  const t = useTranslations("widgets.finance");
   const { fmtCompact } = useCurrency();
   const { kpis, chartData, totalChartRevenue, avgMonthlyRevenue, currentMonth } = data;
   const revenueChange =
@@ -18,16 +20,16 @@ export function FinanceWidget({ data }: { data: DashboardData }) {
       {/* Stats row */}
       <div className="flex flex-wrap gap-4">
         <div>
-          <p className="text-xs text-muted-foreground">החודש</p>
+          <p className="text-xs text-muted-foreground">{t("thisMonth")}</p>
           <p className="text-xl font-bold text-emerald-600">{fmtCompact(kpis.monthlyRevenue)}</p>
           {revenueChange !== null && (
             <p className={`text-xs mt-0.5 ${revenueChange >= 0 ? "text-emerald-600" : "text-orange-500"}`}>
-              {revenueChange >= 0 ? "+" : ""}{revenueChange}% מחודש קודם
+              {revenueChange >= 0 ? "+" : ""}{t("vsLastMonth", { change: revenueChange })}
             </p>
           )}
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">ממוצע חודשי</p>
+          <p className="text-xs text-muted-foreground">{t("monthlyAvg")}</p>
           <p className="text-xl font-bold text-foreground">{fmtCompact(avgMonthlyRevenue)}</p>
         </div>
         <div className="ms-auto self-start">
@@ -43,7 +45,7 @@ export function FinanceWidget({ data }: { data: DashboardData }) {
       </div>
 
       <p className="text-xs text-muted-foreground text-center">
-        סך 6 חודשים: {fmtCompact(totalChartRevenue)}
+        {t("last6months", { amount: fmtCompact(totalChartRevenue) })}
       </p>
     </div>
   );

@@ -1,3 +1,5 @@
+import { getTranslations } from "next-intl/server";
+import { getLocale } from "next-intl/server";
 import { getProjectOverview } from "@/actions/projects";
 import { getProjectActivity } from "@/actions/notifications";
 import { Badge } from "@/components/ui/badge";
@@ -9,22 +11,6 @@ import {
   Activity,
   FolderOpen,
 } from "lucide-react";
-
-// ─── Status / role maps ───────────────────────────────────────────────────────
-
-const TASK_STATUS: Record<string, { label: string; className: string }> = {
-  TODO:        { label: "לביצוע", className: "bg-slate-100 text-slate-600 border-slate-200" },
-  IN_PROGRESS: { label: "בביצוע", className: "bg-blue-100 text-blue-700 border-blue-200" },
-  BLOCKED:     { label: "חסום",   className: "bg-red-100 text-red-700 border-red-200" },
-  DONE:        { label: "הושלם",  className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-};
-
-const MEMBER_ROLE: Record<string, string> = {
-  MANAGER:  "מנהל",
-  ENGINEER: "מהנדס",
-  FOREMAN:  "ממונה",
-  VIEWER:   "צופה",
-};
 
 // ─── Activity helpers ─────────────────────────────────────────────────────────
 
@@ -42,17 +28,23 @@ function parseDetails(raw: string | null): { description?: string } {
   catch { return {}; }
 }
 
-function relativeTime(date: Date | string): string {
-  const ms   = Date.now() - new Date(date).getTime();
-  const min  = Math.floor(ms / 60_000);
-  if (min < 1)    return "עכשיו";
-  if (min < 60)   return `לפני ${min} דקות`;
-  const hrs = Math.floor(min / 60);
-  if (hrs < 24)   return `לפני ${hrs} שעות`;
-  const days = Math.floor(hrs / 24);
-  if (days === 1) return "אתמול";
-  if (days < 7)   return `לפני ${days} ימים`;
-  return new Date(date).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" });
+function makeRelativeTime(
+  locale: string,
+  tCommon: (key: string, values?: Record<string, string | number>) => string
+) {
+  return function relativeTime(date: Date | string): string {
+    const intlLocale = locale === "he" ? "he-IL" : "en-US";
+    const ms   = Date.now() - new Date(date).getTime();
+    const min  = Math.floor(ms / 60_000);
+    if (min < 1)    return tCommon("relativeTime.justNow");
+    if (min < 60)   return tCommon("relativeTime.minutesAgo", { min });
+    const hrs = Math.floor(min / 60);
+    if (hrs < 24)   return tCommon("relativeTime.hoursAgo", { hrs });
+    const days = Math.floor(hrs / 24);
+    if (days === 1) return tCommon("relativeTime.yesterday");
+    if (days < 7)   return tCommon("relativeTime.daysAgo", { days });
+    return new Date(date).toLocaleDateString(intlLocale, { day: "2-digit", month: "2-digit" });
+  };
 }
 
 function EntityIcon({ type }: { type: string }) {
@@ -66,29 +58,43 @@ function EntityIcon({ type }: { type: string }) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export async function ProjectOverviewContent({ projectId }: { projectId: string }) {
-  const [data, activityLogs] = await Promise.all([
+  const [data, activityLogs, t, tCommon, locale] = await Promise.all([
     getProjectOverview(projectId),
     getProjectActivity(projectId, 15),
+    getTranslations("projectOverview"),
+    getTranslations("common"),
+    getLocale(),
   ]);
+
+  const relativeTime = makeRelativeTime(locale, (key, values) =>
+    tCommon(key as Parameters<typeof tCommon>[0], values)
+  );
+
+  const TASK_STATUS_CLS: Record<string, string> = {
+    TODO:        "bg-slate-100 text-slate-600 border-slate-200",
+    IN_PROGRESS: "bg-blue-100 text-blue-700 border-blue-200",
+    BLOCKED:     "bg-red-100 text-red-700 border-red-200",
+    DONE:        "bg-emerald-100 text-emerald-700 border-emerald-200",
+  };
 
   if (!data) {
     return (
-      <p className="text-sm text-muted-foreground">לא ניתן לטעון את נתוני הסקירה.</p>
+      <p className="text-sm text-muted-foreground">{t("cannotLoad")}</p>
     );
   }
 
-  const doneTasks    = data.tasks.filter((t) => t.status === "DONE").length;
-  const pendingTasks = data.tasks.filter((t) => t.status !== "DONE").length;
+  const doneTasks    = data.tasks.filter((task) => task.status === "DONE").length;
+  const pendingTasks = data.tasks.filter((task) => task.status !== "DONE").length;
 
   return (
     <div className="space-y-5 max-w-3xl">
       {/* ── Stats grid ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: "משימות פתוחות", value: pendingTasks,        color: "text-blue-600" },
-          { label: "משימות הושלמו", value: doneTasks,           color: "text-emerald-600" },
-          { label: "חברי צוות",     value: data.members.length, color: "text-violet-600" },
-          { label: "קבצים",          value: data._count.files,  color: "text-slate-600" },
+          { label: t("openTasks"),      value: pendingTasks,        color: "text-blue-600" },
+          { label: t("completedTasks"), value: doneTasks,           color: "text-emerald-600" },
+          { label: t("teamMembers"),    value: data.members.length, color: "text-violet-600" },
+          { label: t("files"),          value: data._count.files,   color: "text-slate-600" },
         ].map((s) => (
           <div key={s.label} className="rounded-lg border border-border bg-muted/30 p-3">
             <p className="text-xs text-muted-foreground">{s.label}</p>
@@ -100,20 +106,20 @@ export async function ProjectOverviewContent({ projectId }: { projectId: string 
       {/* ── Recent tasks ────────────────────────────────────────────────────── */}
       {data.tasks.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-muted-foreground mb-2">משימות אחרונות</h4>
+          <h4 className="text-sm font-semibold text-muted-foreground mb-2">{t("recentTasks")}</h4>
           <ul className="divide-y divide-border">
-            {data.tasks.slice(0, 5).map((t) => (
-              <li key={t.id} className="flex items-center justify-between gap-3 py-2.5 px-1">
-                <p className="text-sm flex-1 min-w-0 truncate">{t.name}</p>
+            {data.tasks.slice(0, 5).map((task) => (
+              <li key={task.id} className="flex items-center justify-between gap-3 py-2.5 px-1">
+                <p className="text-sm flex-1 min-w-0 truncate">{task.name}</p>
                 <div className="flex items-center gap-2 shrink-0">
                   <Badge
                     variant="outline"
-                    className={`text-[10px] h-4 px-1.5 py-0 ${TASK_STATUS[t.status]?.className ?? ""}`}
+                    className={`text-[10px] h-4 px-1.5 py-0 ${TASK_STATUS_CLS[task.status] ?? ""}`}
                   >
-                    {TASK_STATUS[t.status]?.label ?? t.status}
+                    {t(`taskStatus.${task.status}` as Parameters<typeof t>[0], undefined, { fallback: task.status })}
                   </Badge>
-                  {t.dueDate && (
-                    <span className="text-[11px] text-muted-foreground">{fmtDate(t.dueDate)}</span>
+                  {task.dueDate && (
+                    <span className="text-[11px] text-muted-foreground">{fmtDate(task.dueDate)}</span>
                   )}
                 </div>
               </li>
@@ -125,7 +131,7 @@ export async function ProjectOverviewContent({ projectId }: { projectId: string 
       {/* ── Upcoming milestones ──────────────────────────────────────────────── */}
       {data.milestones.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-muted-foreground mb-2">אבני דרך קרובות</h4>
+          <h4 className="text-sm font-semibold text-muted-foreground mb-2">{t("upcomingMilestones")}</h4>
           <ul className="divide-y divide-border">
             {data.milestones.map((m) => (
               <li key={m.id} className="flex items-center justify-between gap-3 py-2.5 px-1">
@@ -140,7 +146,7 @@ export async function ProjectOverviewContent({ projectId }: { projectId: string 
       {/* ── Team members ────────────────────────────────────────────────────── */}
       {data.members.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-muted-foreground mb-2">צוות הפרויקט</h4>
+          <h4 className="text-sm font-semibold text-muted-foreground mb-2">{t("projectTeam")}</h4>
           <div className="flex flex-wrap gap-2">
             {data.members.map((m) => (
               <div
@@ -152,7 +158,7 @@ export async function ProjectOverviewContent({ projectId }: { projectId: string 
                 </div>
                 <span className="text-xs font-medium">{m.user.name}</span>
                 <span className="text-[10px] text-muted-foreground">
-                  {MEMBER_ROLE[m.role] ?? m.role}
+                  {t(`memberRole.${m.role}` as Parameters<typeof t>[0], undefined, { fallback: m.role })}
                 </span>
               </div>
             ))}
@@ -162,11 +168,11 @@ export async function ProjectOverviewContent({ projectId }: { projectId: string 
 
       {/* ── Activity timeline ────────────────────────────────────────────────── */}
       <div>
-        <h4 className="text-sm font-semibold text-muted-foreground mb-3">יומן פעילות</h4>
+        <h4 className="text-sm font-semibold text-muted-foreground mb-3">{t("activityLog")}</h4>
         {activityLogs.length === 0 ? (
           <div className="flex items-center gap-3 rounded-lg border border-dashed border-border px-4 py-6">
             <FolderOpen className="h-5 w-5 text-muted-foreground/40 shrink-0" />
-            <p className="text-sm text-muted-foreground">אין פעילות רשומה עדיין לפרויקט זה.</p>
+            <p className="text-sm text-muted-foreground">{t("noActivity")}</p>
           </div>
         ) : (
           <ol className="relative border-s border-border/60 ms-3 space-y-0">
@@ -196,10 +202,8 @@ export async function ProjectOverviewContent({ projectId }: { projectId: string 
       {/* ── Empty state ──────────────────────────────────────────────────────── */}
       {data.tasks.length === 0 && data.members.length === 0 && (
         <div className="flex flex-col items-center justify-center py-14 text-center">
-          <p className="text-sm text-muted-foreground">פרויקט חדש — אין נתונים עדיין.</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            עבור ללשונית ״משימות״ להוספת משימות.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("emptyProject")}</p>
+          <p className="text-xs text-muted-foreground mt-1">{t("emptySubtitle")}</p>
         </div>
       )}
     </div>

@@ -340,7 +340,7 @@ export function QuoteCalculator({
             categoryId,
             catalogItemId: null,
             name:          "",
-            unit:          "יח'",
+            unit:          t("calc.unitDefault"),
             dim1:          1,
             dim2:          null,
             costPrice:     0,
@@ -509,7 +509,7 @@ export function QuoteCalculator({
           value={item.unit}
           onChange={(e) => updateItem(item.id, { unit: e.target.value })}
           className="h-7 text-sm text-center"
-          placeholder="יח'"
+          placeholder={t("calc.unitDefault")}
         />
 
         <Input
@@ -1005,7 +1005,7 @@ export function QuoteCalculator({
                   <span>{fmtShekel(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">{locale === "he" ? "עלות כוללת" : "Total Cost"}</span>
+                  <span className="text-muted-foreground">{t("calc.totalCost")}</span>
                   <span className="text-amber-700">{fmtShekel(totalCost)}</span>
                 </div>
                 <Separator className="my-1 bg-emerald-200/50" />
@@ -1051,7 +1051,7 @@ export function QuoteCalculator({
                   <span>{fmtShekel(subtotal)}</span>
                 </div>
 
-                {/* ── Contingency (בצ"מ) ── */}
+                {/* ── Contingency ── */}
                 <div className="flex items-center justify-between gap-2 py-0.5">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="text-sm text-muted-foreground shrink-0">

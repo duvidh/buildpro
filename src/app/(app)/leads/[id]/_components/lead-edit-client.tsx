@@ -36,7 +36,7 @@ export function LeadEditClient({ leadId, defaultValues, employees }: Props) {
       toast.success(t("detail.toastUpdated"));
       router.refresh();
     } else {
-      toast.error(res.error ?? t("detail.toastError"));
+      toast.error(t("detail.toastError"));
     }
   }
 

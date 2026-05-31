@@ -10,6 +10,7 @@ import {
   LayoutGrid, RefreshCcw, ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,15 +28,12 @@ import type { DashboardData, WidgetLayoutItem } from "./widgets";
 
 // ─── Layout version helpers ───────────────────────────────────────────────────
 
-/** Sentinel item stored in DB to track which version the layout was saved with */
 const VERSION_SENTINEL_ID = `__layout_v${LAYOUT_VERSION}__`;
 
-/** Strip sentinel items out before rendering */
 function stripSentinels(items: WidgetLayoutItem[]): WidgetLayoutItem[] {
   return items.filter((i) => !i.i.startsWith("__layout_v"));
 }
 
-/** Return true only if the saved layout carries the current version marker */
 function isCurrentVersion(items: WidgetLayoutItem[] | null): boolean {
   return !!items?.some((i) => i.i === VERSION_SENTINEL_ID);
 }
@@ -47,22 +45,19 @@ const COLS = 12;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function fmtDate() {
-  return new Intl.DateTimeFormat("he-IL", {
+function fmtDate(locale: string) {
+  return new Intl.DateTimeFormat(locale === "he" ? "he-IL" : "en-US", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   }).format(new Date());
 }
 
-/** Find the best x,y position to drop a new widget without overlapping */
 function findFreePosition(
   layout: WidgetLayoutItem[],
   w: number,
   h: number,
 ): { x: number; y: number } {
   if (layout.length === 0) return { x: 0, y: 0 };
-
   const maxY = Math.max(...layout.map((item) => item.y + item.h));
-
   for (let row = 0; row <= maxY; row++) {
     for (let col = 0; col <= COLS - w; col++) {
       const overlaps = layout.some((item) => {
@@ -73,14 +68,13 @@ function findFreePosition(
       if (!overlaps) return { x: col, y: row };
     }
   }
-
-  // No gap — append below
   return { x: 0, y: maxY };
 }
 
 // ─── Widget content dispatcher ────────────────────────────────────────────────
 
 function WidgetContent({ id, data }: { id: string; data: DashboardData }) {
+  const t = useTranslations("dashboard");
   switch (id) {
     case "kpis":          return <KpiWidget data={data} />;
     case "finance":       return <FinanceWidget data={data} />;
@@ -95,7 +89,7 @@ function WidgetContent({ id, data }: { id: string; data: DashboardData }) {
     case "quick_actions": return <QuickActionsWidget />;
     default: return (
       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-        ווידג׳ט לא מזוהה
+        {t("unknownWidget")}
       </div>
     );
   }
@@ -119,6 +113,7 @@ function WidgetShell({
   onRemove: (id: string) => void;
   children: React.ReactNode;
 }) {
+  const t = useTranslations();
   const def = WIDGET_DEFS[id];
 
   return (
@@ -134,10 +129,7 @@ function WidgetShell({
           : "hover:shadow-[0_4px_20px_rgb(0,0,0,0.09)]",
       )}
     >
-      {/* Coloured top accent */}
       {def && <AccentStrip gradient={def.accentColor} />}
-
-      {/* Header */}
       <div
         className={cn(
           "flex items-center justify-between px-4 py-2.5 shrink-0 select-none",
@@ -151,7 +143,7 @@ function WidgetShell({
           {editMode && <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 shrink-0" />}
           {def && (
             <span className="text-xs font-semibold text-foreground/70 tracking-wide uppercase leading-none">
-              {def.label}
+              {t(def.labelKey as Parameters<typeof t>[0])}
             </span>
           )}
         </div>
@@ -166,8 +158,6 @@ function WidgetShell({
           </button>
         )}
       </div>
-
-      {/* Content */}
       <div className="flex-1 overflow-hidden">
         {children}
       </div>
@@ -175,14 +165,54 @@ function WidgetShell({
   );
 }
 
-// ─── Widget gallery modal ─────────────────────────────────────────────────────
+// ─── Widget gallery card ──────────────────────────────────────────────────────
 
-const CATEGORY_LABELS: Record<string, string> = {
-  finance:  "💰 פיננסים",
-  projects: "🏗️ פרויקטים",
-  crm:      "🤝 CRM",
-  tools:    "🛠️ כלים",
-};
+function WidgetGalleryCard({
+  id,
+  def,
+  onAdd,
+  onClose,
+}: {
+  id: string;
+  def: (typeof WIDGET_DEFS)[string];
+  onAdd: (id: string) => void;
+  onClose: () => void;
+}) {
+  const t = useTranslations("dashboard");
+  const tGlobal = useTranslations();
+  const Icon = def.icon;
+  return (
+    <button
+      type="button"
+      onClick={() => { onAdd(id); onClose(); }}
+      className="relative flex flex-col items-start gap-2 rounded-xl border border-border/60
+        bg-card hover:bg-muted/40 hover:border-primary/40
+        p-3.5 text-start transition-all duration-200 hover:shadow-sm group"
+    >
+      <div className={`absolute top-0 inset-x-0 h-[2px] rounded-t-xl bg-gradient-to-r ${def.accentColor}`} />
+      <div className="flex items-center gap-2 w-full">
+        <div className={`flex h-8 w-8 items-center justify-center rounded-lg
+          bg-gradient-to-br ${def.accentColor} bg-opacity-10`}
+        >
+          <Icon className="h-4 w-4 text-white drop-shadow-sm" />
+        </div>
+        <span className="text-sm font-semibold text-foreground leading-tight flex-1">
+          {tGlobal(def.labelKey as Parameters<typeof tGlobal>[0])}
+        </span>
+        <Plus className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-primary
+          group-hover:opacity-100 opacity-0 transition-all" />
+      </div>
+      <p className="text-xs text-muted-foreground leading-snug">
+        {tGlobal(def.descriptionKey as Parameters<typeof tGlobal>[0])}
+      </p>
+      <span className="text-[10px] text-muted-foreground/50">
+        {t("widgetGallery.colCount", { w: def.defaultSize.w, h: def.defaultSize.h })}
+      </span>
+    </button>
+  );
+}
+
+// ─── Widget gallery modal ─────────────────────────────────────────────────────
 
 function WidgetGallery({
   currentIds,
@@ -193,6 +223,7 @@ function WidgetGallery({
   onAdd: (id: string) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("dashboard");
   const [filter, setFilter] = useState<string>("all");
 
   const categories = ["all", "finance", "projects", "crm", "tools"] as const;
@@ -228,9 +259,11 @@ function WidgetGallery({
         <div className="flex items-center justify-between px-5 py-3 border-b border-border/50">
           <div className="flex items-center gap-2">
             <LayoutGrid className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold">גלריית ווידג׳טים</h3>
+            <h3 className="text-sm font-semibold">{t("widgetGallery.title")}</h3>
             {available.length > 0 && (
-              <Badge variant="secondary" className="text-xs h-5">{available.length} זמינים</Badge>
+              <Badge variant="secondary" className="text-xs h-5">
+                {t("widgetGallery.available", { count: available.length })}
+              </Badge>
             )}
           </div>
           <button
@@ -255,7 +288,9 @@ function WidgetGallery({
                   : "bg-muted/60 text-muted-foreground hover:bg-muted",
               )}
             >
-              {cat === "all" ? "✨ הכל" : CATEGORY_LABELS[cat]}
+              {cat === "all"
+                ? t("widgetGallery.allCategory")
+                : t(`categoryLabels.${cat}` as Parameters<typeof t>[0])}
             </button>
           ))}
         </div>
@@ -266,48 +301,14 @@ function WidgetGallery({
             <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
               <Check className="h-8 w-8 text-emerald-400/60" />
               <p className="text-sm text-muted-foreground">
-                כל הווידג׳טים בקטגוריה זו כבר מוצגים בדשבורד
+                {t("widgetGallery.allInCategory")}
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              {filtered.map(([id, def]) => {
-                const Icon = def.icon;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => { onAdd(id); onClose(); }}
-                    className="relative flex flex-col items-start gap-2 rounded-xl border border-border/60
-                      bg-card hover:bg-muted/40 hover:border-primary/40
-                      p-3.5 text-start transition-all duration-200 hover:shadow-sm group"
-                  >
-                    {/* Accent top strip */}
-                    <div className={`absolute top-0 inset-x-0 h-[2px] rounded-t-xl bg-gradient-to-r ${def.accentColor}`} />
-
-                    <div className="flex items-center gap-2 w-full">
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg
-                        bg-gradient-to-br ${def.accentColor} bg-opacity-10`}
-                      >
-                        <Icon className="h-4 w-4 text-white drop-shadow-sm" />
-                      </div>
-                      <span className="text-sm font-semibold text-foreground leading-tight flex-1">
-                        {def.label}
-                      </span>
-                      <Plus className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-primary
-                        group-hover:opacity-100 opacity-0 transition-all" />
-                    </div>
-
-                    <p className="text-xs text-muted-foreground leading-snug">
-                      {def.description}
-                    </p>
-
-                    <span className="text-[10px] text-muted-foreground/50">
-                      {def.defaultSize.w}×{def.defaultSize.h} עמודות
-                    </span>
-                  </button>
-                );
-              })}
+              {filtered.map(([id, def]) => (
+                <WidgetGalleryCard key={id} id={id} def={def} onAdd={onAdd} onClose={onClose} />
+              ))}
             </div>
           )}
         </div>
@@ -322,15 +323,17 @@ export function CustomDashboardClient({
   dashboardData,
   savedLayout,
   userName,
+  locale,
 }: {
   dashboardData: DashboardData;
   savedLayout: WidgetLayoutItem[] | null;
   userName: string;
+  locale: string;
 }) {
+  const t = useTranslations("dashboard");
+  const tGlobal = useTranslations();
   const [editMode,      setEditMode]      = useState(false);
   const [showGallery,   setShowGallery]   = useState(false);
-  // Use saved layout only if it carries the current version marker;
-  // otherwise fall back to DEFAULT_LAYOUT so stale/compressed layouts auto-reset.
   const [layout, setLayout] = useState<WidgetLayoutItem[]>(
     isCurrentVersion(savedLayout) ? stripSentinels(savedLayout!) : DEFAULT_LAYOUT,
   );
@@ -338,12 +341,12 @@ export function CustomDashboardClient({
 
   // Greeting based on time of day
   const hour = new Date().getHours();
-  const greeting =
-    hour < 5  ? "לילה טוב" :
-    hour < 12 ? "בוקר טוב" :
-    hour < 17 ? "צהריים טובים" :
-    hour < 21 ? "ערב טוב" :
-                "לילה טוב";
+  const greetingKey =
+    hour < 5  ? "greeting.night" :
+    hour < 12 ? "greeting.morning" :
+    hour < 17 ? "greeting.afternoon" :
+    hour < 21 ? "greeting.evening" :
+                "greeting.night";
 
   const handleLayoutChange = useCallback((newLayout: Layout) => {
     setLayout((prev) =>
@@ -367,39 +370,36 @@ export function CustomDashboardClient({
       ...prev,
       { i: id, ...pos, ...def.defaultSize },
     ]);
-    toast.success(`${def.label} נוסף לדשבורד`);
+    toast.success(t("edit.toastAdded", { label: tGlobal(def.labelKey as Parameters<typeof tGlobal>[0]) }));
   }
 
   function resetLayout() {
     setLayout(DEFAULT_LAYOUT);
-    // Persist the reset immediately so the DB version is up-to-date
     startSaving(async () => {
       await saveDashboardLayout([
         ...DEFAULT_LAYOUT,
         { i: VERSION_SENTINEL_ID, x: 0, y: 9999, w: 1, h: 1 },
       ]);
     });
-    toast.success("הדשבורד אופס לברירת המחדל");
+    toast.success(t("edit.toastReset"));
   }
 
   function handleToggleEdit() {
     if (editMode) {
-      // Attach the version sentinel before saving so future loads can verify compatibility
       const layoutWithVersion: WidgetLayoutItem[] = [
         ...layout,
         { i: VERSION_SENTINEL_ID, x: 0, y: 9999, w: 1, h: 1 },
       ];
       startSaving(async () => {
         const res = await saveDashboardLayout(layoutWithVersion);
-        if (res.success) toast.success("הדשבורד נשמר בהצלחה ✓");
-        else             toast.error("שגיאה בשמירת הדשבורד");
+        if (res.success) toast.success(t("edit.toastSaved"));
+        else             toast.error(t("edit.toastSaveError"));
       });
       setShowGallery(false);
     }
     setEditMode((v) => !v);
   }
 
-  // renderableLayout excludes version-sentinel items (never rendered as widgets)
   const renderableLayout = layout.filter((l) => !l.i.startsWith("__layout_v"));
   const currentIds = renderableLayout.map((l) => l.i);
   const hasAvailable = Object.keys(WIDGET_DEFS).some((id) => !currentIds.includes(id));
@@ -414,21 +414,23 @@ export function CustomDashboardClient({
             <>
               <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                 <Settings2 className="h-5 w-5 text-primary" />
-                עריכת דשבורד
+                {t("edit.title")}
               </h2>
               <p className="text-sm text-muted-foreground mt-0.5">
-                גרור ווידג׳טים למיקום חדש · שנה גודל מהפינה · לחץ ✕ למחיקה
+                {t("edit.hint")}
               </p>
             </>
           ) : (
             <>
               <h2 className="text-xl font-bold">
-                <span className="text-muted-foreground font-normal">{greeting}, </span>
+                <span className="text-muted-foreground font-normal">
+                  {t(greetingKey as Parameters<typeof t>[0])},{" "}
+                </span>
                 <span className="bg-gradient-to-l from-primary to-primary/70 bg-clip-text text-transparent">
                   {userName}
                 </span>
               </h2>
-              <p className="text-sm text-muted-foreground mt-0.5">{fmtDate()}</p>
+              <p className="text-sm text-muted-foreground mt-0.5">{fmtDate(locale)}</p>
             </>
           )}
         </div>
@@ -446,7 +448,7 @@ export function CustomDashboardClient({
                   onClick={() => setShowGallery((v) => !v)}
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  הוסף ווידג׳ט
+                  {t("edit.addWidget")}
                   <ChevronDown className={cn("h-3 w-3 transition-transform", showGallery && "rotate-180")} />
                 </Button>
               )}
@@ -457,7 +459,7 @@ export function CustomDashboardClient({
                 onClick={resetLayout}
               >
                 <RefreshCcw className="h-3.5 w-3.5" />
-                איפוס
+                {t("edit.reset")}
               </Button>
               <Button
                 size="sm"
@@ -468,7 +470,7 @@ export function CustomDashboardClient({
                 {isSaving
                   ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   : <Check className="h-3.5 w-3.5" />}
-                שמור דשבורד
+                {t("edit.saveBtn")}
               </Button>
             </>
           ) : (
@@ -479,7 +481,7 @@ export function CustomDashboardClient({
               onClick={handleToggleEdit}
             >
               <Settings2 className="h-3.5 w-3.5" />
-              ערוך
+              {t("edit.editBtn")}
             </Button>
           )}
         </div>
@@ -492,18 +494,12 @@ export function CustomDashboardClient({
             <Settings2 className="h-3.5 w-3.5 text-primary" />
           </div>
           <p className="text-xs text-primary/80">
-            <strong>מצב עריכה פעיל</strong> — גרור ע״י אחיזת הכותרת · שנה גודל מפינה ימין-תחתון · הנח ווידג׳טים בחופשיות זה לצד זה
+            <strong>{t("edit.editModeActive")}</strong> — {t("edit.editModeDesc")}
           </p>
         </div>
       )}
 
       {/* ── Grid ── */}
-      {/*
-        dir="ltr" is intentional: react-grid-layout always treats x=0 as the
-        physical LEFT edge.  Without this override the RTL context on <html>
-        causes the grid's coordinate system to be mirrored, so widgets cluster
-        to the right and dragging only reaches the centre of the container.
-      */}
       <div
         dir="ltr"
         className={cn(

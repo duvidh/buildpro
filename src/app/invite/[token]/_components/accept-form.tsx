@@ -9,18 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { acceptInvitation } from "@/actions/invitations";
 
-const ROLE_LABELS: Record<string, { en: string; he: string }> = {
-  ADMIN:           { en: "System Admin",    he: "מנהל מערכת"    },
-  OFFICE_MANAGER:  { en: "Office Manager",  he: "מנהל/ת משרד"   },
-  PROJECT_MANAGER: { en: "Project Manager", he: "מנהל פרויקטים" },
-  FIELD_WORKER:    { en: "Field Worker",    he: "איש שטח"       },
-};
-
 export function AcceptForm({
   token,
   email,
   role,
-  locale,
 }: {
   token: string;
   email: string;
@@ -39,10 +31,7 @@ export function AcceptForm({
   const [done,     setDone]     = useState(false);
   const [loading,  setLoading]  = useState(false);
 
-  const roleLabel =
-    locale === "he"
-      ? (ROLE_LABELS[role]?.he ?? role)
-      : (ROLE_LABELS[role]?.en ?? role);
+  const roleLabel = t(`roleLabels.${role}` as Parameters<typeof t>[0], undefined, { fallback: role });
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

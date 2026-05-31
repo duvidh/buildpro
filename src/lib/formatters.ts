@@ -53,9 +53,9 @@ export function formatCurrency(
 export type MeasurementSystem = "AUTO" | "METRIC" | "IMPERIAL";
 
 export interface MeasurementUnits {
-  /** Short area unit label, e.g. "מ״ר" or "sq ft" */
+  /** Short area unit label, e.g. "m²" or "sq ft" */
   area: string;
-  /** Short length unit label, e.g. "מ׳" or "ft" */
+  /** Short length unit label, e.g. "m" or "ft" */
   length: string;
 }
 
@@ -79,7 +79,7 @@ export function getMeasurementUnits(
   if (resolved === "IMPERIAL") {
     return { area: "sq ft", length: "ft" };
   }
-  return { area: 'מ״ר', length: "מ׳" };
+  return { area: "m²", length: "m" };
 }
 
 // ─── Currency formatters ──────────────────────────────────────────────────────

@@ -47,7 +47,7 @@ export default function NewClientPage() {
       toast.success(t("new.toastSuccess"));
       router.push(`/clients/${res.clientId}`);
     } else {
-      toast.error(res.error ?? t("new.toastError"));
+      toast.error(t("new.toastError"));
     }
   }
 

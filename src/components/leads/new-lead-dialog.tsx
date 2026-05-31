@@ -34,32 +34,8 @@ import { LEAD_SOURCE_VALUES } from "@/lib/constants/lead-enums";
 
 type EmployeeOption = { id: string; name: string };
 
-// ─── Static city list (Hebrew city names, locale-independent) ─────────────────
-
-export const DEFAULT_CITIES = [
-  "תל אביב", "ירושלים", "חיפה", "ראשון לציון", "פתח תקווה",
-  "אשדוד", "נתניה", "באר שבע", "בני ברק", "רמת גן",
-  "הרצליה", "רעננה", "כפר סבא", "מודיעין", "אשקלון",
-  "רחובות", "בת ים", "בית שמש", "הוד השרון", "חולון",
-  "אילת", "טבריה", "נצרת", "עכו", "נהריה", "קריית שמונה",
-  "לוד", "רמלה", "יהוד", "גבעתיים",
-];
-
-// ─── Default construction types (stored as-is in DB, locale-independent) ──────
-
-export const DEFAULT_CONSTRUCTION_TYPES = [
-  "בנייה חדשה",
-  "שיפוץ",
-  "תוספת בנייה",
-  "הריסה ובנייה",
-  "שיקום מבנה",
-  "עבודות פנים",
-  "עבודות חוץ",
-  "בנייה מסחרית",
-  "בנייה תעשייתית",
-  "בנייה ציבורית / מוסדית",
-  "תשתיות",
-];
+// City and construction type data is loaded from i18n messages at runtime
+// (see leads.defaultCities / leads.defaultConstructionTypes in messages/)
 
 // ─── Multi-select construction types ─────────────────────────────────────────
 
@@ -173,11 +149,12 @@ export function CreatableCitySelect({
   onChange: (v: string) => void;
 }) {
   const t      = useTranslations("leads.form");
+  const tLeads = useTranslations("leads");
   const locale = useLocale();
   const dir    = locale === "he" ? "rtl" : "ltr";
 
   const [open, setOpen]   = useState(false);
-  const [cities, setCities] = useState(DEFAULT_CITIES);
+  const [cities, setCities] = useState(() => tLeads.raw("defaultCities") as string[]);
   const [search, setSearch] = useState("");
 
   const filtered = cities.filter((c) => c.includes(search));
@@ -311,7 +288,7 @@ export function LeadFormBody({
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-      {/* שם + טלפון */}
+      {/* Name + Phone */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="lf-name">
@@ -335,7 +312,7 @@ export function LeadFormBody({
         </div>
       </div>
 
-      {/* טלפון נוסף + אימייל */}
+      {/* Secondary Phone + Email */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="lf-phone2">{tf("form.fields.phone2")}</Label>
@@ -360,7 +337,7 @@ export function LeadFormBody({
         </div>
       </div>
 
-      {/* כתובת + עיר */}
+      {/* Address + City */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="lf-address">{tf("form.fields.address")}</Label>
@@ -376,7 +353,7 @@ export function LeadFormBody({
         </div>
       </div>
 
-      {/* מקור ליד + נציג מטפל */}
+      {/* Lead Source + Assigned Rep */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label>{tf("form.fields.source")}</Label>
@@ -410,12 +387,12 @@ export function LeadFormBody({
         )}
       </div>
 
-      {/* סוג בנייה + תקציב + גודל */}
+      {/* Construction Type + Budget + Size */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="space-y-1.5">
           <Label>{tf("form.fields.constructionType")}</Label>
           <MultiSelectCreatable
-            options={DEFAULT_CONSTRUCTION_TYPES}
+            options={t.raw("defaultConstructionTypes") as string[]}
             selected={constructionTypes}
             onChange={setConstructionTypes}
             placeholder={tf("form.placeholders.selectTypes")}
@@ -446,7 +423,7 @@ export function LeadFormBody({
         </div>
       </div>
 
-      {/* הערות */}
+      {/* Notes */}
       <div className="space-y-1.5">
         <Label htmlFor="lf-notes">{tf("form.fields.notes")}</Label>
         <Textarea

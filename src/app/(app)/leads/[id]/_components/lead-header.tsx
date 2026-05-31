@@ -80,7 +80,7 @@ export function LeadHeader({ lead }: LeadHeaderProps) {
         toast.success(t("header.convertSuccess"));
         router.push(`/clients/${res.clientId}`);
       } else {
-        toast.error(res.error ?? t("header.convertError"));
+        toast.error(t("header.convertError"));
       }
     });
   }
@@ -92,7 +92,7 @@ export function LeadHeader({ lead }: LeadHeaderProps) {
         toast.success(t("table.toastDeleted"));
         router.push("/leads");
       } else {
-        toast.error(res.error ?? t("header.deleteError"));
+        toast.error(t("header.deleteError"));
         setShowDeleteDialog(false);
       }
     });

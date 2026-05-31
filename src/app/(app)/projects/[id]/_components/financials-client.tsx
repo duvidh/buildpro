@@ -125,7 +125,7 @@ function InlineInvoicePaymentRow({
   const isPaid  = invoice.status === "PAID";
   const balance = invoice.total - invoice.paidAmount;
   const stCls   = INVOICE_STATUS_CLS[invoice.status] ?? "";
-  const stLabel = t(`invoiceStatus.${invoice.status}` as Parameters<typeof t>[0], undefined, { fallback: invoice.status });
+  const stLabel = t(`invoiceStatus.${invoice.status}` as Parameters<typeof t>[0]) || invoice.status;
   const bal     = invoice.total - invoice.paidAmount;
 
   function handleOpen() {

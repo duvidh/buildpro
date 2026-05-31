@@ -25,6 +25,7 @@ export type SessionUser = {
   role: string;
   name: string;
   email: string;
+  mustChangePassword?: boolean;
 };
 
 export async function signToken(payload: SessionUser): Promise<string> {

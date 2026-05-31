@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { UserRole } from "@/generated/prisma/client";
 import { requireRole, ADMIN_ROLES } from "@/lib/auth-utils";
 import { getSession } from "@/lib/session";
+import { DEFAULT_PASSWORD } from "@/lib/auth-constants";
+import { sendCredentialsEmail } from "@/lib/email";
 
 export async function getUsers() {
   return db.user.findMany({
@@ -85,6 +87,118 @@ export async function updateCurrentUserProfile(data: {
     },
   });
   revalidatePath("/profile");
+  revalidatePath("/settings");
+  return { success: true as const };
+}
+
+export async function createUser(data: {
+  name: string;
+  email: string;
+  role: UserRole;
+  phone?: string;
+}) {
+  await requireRole(ADMIN_ROLES);
+  const email = data.email.trim().toLowerCase();
+  const name = data.name.trim();
+  if (!name || !email) return { success: false as const, error: "invalid" as const };
+  const existing = await db.user.findUnique({ where: { email } });
+  if (existing) return { success: false as const, error: "user_exists" as const };
+  const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 12);
+  const user = await db.user.create({
+    data: {
+      name,
+      email,
+      role: data.role,
+      phone: data.phone?.trim() || null,
+      passwordHash,
+      active: true,
+    },
+  });
+  let emailSent = true;
+  try {
+    await sendCredentialsEmail({
+      to: email,
+      name,
+      tempPassword: DEFAULT_PASSWORD,
+      role: data.role,
+    });
+  } catch (err) {
+    emailSent = false;
+    console.error(
+      "[createUser] credentials email failed:",
+      err instanceof Error ? err.message : err
+    );
+  }
+  revalidatePath("/settings");
+  return {
+    success: true as const,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone,
+      active: user.active,
+      createdAt: user.createdAt,
+    },
+    emailSent,
+  };
+}
+
+export async function updateUser(
+  id: string,
+  data: { name: string; email: string; role: UserRole; phone?: string }
+) {
+  await requireRole(ADMIN_ROLES);
+  const email = data.email.trim().toLowerCase();
+  const name = data.name.trim();
+  if (!name || !email) return { success: false as const, error: "invalid" as const };
+  const clash = await db.user.findFirst({ where: { email, NOT: { id } } });
+  if (clash) return { success: false as const, error: "user_exists" as const };
+  await db.user.update({
+    where: { id },
+    data: { name, email, role: data.role, phone: data.phone?.trim() || null },
+  });
+  revalidatePath("/settings");
+  return { success: true as const };
+}
+
+export async function resetUserPassword(id: string) {
+  await requireRole(ADMIN_ROLES);
+  const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 12);
+  await db.user.update({ where: { id }, data: { passwordHash } });
+  revalidatePath("/settings");
+  return { success: true as const, tempPassword: DEFAULT_PASSWORD };
+}
+
+export async function deleteUser(id: string) {
+  const session = await requireRole(ADMIN_ROLES);
+  if (session.userId === id) return { success: false as const, error: "self" as const };
+  const counts = await db.user.findUnique({
+    where: { id },
+    select: {
+      _count: {
+        select: {
+          managedProjects: true,
+          assignedTasks: true,
+          assignedLeads: true,
+          projectMembers: true,
+          uploadedFiles: true,
+        },
+      },
+    },
+  });
+  if (!counts) return { success: false as const, error: "not_found" as const };
+  const c = counts._count;
+  const hasData =
+    c.managedProjects +
+      c.assignedTasks +
+      c.assignedLeads +
+      c.projectMembers +
+      c.uploadedFiles >
+    0;
+  if (hasData) return { success: false as const, error: "has_data" as const };
+  await db.user.delete({ where: { id } });
   revalidatePath("/settings");
   return { success: true as const };
 }

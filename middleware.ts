@@ -42,10 +42,12 @@ export async function middleware(req: NextRequest) {
 
   // Verify JWT without hitting the DB (stateless edge check)
   let isAuthenticated = false;
+  let mustChange = false;
   if (token) {
     try {
-      await jwtVerify(token, secret);
+      const { payload } = await jwtVerify(token, secret);
       isAuthenticated = true;
+      mustChange = payload.mustChangePassword === true;
     } catch {
       isAuthenticated = false;
     }
@@ -61,6 +63,18 @@ export async function middleware(req: NextRequest) {
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("from", pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // ── Forced password-change gate ─────────────────────────────────────────────
+  // A user who logged in with the default password must change it before they
+  // can reach anything else. "/change-password" is NOT a public path, so it is
+  // only reachable while authenticated.
+  if (isAuthenticated && mustChange && pathname !== "/change-password") {
+    return NextResponse.redirect(new URL("/change-password", req.url));
+  }
+  // No reason to sit on the change-password page once the flag is cleared.
+  if (isAuthenticated && !mustChange && pathname === "/change-password") {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
   return NextResponse.next();

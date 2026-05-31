@@ -15,12 +15,11 @@ import {
   BadgePercent,
   FileText,
   UserPlus,
-  Clock,
-  X,
-  RefreshCw,
   Loader2,
-  Mail,
   Upload,
+  Pencil,
+  KeyRound,
+  Trash2,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -46,8 +45,14 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { saveAllSettings, uploadCompanyLogo } from "@/actions/settings";
-import { updateUserRole, toggleUserActive } from "@/actions/users";
-import { inviteUser, cancelInvitation, resendInvitation } from "@/actions/invitations";
+import {
+  updateUserRole,
+  toggleUserActive,
+  createUser,
+  updateUser,
+  resetUserPassword,
+  deleteUser,
+} from "@/actions/users";
 import { SUPPORTED_CURRENCIES } from "@/lib/formatters";
 import { useCurrency } from "@/lib/currency-context";
 
@@ -61,16 +66,6 @@ type User = {
   phone: string | null;
   active: boolean;
   createdAt: Date;
-};
-
-type Invitation = {
-  id: string;
-  email: string;
-  role: string;
-  // Dates arrive as ISO strings after JSON.parse(JSON.stringify(...)) in the page
-  expiresAt: Date | string;
-  createdAt: Date | string;
-  invitedBy: { name: string } | null;
 };
 
 // ─── Role badge class map (className only — labels from translations) ─────────
@@ -357,28 +352,40 @@ function PreferencesTab() {
 
 function UsersTab({
   initialUsers,
-  initialInvitations,
-  canInvite,
+  canManage,
 }: {
   initialUsers: User[];
-  initialInvitations: Invitation[];
-  canInvite: boolean;
+  canManage: boolean;
 }) {
   const t = useTranslations("settings");
-  const [users, setUsers]               = useState(initialUsers);
-  const [invitations, setInvitations]   = useState(initialInvitations);
-  const [, startTransition]             = useTransition();
-
-  // ── Invite dialog state ───────────────────────────────────────────────────
-  const [dialogOpen,   setDialogOpen]   = useState(false);
-  const [inviteEmail,  setInviteEmail]  = useState("");
-  const [inviteRole,   setInviteRole]   = useState<typeof ROLE_VALUES[number]>("FIELD_WORKER");
-  const [inviting,     setInviting]     = useState(false);
-  const [inviteMsg,    setInviteMsg]    = useState<{ type: "ok" | "warn" | "err"; text: string } | null>(null);
+  const [users, setUsers]   = useState(initialUsers);
+  const [, startTransition] = useTransition();
 
   const tRole = (r: string) => {
     try { return t(`roles.${r}` as Parameters<typeof t>[0]); } catch { return r; }
   };
+
+  // ── Add dialog state ───────────────────────────────────────────────────────
+  const [addOpen,    setAddOpen]    = useState(false);
+  const [addName,    setAddName]    = useState("");
+  const [addEmail,   setAddEmail]   = useState("");
+  const [addPhone,   setAddPhone]   = useState("");
+  const [addRole,    setAddRole]    = useState<typeof ROLE_VALUES[number]>("FIELD_WORKER");
+  const [adding,     setAdding]     = useState(false);
+  const [addError,   setAddError]   = useState<string | null>(null);
+
+  // ── Edit dialog state ──────────────────────────────────────────────────────
+  const [editOpen,   setEditOpen]   = useState(false);
+  const [editId,     setEditId]     = useState<string | null>(null);
+  const [editName,   setEditName]   = useState("");
+  const [editEmail,  setEditEmail]  = useState("");
+  const [editPhone,  setEditPhone]  = useState("");
+  const [editRole,   setEditRole]   = useState<typeof ROLE_VALUES[number]>("FIELD_WORKER");
+  const [saving,     setSaving]     = useState(false);
+  const [editError,  setEditError]  = useState<string | null>(null);
+
+  // ── Per-row pending guard (reset / delete) ─────────────────────────────────
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   function handleRoleChange(id: string, role: string) {
     setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
@@ -394,66 +401,113 @@ function UsersTab({
     });
   }
 
-  // ── Invite submit ──────────────────────────────────────────────────────────
-  async function handleInvite(e: React.FormEvent) {
+  // ── Add submit ─────────────────────────────────────────────────────────────
+  async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    setInviting(true);
-    setInviteMsg(null);
-    const res = await inviteUser(inviteEmail, inviteRole as Parameters<typeof inviteUser>[1]);
-    setInviting(false);
-    if ("error" in res) {
-      setInviteMsg({
-        type: "err",
-        text: res.error === "user_exists"
-          ? t("users.inviteErrorExists" as Parameters<typeof t>[0])
-          : t("users.inviteErrorGeneric" as Parameters<typeof t>[0]),
-      });
-    } else {
-      // The invitation row is always created; the email may still have failed
-      // to send (e.g. Resend not configured). Warn instead of claiming success.
-      setInviteMsg(
-        res.emailSent
-          ? { type: "ok",   text: t("users.inviteSuccess" as Parameters<typeof t>[0]) }
-          : { type: "warn", text: t("users.inviteWarnNoEmail" as Parameters<typeof t>[0]) },
+    setAdding(true);
+    setAddError(null);
+    const res = await createUser({
+      name: addName,
+      email: addEmail,
+      role: addRole as Parameters<typeof createUser>[0]["role"],
+      phone: addPhone || undefined,
+    });
+    setAdding(false);
+    if (!res.success) {
+      setAddError(
+        res.error === "user_exists"
+          ? t("users.createErrorExists" as Parameters<typeof t>[0])
+          : t("users.createErrorGeneric" as Parameters<typeof t>[0]),
       );
-      setInviteEmail("");
-      setInviteRole("FIELD_WORKER");
-      // Add with real DB id so cancel/resend work immediately without a refresh
-      setInvitations((prev) => [
-        {
-          id:        res.invitation.id,
-          email:     res.invitation.email,
-          role:      res.invitation.role,
-          expiresAt: res.invitation.expiresAt,
-          createdAt: res.invitation.createdAt,
-          invitedBy: null,
-        },
-        ...prev,
-      ]);
-      // Keep the dialog open longer when the email failed so the warning is read.
-      setTimeout(() => { setDialogOpen(false); setInviteMsg(null); }, res.emailSent ? 1500 : 4000);
+      return;
     }
+    setUsers((prev) => [{ ...res.user }, ...prev]);
+    if (res.emailSent) {
+      toast.success(t("users.createSuccess" as Parameters<typeof t>[0]));
+    } else {
+      toast.warning(t("users.createWarnNoEmail" as Parameters<typeof t>[0]));
+    }
+    setAddOpen(false);
+    setAddName(""); setAddEmail(""); setAddPhone(""); setAddRole("FIELD_WORKER");
   }
 
-  // ── Cancel invitation ──────────────────────────────────────────────────────
-  function handleCancel(id: string) {
-    setInvitations((prev) => prev.filter((inv) => inv.id !== id));
-    startTransition(async () => { await cancelInvitation(id); });
+  // ── Open edit dialog ───────────────────────────────────────────────────────
+  function openEdit(u: User) {
+    setEditId(u.id);
+    setEditName(u.name);
+    setEditEmail(u.email);
+    setEditPhone(u.phone ?? "");
+    setEditRole(u.role as typeof ROLE_VALUES[number]);
+    setEditError(null);
+    setEditOpen(true);
   }
 
-  // ── Resend invitation ─────────────────────────────────────────────────────
-  function handleResend(id: string) {
+  // ── Edit submit ────────────────────────────────────────────────────────────
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editId) return;
+    setSaving(true);
+    setEditError(null);
+    const res = await updateUser(editId, {
+      name: editName,
+      email: editEmail,
+      role: editRole as Parameters<typeof updateUser>[1]["role"],
+      phone: editPhone || undefined,
+    });
+    setSaving(false);
+    if (!res.success) {
+      setEditError(
+        res.error === "user_exists"
+          ? t("users.createErrorExists" as Parameters<typeof t>[0])
+          : t("users.createErrorGeneric" as Parameters<typeof t>[0]),
+      );
+      return;
+    }
+    const normEmail = editEmail.trim().toLowerCase();
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === editId
+          ? { ...u, name: editName.trim(), email: normEmail, role: editRole, phone: editPhone.trim() || null }
+          : u,
+      ),
+    );
+    setEditOpen(false);
+  }
+
+  // ── Reset password ─────────────────────────────────────────────────────────
+  function handleResetPassword(id: string) {
+    setBusyId(id);
     startTransition(async () => {
-      const res = await resendInvitation(id);
-      if ("error" in res) {
-        toast.error(t("users.resendError" as Parameters<typeof t>[0]));
+      const res = await resetUserPassword(id);
+      setBusyId(null);
+      if (res.success) {
+        toast.success(
+          t("users.resetPwSuccess" as Parameters<typeof t>[0], { password: res.tempPassword }),
+        );
       } else {
-        toast.success(t("users.resendSuccess" as Parameters<typeof t>[0]));
+        toast.error(t("users.resetPwError" as Parameters<typeof t>[0]));
       }
     });
   }
 
-  const now = new Date();
+  // ── Delete ─────────────────────────────────────────────────────────────────
+  function handleDelete(id: string) {
+    setBusyId(id);
+    startTransition(async () => {
+      const res = await deleteUser(id);
+      setBusyId(null);
+      if (res.success) {
+        setUsers((prev) => prev.filter((u) => u.id !== id));
+        toast.success(t("users.deleteSuccess" as Parameters<typeof t>[0]));
+      } else if (res.error === "self") {
+        toast.error(t("users.deleteSelfError" as Parameters<typeof t>[0]));
+      } else if (res.error === "has_data") {
+        toast.error(t("users.deleteHasDataError" as Parameters<typeof t>[0]));
+      } else {
+        toast.error(t("users.deleteError" as Parameters<typeof t>[0]));
+      }
+    });
+  }
 
   return (
     <div className="space-y-4">
@@ -464,10 +518,10 @@ function UsersTab({
             <h3 className="text-sm font-semibold">{t("users.title")}</h3>
             <p className="text-xs text-muted-foreground mt-0.5">{t("users.subtitle")}</p>
           </div>
-          {canInvite && (
-            <Button size="sm" onClick={() => { setDialogOpen(true); setInviteMsg(null); }}>
+          {canManage && (
+            <Button size="sm" onClick={() => { setAddOpen(true); setAddError(null); }}>
               <UserPlus className="h-4 w-4 me-1.5" />
-              {t("users.inviteBtn" as Parameters<typeof t>[0])}
+              {t("users.addBtn" as Parameters<typeof t>[0])}
             </Button>
           )}
         </div>
@@ -481,6 +535,9 @@ function UsersTab({
                   <th className="text-start font-medium text-muted-foreground px-4 py-3 text-xs hidden sm:table-cell">{t("users.colEmail")}</th>
                   <th className="text-start font-medium text-muted-foreground px-4 py-3 text-xs">{t("users.colRole")}</th>
                   <th className="text-center font-medium text-muted-foreground px-4 py-3 text-xs">{t("users.colActive")}</th>
+                  {canManage && (
+                    <th className="text-center font-medium text-muted-foreground px-4 py-3 text-xs">{t("users.colActions" as Parameters<typeof t>[0])}</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -505,7 +562,7 @@ function UsersTab({
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-xs hidden sm:table-cell">{u.email}</td>
                     <td className="px-4 py-3">
-                      <Select value={u.role} onValueChange={(v) => handleRoleChange(u.id, v)}>
+                      <Select value={u.role} onValueChange={(v) => handleRoleChange(u.id, v)} disabled={!canManage}>
                         <SelectTrigger className="h-7 w-[160px] text-xs">
                           <SelectValue />
                         </SelectTrigger>
@@ -523,9 +580,47 @@ function UsersTab({
                         <Switch
                           checked={u.active}
                           onCheckedChange={(v) => handleToggleActive(u.id, v)}
+                          disabled={!canManage}
                         />
                       </div>
                     </td>
+                    {canManage && (
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            title={t("users.editBtn" as Parameters<typeof t>[0])}
+                            onClick={() => openEdit(u)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            title={t("users.resetPwBtn" as Parameters<typeof t>[0])}
+                            disabled={busyId === u.id}
+                            onClick={() => handleResetPassword(u.id)}
+                          >
+                            {busyId === u.id
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : <KeyRound className="h-3.5 w-3.5" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            title={t("users.deleteBtn" as Parameters<typeof t>[0])}
+                            disabled={busyId === u.id}
+                            onClick={() => handleDelete(u.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -537,173 +632,121 @@ function UsersTab({
         </div>
       </div>
 
-      {/* ── Pending invitations ──────────────────────────────────────────── */}
-      {canInvite && (
-        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold">{t("users.pendingTitle" as Parameters<typeof t>[0])}</h3>
-            {invitations.length > 0 && (
-              <Badge variant="outline" className="text-[10px] ms-1">{invitations.length}</Badge>
-            )}
-          </div>
-          <Separator />
-          {invitations.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              {t("users.noPending" as Parameters<typeof t>[0])}
-            </p>
-          ) : (
-            <div className="rounded-lg border border-border overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/40">
-                    <tr>
-                      <th className="text-start font-medium text-muted-foreground px-4 py-3 text-xs">
-                        {t("users.pendingColEmail" as Parameters<typeof t>[0])}
-                      </th>
-                      <th className="text-start font-medium text-muted-foreground px-4 py-3 text-xs hidden sm:table-cell">
-                        {t("users.pendingColRole" as Parameters<typeof t>[0])}
-                      </th>
-                      <th className="text-start font-medium text-muted-foreground px-4 py-3 text-xs hidden md:table-cell">
-                        {t("users.pendingColExpires" as Parameters<typeof t>[0])}
-                      </th>
-                      <th className="text-center font-medium text-muted-foreground px-4 py-3 text-xs">
-                        {t("users.pendingColStatus" as Parameters<typeof t>[0])}
-                      </th>
-                      <th className="px-4 py-3" />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {invitations.map((inv) => {
-                      const expiresDate = new Date(inv.expiresAt);
-                      const expired = expiresDate < now;
-                      return (
-                        <tr key={inv.id} className="hover:bg-muted/20 transition-colors">
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                                <Mail className="h-3.5 w-3.5" />
-                              </div>
-                              <span className="text-sm">{inv.email}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 hidden sm:table-cell">
-                            <Badge
-                              variant="outline"
-                              className={`text-[10px] px-1.5 py-0 ${ROLE_BADGE_CLS[inv.role] ?? ""}`}
-                            >
-                              {tRole(inv.role)}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">
-                            {expiresDate.toLocaleDateString()}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <Badge
-                              variant="outline"
-                              className={expired
-                                ? "text-[10px] bg-red-50 text-red-600 border-red-200"
-                                : "text-[10px] bg-amber-50 text-amber-600 border-amber-200"}
-                            >
-                              {expired
-                                ? t("users.statusExpired" as Parameters<typeof t>[0])
-                                : t("users.statusPending" as Parameters<typeof t>[0])}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center justify-end gap-1">
-                              {!expired && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 px-2 text-xs"
-                                  onClick={() => handleResend(inv.id)}
-                                >
-                                  <RefreshCw className="h-3 w-3 me-1" />
-                                  {t("users.actionResend" as Parameters<typeof t>[0])}
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                                onClick={() => handleCancel(inv.id)}
-                              >
-                                <X className="h-3 w-3 me-1" />
-                                {t("users.actionCancel" as Parameters<typeof t>[0])}
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Invite dialog ──────────────────────────────────────────────── */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {/* ── Add dialog ─────────────────────────────────────────────────── */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("users.inviteDialogTitle" as Parameters<typeof t>[0])}</DialogTitle>
-            <DialogDescription>{t("users.inviteDialogSubtitle" as Parameters<typeof t>[0])}</DialogDescription>
+            <DialogTitle>{t("users.addDialogTitle" as Parameters<typeof t>[0])}</DialogTitle>
+            <DialogDescription>{t("users.addDialogSubtitle" as Parameters<typeof t>[0])}</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleInvite} className="space-y-4 mt-2">
+          <form onSubmit={handleAdd} className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label htmlFor="invite-email">
-                {t("users.inviteEmailLabel" as Parameters<typeof t>[0])}
-              </Label>
+              <Label htmlFor="add-name">{t("users.nameLabel" as Parameters<typeof t>[0])}</Label>
+              <Input id="add-name" required value={addName} onChange={(e) => setAddName(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="add-email">{t("users.emailLabel" as Parameters<typeof t>[0])}</Label>
               <Input
-                id="invite-email"
+                id="add-email"
                 type="email"
                 required
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder={t("users.inviteEmailPlaceholder" as Parameters<typeof t>[0])}
+                value={addEmail}
+                onChange={(e) => setAddEmail(e.target.value)}
+                placeholder={t("users.emailPlaceholder" as Parameters<typeof t>[0])}
                 dir="ltr"
               />
             </div>
             <div className="space-y-1.5">
-              <Label>{t("users.inviteRoleLabel" as Parameters<typeof t>[0])}</Label>
-              <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as typeof inviteRole)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+              <Label>{t("users.roleLabel" as Parameters<typeof t>[0])}</Label>
+              <Select value={addRole} onValueChange={(v) => setAddRole(v as typeof addRole)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {ROLE_VALUES.map((rv) => (
-                    <SelectItem key={rv} value={rv}>
-                      {tRole(rv)}
-                    </SelectItem>
+                    <SelectItem key={rv} value={rv}>{tRole(rv)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="add-phone">{t("users.phoneLabel" as Parameters<typeof t>[0])}</Label>
+              <Input id="add-phone" value={addPhone} onChange={(e) => setAddPhone(e.target.value)} dir="ltr" />
+            </div>
 
-            {inviteMsg && (
-              <p className={`rounded-lg px-3 py-2 text-sm border ${
-                inviteMsg.type === "ok"
-                  ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                  : inviteMsg.type === "warn"
-                  ? "bg-amber-50 border-amber-200 text-amber-700"
-                  : "bg-red-50 border-red-200 text-red-600"
-              }`}>
-                {inviteMsg.text}
+            {addError && (
+              <p className="rounded-lg px-3 py-2 text-sm border bg-red-50 border-red-200 text-red-600">
+                {addError}
               </p>
             )}
 
             <div className="flex justify-end gap-2 pt-1">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
                 {t("users.actionCancel" as Parameters<typeof t>[0])}
               </Button>
-              <Button type="submit" disabled={inviting}>
-                {inviting ? (
-                  <><Loader2 className="h-4 w-4 me-1.5 animate-spin" />{t("users.inviteSending" as Parameters<typeof t>[0])}</>
+              <Button type="submit" disabled={adding}>
+                {adding ? (
+                  <><Loader2 className="h-4 w-4 me-1.5 animate-spin" />{t("users.createSending" as Parameters<typeof t>[0])}</>
                 ) : (
-                  <><UserPlus className="h-4 w-4 me-1.5" />{t("users.inviteSend" as Parameters<typeof t>[0])}</>
+                  <><UserPlus className="h-4 w-4 me-1.5" />{t("users.createSend" as Parameters<typeof t>[0])}</>
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Edit dialog ────────────────────────────────────────────────── */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("users.editDialogTitle" as Parameters<typeof t>[0])}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-name">{t("users.nameLabel" as Parameters<typeof t>[0])}</Label>
+              <Input id="edit-name" required value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-email">{t("users.emailLabel" as Parameters<typeof t>[0])}</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                required
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                dir="ltr"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("users.roleLabel" as Parameters<typeof t>[0])}</Label>
+              <Select value={editRole} onValueChange={(v) => setEditRole(v as typeof editRole)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ROLE_VALUES.map((rv) => (
+                    <SelectItem key={rv} value={rv}>{tRole(rv)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-phone">{t("users.phoneLabel" as Parameters<typeof t>[0])}</Label>
+              <Input id="edit-phone" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} dir="ltr" />
+            </div>
+
+            {editError && (
+              <p className="rounded-lg px-3 py-2 text-sm border bg-red-50 border-red-200 text-red-600">
+                {editError}
+              </p>
+            )}
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>
+                {t("users.actionCancel" as Parameters<typeof t>[0])}
+              </Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? (
+                  <><Loader2 className="h-4 w-4 me-1.5 animate-spin" />{t("users.saving" as Parameters<typeof t>[0])}</>
+                ) : (
+                  <><Save className="h-4 w-4 me-1.5" />{t("users.save" as Parameters<typeof t>[0])}</>
                 )}
               </Button>
             </div>
@@ -1053,13 +1096,11 @@ const TAB_VALUES: TabValue[] = ["company", "financials", "documents", "preferenc
 export function SettingsTabs({
   systemSettings,
   users,
-  invitations,
-  canInvite,
+  canManage,
 }: {
   systemSettings: Record<string, string>;
   users: User[];
-  invitations: Invitation[];
-  canInvite: boolean;
+  canManage: boolean;
 }) {
   const t      = useTranslations("settings");
   const locale = useLocale();
@@ -1086,7 +1127,7 @@ export function SettingsTabs({
       <TabsContent value="financials"  className="pt-5"><FinancialsTab  initial={systemSettings} /></TabsContent>
       <TabsContent value="documents"   className="pt-5"><DocumentsTab   initial={systemSettings} /></TabsContent>
       <TabsContent value="preferences" className="pt-5"><PreferencesTab /></TabsContent>
-      <TabsContent value="users"       className="pt-5"><UsersTab       initialUsers={users} initialInvitations={invitations} canInvite={canInvite} /></TabsContent>
+      <TabsContent value="users"       className="pt-5"><UsersTab       initialUsers={users} canManage={canManage} /></TabsContent>
       <TabsContent value="appearance"  className="pt-5"><AppearanceTab  /></TabsContent>
     </Tabs>
   );

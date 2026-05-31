@@ -10,7 +10,10 @@ import { DEFAULT_PASSWORD } from "@/lib/auth-constants";
 import { sendCredentialsEmail } from "@/lib/email";
 
 export async function getUsers() {
+  const session = await getSession();
+  if (!session?.companyId) return [];
   return db.user.findMany({
+    where: { companyId: session.companyId },
     orderBy: [{ role: "asc" }, { name: "asc" }],
     select: {
       id: true,
@@ -56,14 +59,20 @@ export async function getCurrentUser() {
 }
 
 export async function updateUserRole(id: string, role: UserRole) {
-  await requireRole(ADMIN_ROLES);
+  const session = await requireRole(ADMIN_ROLES);
+  const target = await db.user.findUnique({ where: { id }, select: { companyId: true } });
+  if (!target || target.companyId !== session.companyId)
+    return { success: false as const, error: "not_found" as const };
   await db.user.update({ where: { id }, data: { role } });
   revalidatePath("/settings");
   return { success: true as const };
 }
 
 export async function toggleUserActive(id: string, active: boolean) {
-  await requireRole(ADMIN_ROLES);
+  const session = await requireRole(ADMIN_ROLES);
+  const target = await db.user.findUnique({ where: { id }, select: { companyId: true } });
+  if (!target || target.companyId !== session.companyId)
+    return { success: false as const, error: "not_found" as const };
   await db.user.update({ where: { id }, data: { active } });
   revalidatePath("/settings");
   return { success: true as const };
@@ -97,7 +106,8 @@ export async function createUser(data: {
   role: UserRole;
   phone?: string;
 }) {
-  await requireRole(ADMIN_ROLES);
+  const session = await requireRole(ADMIN_ROLES);
+  if (!session.companyId) return { success: false as const, error: "no_company" as const };
   const email = data.email.trim().toLowerCase();
   const name = data.name.trim();
   if (!name || !email) return { success: false as const, error: "invalid" as const };
@@ -112,6 +122,7 @@ export async function createUser(data: {
       phone: data.phone?.trim() || null,
       passwordHash,
       active: true,
+      companyId: session.companyId,
     },
   });
   let emailSent = true;
@@ -149,7 +160,10 @@ export async function updateUser(
   id: string,
   data: { name: string; email: string; role: UserRole; phone?: string }
 ) {
-  await requireRole(ADMIN_ROLES);
+  const session = await requireRole(ADMIN_ROLES);
+  const target = await db.user.findUnique({ where: { id }, select: { companyId: true } });
+  if (!target || target.companyId !== session.companyId)
+    return { success: false as const, error: "not_found" as const };
   const email = data.email.trim().toLowerCase();
   const name = data.name.trim();
   if (!name || !email) return { success: false as const, error: "invalid" as const };
@@ -164,7 +178,10 @@ export async function updateUser(
 }
 
 export async function resetUserPassword(id: string) {
-  await requireRole(ADMIN_ROLES);
+  const session = await requireRole(ADMIN_ROLES);
+  const target = await db.user.findUnique({ where: { id }, select: { companyId: true } });
+  if (!target || target.companyId !== session.companyId)
+    return { success: false as const, tempPassword: "" };
   const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 12);
   await db.user.update({ where: { id }, data: { passwordHash } });
   revalidatePath("/settings");
@@ -175,7 +192,7 @@ export async function deleteUser(id: string) {
   const session = await requireRole(ADMIN_ROLES);
   if (session.userId === id) return { success: false as const, error: "self" as const };
   const counts = await db.user.findUnique({
-    where: { id },
+    where: { id, companyId: session.companyId },
     select: {
       _count: {
         select: {

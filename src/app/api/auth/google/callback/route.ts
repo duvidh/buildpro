@@ -34,10 +34,16 @@ export async function GET(req: NextRequest) {
   const email = profile.email.toLowerCase();
 
   try {
-    let user = await db.user.findUnique({ where: { email } });
+    // Case-insensitive search to match pre-registered invite records regardless
+    // of how the email was originally stored.
+    let user = await db.user.findFirst({
+      where: { email: { equals: email, mode: "insensitive" } },
+    });
 
     if (user) {
-      // Existing account — mark provider, backfill avatar if missing.
+      // Existing account (including pre-registered invites) — mark provider and
+      // backfill avatar if missing. companyId and role are intentionally NOT
+      // modified so invite-assigned values are strictly preserved.
       user = await db.user.update({
         where: { id: user.id },
         data: {
@@ -46,7 +52,7 @@ export async function GET(req: NextRequest) {
         },
       });
     } else {
-      // New account — no password, default role, no company yet.
+      // Truly new account — no password, default role, no company yet.
       user = await db.user.create({
         data: {
           name: profile.name || email,

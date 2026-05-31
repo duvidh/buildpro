@@ -59,7 +59,8 @@
     "subcontractors": "Vendors & Subs",
     "catalog": "Catalog",
     "finance": "Finance",
-    "settings": "Settings"
+    "settings": "Settings",
+    "employees": "Employees"
   },
   "common": {
     "newClient": "New Client",
@@ -2474,5 +2475,39 @@
     "searching": "Searching…",
     "noResults": "No results found",
     "typeMore": "Keep typing…"
+  },
+  "employees": {
+    "title": "Team",
+    "subtitle": "Manage your company's employees and invite new teammates",
+    "inviteBtn": "Invite Employee",
+    "inviteDialogTitle": "Invite New Employee",
+    "inviteDialogSubtitle": "The employee will sign in with Google using this email and join your company automatically.",
+    "nameLabel": "Full name",
+    "namePlaceholder": "John Doe",
+    "emailLabel": "Email (Google)",
+    "emailPlaceholder": "employee@gmail.com",
+    "roleLabel": "Role",
+    "submit": "Send invite",
+    "submitting": "Sending...",
+    "cancel": "Cancel",
+    "inviteSuccess": "Invitation sent successfully",
+    "errorExists": "A user with this email already exists",
+    "errorEmail": "The email address is invalid",
+    "errorNoCompany": "No company is associated with your account",
+    "errorGeneric": "Something went wrong. Please try again",
+    "colUser": "Employee",
+    "colEmail": "Email",
+    "colRole": "Role",
+    "colStatus": "Status",
+    "colActions": "Actions",
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
+    "pending": "Pending first login",
+    "googleLinked": "Google",
+    "deactivate": "Deactivate",
+    "deactivateSelfError": "You cannot deactivate your own account",
+    "deactivateSuccess": "Employee deactivated",
+    "empty": "No employees yet — invite your first teammate.",
+    "roleChangeSuccess": "Role updated"
   }
 }

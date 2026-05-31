@@ -203,6 +203,101 @@ export async function deleteUser(id: string) {
   return { success: true as const };
 }
 
+// ─── Employees (company-scoped, Google pre-registration) ──────────────────────
+
+export async function getCompanyUsers() {
+  const session = await requireRole(ADMIN_ROLES);
+  if (!session.companyId) return [];
+  return db.user.findMany({
+    where: { companyId: session.companyId },
+    orderBy: [{ role: "asc" }, { name: "asc" }],
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      phone: true,
+      avatarUrl: true,
+      active: true,
+      authProvider: true,
+      companyId: true,
+      createdAt: true,
+    },
+  });
+}
+
+export async function inviteEmployee(data: {
+  name: string;
+  email: string;
+  role: UserRole;
+}) {
+  const session = await requireRole(ADMIN_ROLES);
+  if (!session.companyId) return { success: false as const, error: "no_company" as const };
+  const email = data.email.trim().toLowerCase();
+  const name = data.name.trim();
+  if (!name || !email) return { success: false as const, error: "invalid" as const };
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+    return { success: false as const, error: "invalid_email" as const };
+  const existing = await db.user.findUnique({ where: { email } });
+  if (existing) return { success: false as const, error: "user_exists" as const };
+  const user = await db.user.create({
+    data: {
+      name,
+      email,
+      role: data.role,
+      passwordHash: null, // Google-login only (pre-registration)
+      authProvider: null, // set to "google" on first actual Google login
+      active: true,
+      companyId: session.companyId,
+    },
+  });
+  revalidatePath("/employees");
+  return {
+    success: true as const,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone,
+      avatarUrl: user.avatarUrl,
+      active: user.active,
+      authProvider: user.authProvider,
+      companyId: user.companyId,
+      createdAt: user.createdAt,
+    },
+  };
+}
+
+export async function setEmployeeRole(id: string, role: UserRole) {
+  const session = await requireRole(ADMIN_ROLES);
+  const target = await db.user.findUnique({
+    where: { id },
+    select: { companyId: true },
+  });
+  if (!target || target.companyId !== session.companyId)
+    return { success: false as const, error: "not_found" as const };
+  await db.user.update({ where: { id }, data: { role } });
+  revalidatePath("/employees");
+  return { success: true as const };
+}
+
+export async function removeEmployee(id: string) {
+  const session = await requireRole(ADMIN_ROLES);
+  if (session.userId === id) return { success: false as const, error: "self" as const };
+  const target = await db.user.findUnique({
+    where: { id },
+    select: { companyId: true },
+  });
+  if (!target || target.companyId !== session.companyId)
+    return { success: false as const, error: "not_found" as const };
+  // Deactivate rather than delete — preserves FK integrity and matches
+  // the existing toggleUserActive philosophy.
+  await db.user.update({ where: { id }, data: { active: false } });
+  revalidatePath("/employees");
+  return { success: true as const };
+}
+
 export async function seedUsers() {
   const count = await db.user.count();
   if (count > 0) return { success: true as const, skipped: true };

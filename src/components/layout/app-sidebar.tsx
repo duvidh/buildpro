@@ -18,6 +18,7 @@ import {
   Settings,
   Building2,
   HardHat,
+  UsersRound,
 } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,7 @@ const navGroups: NavGroup[] = [
       { href: "/clients",   icon: Users,           labelKey: "clients",         roles: ["ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER"] },
       { href: "/projects",  icon: FolderKanban,    labelKey: "projects" },
       { href: "/quotes",    icon: FileText,         labelKey: "quotes",          roles: ["ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER"] },
+      { href: "/employees", icon: UsersRound,       labelKey: "employees",       roles: ["ADMIN"] },
     ],
   },
   {

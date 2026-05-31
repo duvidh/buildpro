@@ -59,7 +59,8 @@
     "subcontractors": "ספקים וקבלנים",
     "catalog": "קטלוג",
     "finance": "כספים",
-    "settings": "הגדרות"
+    "settings": "הגדרות",
+    "employees": "צוות"
   },
   "common": {
     "newClient": "לקוח חדש",
@@ -2474,5 +2475,39 @@
     "searching": "מחפש…",
     "noResults": "לא נמצאו תוצאות",
     "typeMore": "המשך להקליד…"
+  },
+  "employees": {
+    "title": "צוות",
+    "subtitle": "ניהול עובדי החברה והזמנת עובדים חדשים",
+    "inviteBtn": "הזמנת עובד",
+    "inviteDialogTitle": "הזמנת עובד חדש",
+    "inviteDialogSubtitle": "העובד יתחבר באמצעות חשבון Google עם כתובת מייל זו ויצורף לחברה שלך באופן אוטומטי.",
+    "nameLabel": "שם מלא",
+    "namePlaceholder": "ישראל ישראלי",
+    "emailLabel": "כתובת מייל (Google)",
+    "emailPlaceholder": "employee@gmail.com",
+    "roleLabel": "תפקיד",
+    "submit": "שלח הזמנה",
+    "submitting": "שולח...",
+    "cancel": "ביטול",
+    "inviteSuccess": "ההזמנה נשלחה בהצלחה",
+    "errorExists": "משתמש עם כתובת מייל זו כבר קיים",
+    "errorEmail": "כתובת המייל אינה תקינה",
+    "errorNoCompany": "לא נמצאה חברה משויכת לחשבון שלך",
+    "errorGeneric": "אירעה שגיאה. נסה שוב",
+    "colUser": "עובד",
+    "colEmail": "מייל",
+    "colRole": "תפקיד",
+    "colStatus": "סטטוס",
+    "colActions": "פעולות",
+    "statusActive": "פעיל",
+    "statusInactive": "לא פעיל",
+    "pending": "ממתין לכניסה ראשונה",
+    "googleLinked": "Google",
+    "deactivate": "השבת",
+    "deactivateSelfError": "לא ניתן להשבית את המשתמש שלך",
+    "deactivateSuccess": "העובד הושבת",
+    "empty": "אין עדיין עובדים — הזמן את חבר הצוות הראשון שלך.",
+    "roleChangeSuccess": "התפקיד עודכן"
   }
 }

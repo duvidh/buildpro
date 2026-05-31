@@ -477,7 +477,7 @@ export function CustomDashboardClient({
             <Button
               variant="outline"
               size="sm"
-              className="h-8 gap-1.5 text-xs"
+              className="h-8 gap-1.5 text-xs hidden lg:inline-flex"
               onClick={handleToggleEdit}
             >
               <Settings2 className="h-3.5 w-3.5" />
@@ -499,11 +499,11 @@ export function CustomDashboardClient({
         </div>
       )}
 
-      {/* ── Grid ── */}
+      {/* ── Grid (desktop: draggable react-grid-layout, lg and up) ── */}
       <div
         dir="ltr"
         className={cn(
-          "relative transition-all duration-300",
+          "relative transition-all duration-300 hidden lg:block",
           editMode && "rounded-2xl bg-muted/20 border-2 border-dashed border-border/60 p-2 -m-2",
         )}
       >
@@ -531,6 +531,24 @@ export function CustomDashboardClient({
             </div>
           ))}
         </AutoGrid>
+      </div>
+
+      {/* ── Mobile stacked grid (below lg): 1 widget per row by default, */}
+      {/*    up to 2 per row on larger phones. Not draggable.            */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:hidden">
+        {[...renderableLayout]
+          .sort((a, b) => a.y - b.y || a.x - b.x)
+          .map((item) => (
+            <div
+              key={item.i}
+              className={cn(item.w >= 7 && "sm:col-span-2")}
+              style={{ minHeight: item.h * 80 }}
+            >
+              <WidgetShell id={item.i} editMode={false} onRemove={() => {}}>
+                <WidgetContent id={item.i} data={dashboardData} />
+              </WidgetShell>
+            </div>
+          ))}
       </div>
 
       {/* ── Widget gallery (floating panel) ── */}

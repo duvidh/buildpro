@@ -185,37 +185,70 @@ enum TaskType {
   EMAIL
 }
 
+// ─── Tenancy ─────────────────────────────────────────────────────────────────
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users             User[]
+  leads             Lead[]
+  clients           Client[]
+  projects          Project[]
+  tasks             Task[]
+  catalogItems      CatalogItem[]
+  dailyLogs         DailyLog[]
+  employees         Employee[]
+  equipment         Equipment[]
+  quotes            Quote[]
+  invoices          Invoice[]
+  suppliers         Supplier[]
+  contracts         Contract[]
+  invitations       Invitation[]
+  notifications     Notification[]
+  activityLogs      ActivityLog[]
+  communicationLogs CommunicationLog[]
+}
+
 // ─── Users & Auth ────────────────────────────────────────────────────────────
 
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         UserRole @default(FIELD_WORKER)
-  phone            String?
-  avatarUrl        String?
-  active           Boolean  @default(true)
-  dashboardLayout  Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String
+  email           String   @unique
+  passwordHash    String?
+  authProvider    String?
+  role            UserRole @default(FIELD_WORKER)
+  phone           String?
+  avatarUrl       String?
+  active          Boolean  @default(true)
+  dashboardLayout Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  assignedLeads        Lead[]          @relation("LeadAssignee")
-  managedProjects      Project[]       @relation("ProjectManager")
-  projectMembers       ProjectMember[]
-  uploadedFiles        ProjectFile[]
-  assignedTasks        Task[]          @relation("TaskAssignee")
-  supervisedLogs       DailyLog[]      @relation("LogSupervisor")
-  approvedTimeEntries  TimeEntry[]     @relation("TimeEntryApprover")
-  approvedExpenses     Expense[]       @relation("ExpenseApprover")
-  approvedChangeRequests ChangeRequest[] @relation("CRApprover")
-  notifications        Notification[]
-  activityLogs         ActivityLog[]
-  communicationLogs    CommunicationLog[]
-  sentInvitations      Invitation[]    @relation("SentInvitations")
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  assignedLeads          Lead[]             @relation("LeadAssignee")
+  managedProjects        Project[]          @relation("ProjectManager")
+  projectMembers         ProjectMember[]
+  uploadedFiles          ProjectFile[]
+  assignedTasks          Task[]             @relation("TaskAssignee")
+  supervisedLogs         DailyLog[]         @relation("LogSupervisor")
+  approvedTimeEntries    TimeEntry[]        @relation("TimeEntryApprover")
+  approvedExpenses       Expense[]          @relation("ExpenseApprover")
+  approvedChangeRequests ChangeRequest[]    @relation("CRApprover")
+  notifications          Notification[]
+  activityLogs           ActivityLog[]
+  communicationLogs      CommunicationLog[]
+  sentInvitations        Invitation[]       @relation("SentInvitations")
 }
 
 model Invitation {
+  companyId   String?
+  company     Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
   id          String    @id @default(cuid())
   email       String
   role        UserRole  @default(FIELD_WORKER)
@@ -230,29 +263,31 @@ model Invitation {
 // ─── CRM ─────────────────────────────────────────────────────────────────────
 
 model Lead {
-  id              String      @id @default(cuid())
-  name            String
-  phone           String
-  phone2          String?
-  email           String?
-  propertyAddress String?
-  city            String?
-  estimatedSize   Float?
-  constructionTypes String[]
-  source          LeadSource  @default(OTHER)
-  status          LeadStatus  @default(NEW)
-  urgency         LeadUrgency @default(MEDIUM)
-  budget          Float?
-  notes           String?
-  assignedToId         String?
-  assignedTo           User?     @relation("LeadAssignee", fields: [assignedToId], references: [id])
-  assignedEmployeeId   String?
-  assignedEmployee     Employee? @relation("LeadEmployee", fields: [assignedEmployeeId], references: [id])
-  convertedAt     DateTime?
-  convertedToId   String?
-  client          Client?     @relation("LeadToClient", fields: [convertedToId], references: [id], onDelete: SetNull)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  companyId          String?
+  company            Company?    @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  id                 String      @id @default(cuid())
+  name               String
+  phone              String
+  phone2             String?
+  email              String?
+  propertyAddress    String?
+  city               String?
+  estimatedSize      Float?
+  constructionTypes  String[]
+  source             LeadSource  @default(OTHER)
+  status             LeadStatus  @default(NEW)
+  urgency            LeadUrgency @default(MEDIUM)
+  budget             Float?
+  notes              String?
+  assignedToId       String?
+  assignedTo         User?       @relation("LeadAssignee", fields: [assignedToId], references: [id])
+  assignedEmployeeId String?
+  assignedEmployee   Employee?   @relation("LeadEmployee", fields: [assignedEmployeeId], references: [id])
+  convertedAt        DateTime?
+  convertedToId      String?
+  client             Client?     @relation("LeadToClient", fields: [convertedToId], references: [id], onDelete: SetNull)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
   quotes         Quote[]
   communications CommunicationLog[]
@@ -261,6 +296,8 @@ model Lead {
 }
 
 model Client {
+  companyId     String?
+  company       Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
   id            String   @id @default(cuid())
   name          String
   contactName   String?
@@ -275,7 +312,7 @@ model Client {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  leads          Lead[]    @relation("LeadToClient")
+  leads          Lead[]             @relation("LeadToClient")
   projects       Project[]
   quotes         Quote[]
   invoices       Invoice[]
@@ -287,6 +324,8 @@ model Client {
 // ─── Projects ────────────────────────────────────────────────────────────────
 
 model Project {
+  companyId       String?
+  company         Company?      @relation(fields: [companyId], references: [id], onDelete: SetNull)
   id              String        @id @default(cuid())
   name            String
   description     String?
@@ -394,30 +433,32 @@ model Milestone {
 }
 
 model Task {
-  id           String       @id @default(cuid())
-  projectId    String?
-  project      Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  leadId       String?
-  lead         Lead?        @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  clientId     String?
-  client       Client?      @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  taskType     TaskType     @default(GENERAL)
-  milestoneId  String?
-  milestone    Milestone?   @relation(fields: [milestoneId], references: [id])
-  assignedToId String?
-  assignedTo   User?        @relation("TaskAssignee", fields: [assignedToId], references: [id])
-  name         String
-  description  String?
-  status       TaskStatus   @default(TODO)
-  priority     TaskPriority @default(MEDIUM)
-  startDate    DateTime?
-  dueDate      DateTime?
-  completedAt  DateTime?
-  dependsOnId  String?
-  dependsOn    Task?        @relation("TaskDependencies", fields: [dependsOnId], references: [id], onDelete: SetNull)
-  dependentTasks Task[]     @relation("TaskDependencies")
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  companyId      String?
+  company        Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  id             String       @id @default(cuid())
+  projectId      String?
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  leadId         String?
+  lead           Lead?        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  clientId       String?
+  client         Client?      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  taskType       TaskType     @default(GENERAL)
+  milestoneId    String?
+  milestone      Milestone?   @relation(fields: [milestoneId], references: [id])
+  assignedToId   String?
+  assignedTo     User?        @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  name           String
+  description    String?
+  status         TaskStatus   @default(TODO)
+  priority       TaskPriority @default(MEDIUM)
+  startDate      DateTime?
+  dueDate        DateTime?
+  completedAt    DateTime?
+  dependsOnId    String?
+  dependsOn      Task?        @relation("TaskDependencies", fields: [dependsOnId], references: [id], onDelete: SetNull)
+  dependentTasks Task[]       @relation("TaskDependencies")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   prefabElements PrefabElement[]
 }
@@ -425,6 +466,8 @@ model Task {
 // ─── WBS & Catalog ───────────────────────────────────────────────────────────
 
 model CatalogItem {
+  companyId   String?
+  company     Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
   id          String   @id @default(cuid())
   name        String
   sku         String?
@@ -532,6 +575,8 @@ model ChangeRequest {
 }
 
 model DailyLog {
+  companyId         String?
+  company           Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
   id                String   @id @default(cuid())
   projectId         String
   project           Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -550,6 +595,8 @@ model DailyLog {
 // ─── HR & Field ──────────────────────────────────────────────────────────────
 
 model Employee {
+  companyId  String?
+  company    Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
   id         String    @id @default(cuid())
   name       String
   phone      String?
@@ -604,6 +651,8 @@ model Expense {
 }
 
 model Equipment {
+  companyId        String?
+  company          Company?        @relation(fields: [companyId], references: [id], onDelete: SetNull)
   id               String          @id @default(cuid())
   name             String
   code             String?         @unique
@@ -619,33 +668,35 @@ model Equipment {
 }
 
 model EquipmentLog {
-  id           String     @id @default(cuid())
+  id           String    @id @default(cuid())
   equipmentId  String
-  equipment    Equipment  @relation(fields: [equipmentId], references: [id])
+  equipment    Equipment @relation(fields: [equipmentId], references: [id])
   projectId    String
-  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   employeeId   String?
-  employee     Employee?  @relation(fields: [employeeId], references: [id])
+  employee     Employee? @relation(fields: [employeeId], references: [id])
   checkOutDate DateTime
   checkInDate  DateTime?
   notes        String?
-  createdAt    DateTime   @default(now())
+  createdAt    DateTime  @default(now())
 }
 
 // ─── Quotes & Invoices ───────────────────────────────────────────────────────
 
 model Quote {
-  id          String      @id @default(cuid())
-  clientId    String?
-  client      Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  projectId   String?
-  project     Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  leadId      String?
-  lead        Lead?       @relation(fields: [leadId], references: [id])
-  quoteNumber String?
-  date        DateTime    @default(now())
-  validUntil  DateTime?
-  status      QuoteStatus @default(DRAFT)
+  companyId          String?
+  company            Company?    @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  id                 String      @id @default(cuid())
+  clientId           String?
+  client             Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  projectId          String?
+  project            Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  leadId             String?
+  lead               Lead?       @relation(fields: [leadId], references: [id])
+  quoteNumber        String?
+  date               DateTime    @default(now())
+  validUntil         DateTime?
+  status             QuoteStatus @default(DRAFT)
   subtotal           Float       @default(0)
   contingencyPercent Float       @default(0)
   taxPercent         Float       @default(17)
@@ -661,12 +712,12 @@ model Quote {
 }
 
 model QuoteCategory {
-  id        String    @id @default(cuid())
+  id        String   @id @default(cuid())
   quoteId   String
-  quote     Quote     @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  quote     Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   name      String
-  order     Int       @default(0)
-  createdAt DateTime  @default(now())
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
 
   items QuoteItem[]
 }
@@ -692,6 +743,8 @@ model QuoteItem {
 }
 
 model Invoice {
+  companyId     String?
+  company       Company?      @relation(fields: [companyId], references: [id], onDelete: SetNull)
   id            String        @id @default(cuid())
   clientId      String
   client        Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
@@ -730,6 +783,8 @@ model Payment {
 // ─── Procurement ─────────────────────────────────────────────────────────────
 
 model Supplier {
+  companyId   String?
+  company     Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
   id          String       @id @default(cuid())
   name        String
   contactName String?
@@ -748,6 +803,8 @@ model Supplier {
 }
 
 model Contract {
+  companyId         String?
+  company           Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
   id                String         @id @default(cuid())
   projectId         String
   project           Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -800,6 +857,8 @@ model PrefabElement {
 // ─── System ──────────────────────────────────────────────────────────────────
 
 model Notification {
+  companyId   String?
+  company     Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
   id          String   @id @default(cuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -813,6 +872,8 @@ model Notification {
 }
 
 model ActivityLog {
+  companyId  String?
+  company    Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
   id         String   @id @default(cuid())
   userId     String?
   user       User?    @relation(fields: [userId], references: [id])
@@ -824,6 +885,8 @@ model ActivityLog {
 }
 
 model CommunicationLog {
+  companyId String?
+  company   Company?          @relation(fields: [companyId], references: [id], onDelete: SetNull)
   id        String            @id @default(cuid())
   type      CommunicationType @default(NOTE)
   content   String

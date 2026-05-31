@@ -25,6 +25,7 @@ export type SessionUser = {
   role: string;
   name: string;
   email: string;
+  companyId?: string | null;
   mustChangePassword?: boolean;
 };
 

@@ -9,7 +9,21 @@
     "passwordLabel": "Password",
     "passwordPlaceholder": "••••••••",
     "submit": "Sign In",
-    "demoHint": "Demo user: admin@buildpro.co.il | Password: Admin@123"
+    "demoHint": "Demo user: admin@buildpro.co.il | Password: Admin@123",
+    "googleSignIn": "Sign in with Google",
+    "errorGoogle": "Google sign-in failed. Please try again.",
+    "errorGoogleUnconfigured": "Google sign-in is not configured."
+  },
+  "onboarding": {
+    "pageTitle": "Set up your company — BuildPro",
+    "title": "Welcome! What is the name of your construction company?",
+    "subtitle": "Let's set up your company to get started.",
+    "nameLabel": "Company name",
+    "namePlaceholder": "My Construction Co. Ltd.",
+    "submit": "Create company",
+    "submitting": "Creating...",
+    "errorRequired": "Please enter a company name",
+    "errorGeneric": "Something went wrong. Please try again."
   },
   "changePassword": {
     "pageTitle": "Change password",

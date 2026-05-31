@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { login } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,15 @@ export function LoginForm() {
   const t      = useTranslations("login");
   const locale = useLocale();
   const dir    = locale === "he" ? "rtl" : "ltr";
+
+  const searchParams = useSearchParams();
+  const urlError = searchParams.get("error");
+  const googleError =
+    urlError === "google_unconfigured"
+      ? t("errorGoogleUnconfigured")
+      : urlError === "google_failed"
+        ? t("errorGoogle")
+        : null;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4" dir={dir}>
@@ -67,9 +77,9 @@ export function LoginForm() {
               />
             </div>
 
-            {state?.error && (
+            {(state?.error || googleError) && (
               <p className="text-sm text-destructive rounded-lg bg-destructive/10 px-3 py-2">
-                {state.error}
+                {state?.error || googleError}
               </p>
             )}
 
@@ -78,6 +88,11 @@ export function LoginForm() {
               {t("submit")}
             </Button>
           </form>
+
+          {/* Google sign-in */}
+          <Button asChild variant="outline" className="w-full">
+            <a href="/api/auth/google">{t("googleSignIn")}</a>
+          </Button>
         </div>
 
         {/* Demo hint */}

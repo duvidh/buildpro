@@ -22,7 +22,8 @@ export async function login(
 
   try {
     const user = await db.user.findUnique({ where: { email } });
-    if (!user || !user.active) {
+    if (!user || !user.active || !user.passwordHash) {
+      // No passwordHash → Google-only account; can't log in with a password.
       return { error: "אימייל או סיסמה שגויים" };
     }
 
@@ -38,6 +39,7 @@ export async function login(
       role: user.role,
       name: user.name,
       email: user.email,
+      companyId: user.companyId,
       mustChangePassword: mustChange,
     });
   } catch (error) {

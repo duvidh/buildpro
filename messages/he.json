@@ -9,7 +9,21 @@
     "passwordLabel": "סיסמה",
     "passwordPlaceholder": "••••••••",
     "submit": "כניסה",
-    "demoHint": "משתמש דמו: admin@buildpro.co.il | סיסמה: Admin@123"
+    "demoHint": "משתמש דמו: admin@buildpro.co.il | סיסמה: Admin@123",
+    "googleSignIn": "התחבר עם Google",
+    "errorGoogle": "ההתחברות עם Google נכשלה. אנא נסה שוב.",
+    "errorGoogleUnconfigured": "התחברות עם Google אינה מוגדרת במערכת."
+  },
+  "onboarding": {
+    "pageTitle": "הגדרת חברה — BuildPro",
+    "title": "ברוכים הבאים! מה שם חברת הבנייה שלך?",
+    "subtitle": "בואו נגדיר את החברה שלך כדי להתחיל.",
+    "nameLabel": "שם החברה",
+    "namePlaceholder": "חברת הבנייה שלי בע\"מ",
+    "submit": "צור חברה",
+    "submitting": "יוצר...",
+    "errorRequired": "נא להזין שם חברה",
+    "errorGeneric": "אירעה שגיאה. אנא נסה שוב."
   },
   "changePassword": {
     "pageTitle": "החלפת סיסמה",

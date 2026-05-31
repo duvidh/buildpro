@@ -2210,6 +2210,8 @@
         "title": "Company Logo",
         "subtitle": "The logo appears on quotes and official documents.",
         "upload": "Upload Logo",
+        "uploading": "Uploading...",
+        "error": "Logo upload failed. Please try again.",
         "hint": "PNG, JPG up to 2 MB",
         "placeholder": "Logo"
       },

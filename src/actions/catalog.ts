@@ -77,6 +77,7 @@ type ImportRow = {
   category?: string;
   unit: string;
   unitCost?: number;
+  description?: string;
 };
 
 export async function bulkImportCatalogItems(rows: ImportRow[]) {
@@ -86,11 +87,12 @@ export async function bulkImportCatalogItems(rows: ImportRow[]) {
   }
   await db.catalogItem.createMany({
     data: valid.map((r) => ({
-      name:     r.name.trim(),
-      sku:      r.sku?.trim()      || null,
-      category: r.category?.trim() || null,
-      unit:     r.unit.trim(),
-      unitCost: r.unitCost         ?? 0,
+      name:        r.name.trim(),
+      sku:         r.sku?.trim()         || null,
+      category:    r.category?.trim()    || null,
+      unit:        r.unit.trim(),
+      unitCost:    r.unitCost            ?? 0,
+      description: r.description?.trim() || null,
     })),
     skipDuplicates: false,
   });

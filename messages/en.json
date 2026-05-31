@@ -1541,7 +1541,8 @@
       "sku": "SKU",
       "category": "Category",
       "unit": "Unit",
-      "unitCost": "Unit Cost"
+      "unitCost": "Unit Cost",
+      "description": "Description"
     },
     "toast": {
       "exportEmpty": "Catalog is empty",
@@ -1554,7 +1555,9 @@
       "name2": "Sample Item 2",
       "category1": "Flooring",
       "category2": "Labour",
-      "unit2": "hr"
+      "unit2": "hr",
+      "desc1": "Short item description",
+      "desc2": "Short labour description"
     },
     "unitDefault": "pcs",
     "validation": {

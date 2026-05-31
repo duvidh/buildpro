@@ -189,6 +189,7 @@ function ImportDialog({ onDone }: { onDone: () => void }) {
     t("csvHeaders.category"),
     t("csvHeaders.unit"),
     t("csvHeaders.unitCost"),
+    t("csvHeaders.description"),
   ];
 
   function parseFile(file: File) {
@@ -221,11 +222,12 @@ function ImportDialog({ onDone }: { onDone: () => void }) {
     if (!rawRows) return;
     const rows = rawRows
       .map((r) => ({
-        name:     r[0] ?? "",
-        sku:      r[1] ?? "",
-        category: r[2] ?? "",
-        unit:     r[3] ?? t("unitDefault"),
-        unitCost: parseFloat(r[4] ?? "0") || 0,
+        name:        r[0] ?? "",
+        sku:         r[1] ?? "",
+        category:    r[2] ?? "",
+        unit:        r[3] ?? t("unitDefault"),
+        unitCost:    parseFloat(r[4] ?? "0") || 0,
+        description: r[5] ?? "",
       }))
       .filter((r) => r.name.trim() && r.unit.trim());
 
@@ -377,6 +379,7 @@ export function CatalogManager({ initialItems }: Props) {
     t("csvHeaders.category"),
     t("csvHeaders.unit"),
     t("csvHeaders.unitCost"),
+    t("csvHeaders.description"),
   ];
 
   function handleSeed() {
@@ -402,10 +405,11 @@ export function CatalogManager({ initialItems }: Props) {
     if (initialItems.length === 0) { toast.error(t("toast.exportEmpty")); return; }
     const rows = initialItems.map((item) => [
       item.name,
-      item.sku      ?? "",
-      item.category ?? "",
+      item.sku         ?? "",
+      item.category    ?? "",
       item.unit,
       String(item.unitCost),
+      item.description ?? "",
     ]);
     downloadCsv("catalog-export.csv", csvHeaders, rows);
     toast.success(t("toast.exportSuccess", { count: rows.length }));
@@ -413,8 +417,8 @@ export function CatalogManager({ initialItems }: Props) {
 
   function handleDownloadTemplate() {
     downloadCsv("catalog-template.csv", csvHeaders, [
-      [t("templateRows.name1"), "SKU-001", t("templateRows.category1"), areaUnit, "65"],
-      [t("templateRows.name2"), "LAB-001", t("templateRows.category2"), t("templateRows.unit2"), "120"],
+      [t("templateRows.name1"), "SKU-001", t("templateRows.category1"), areaUnit, "65", t("templateRows.desc1")],
+      [t("templateRows.name2"), "LAB-001", t("templateRows.category2"), t("templateRows.unit2"), "120", t("templateRows.desc2")],
     ]);
     toast.success(t("toast.templateSuccess"));
   }

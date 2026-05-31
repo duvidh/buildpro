@@ -1541,7 +1541,8 @@
       "sku": "מק\"ט",
       "category": "קטגוריה",
       "unit": "יחידה",
-      "unitCost": "מחיר עלות"
+      "unitCost": "מחיר עלות",
+      "description": "תיאור"
     },
     "toast": {
       "exportEmpty": "הקטלוג ריק",
@@ -1554,7 +1555,9 @@
       "name2": "שם לדוגמה 2",
       "category1": "ריצוף",
       "category2": "עבודה",
-      "unit2": "שעה"
+      "unit2": "שעה",
+      "desc1": "תיאור קצר של הפריט",
+      "desc2": "תיאור קצר של העבודה"
     },
     "unitDefault": "יח'",
     "validation": {

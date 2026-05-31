@@ -833,7 +833,11 @@ export function FieldClient({ data }: { data: FieldData }) {
 
   // Expense category lookup using current locale
   function expenseCategoryLabel(key: string): string {
-    return t(`expenseCategories.${key}` as Parameters<typeof t>[0], undefined, { fallback: key });
+    try {
+      return t(`expenseCategories.${key}` as Parameters<typeof t>[0]);
+    } catch {
+      return key;
+    }
   }
 
   return (

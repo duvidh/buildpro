@@ -56,6 +56,7 @@ export async function inviteUser(email: string, role: UserRole) {
     data: { email: normalised, role, expiresAt, invitedById: session.userId },
   });
 
+  let emailSent = true;
   try {
     await sendInvitationEmail({
       to:          normalised,
@@ -64,12 +65,15 @@ export async function inviteUser(email: string, role: UserRole) {
       token:       invitation.token,
     });
   } catch (err) {
-    // Don't fail the whole operation if email sending fails — log and continue
+    // Don't fail the whole operation if email sending fails — log and continue.
+    // The caller is told (emailSent: false) so the admin can be warned that the
+    // invitation exists but the email never went out (usually a Resend config issue).
+    emailSent = false;
     console.error("[inviteUser] email send failed:", err instanceof Error ? err.message : err);
   }
 
   revalidatePath("/settings");
-  return { success: true as const, invitation };
+  return { success: true as const, invitation, emailSent };
 }
 
 export async function cancelInvitation(id: string) {

@@ -43,6 +43,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
 import { saveAllSettings } from "@/actions/settings";
 import { updateUserRole, toggleUserActive } from "@/actions/users";
 import { inviteUser, cancelInvitation, resendInvitation } from "@/actions/invitations";
@@ -319,7 +320,7 @@ function UsersTab({
   const [inviteEmail,  setInviteEmail]  = useState("");
   const [inviteRole,   setInviteRole]   = useState<typeof ROLE_VALUES[number]>("FIELD_WORKER");
   const [inviting,     setInviting]     = useState(false);
-  const [inviteMsg,    setInviteMsg]    = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [inviteMsg,    setInviteMsg]    = useState<{ type: "ok" | "warn" | "err"; text: string } | null>(null);
 
   const tRole = (r: string) => {
     try { return t(`roles.${r}` as Parameters<typeof t>[0]); } catch { return r; }
@@ -354,7 +355,13 @@ function UsersTab({
           : t("users.inviteErrorGeneric" as Parameters<typeof t>[0]),
       });
     } else {
-      setInviteMsg({ type: "ok", text: t("users.inviteSuccess" as Parameters<typeof t>[0]) });
+      // The invitation row is always created; the email may still have failed
+      // to send (e.g. Resend not configured). Warn instead of claiming success.
+      setInviteMsg(
+        res.emailSent
+          ? { type: "ok",   text: t("users.inviteSuccess" as Parameters<typeof t>[0]) }
+          : { type: "warn", text: t("users.inviteWarnNoEmail" as Parameters<typeof t>[0]) },
+      );
       setInviteEmail("");
       setInviteRole("FIELD_WORKER");
       // Add with real DB id so cancel/resend work immediately without a refresh
@@ -369,7 +376,8 @@ function UsersTab({
         },
         ...prev,
       ]);
-      setTimeout(() => { setDialogOpen(false); setInviteMsg(null); }, 1500);
+      // Keep the dialog open longer when the email failed so the warning is read.
+      setTimeout(() => { setDialogOpen(false); setInviteMsg(null); }, res.emailSent ? 1500 : 4000);
     }
   }
 
@@ -381,7 +389,14 @@ function UsersTab({
 
   // ── Resend invitation ─────────────────────────────────────────────────────
   function handleResend(id: string) {
-    startTransition(async () => { await resendInvitation(id); });
+    startTransition(async () => {
+      const res = await resendInvitation(id);
+      if ("error" in res) {
+        toast.error(t("users.resendError" as Parameters<typeof t>[0]));
+      } else {
+        toast.success(t("users.resendSuccess" as Parameters<typeof t>[0]));
+      }
+    });
   }
 
   const now = new Date();
@@ -618,6 +633,8 @@ function UsersTab({
               <p className={`rounded-lg px-3 py-2 text-sm border ${
                 inviteMsg.type === "ok"
                   ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                  : inviteMsg.type === "warn"
+                  ? "bg-amber-50 border-amber-200 text-amber-700"
                   : "bg-red-50 border-red-200 text-red-600"
               }`}>
                 {inviteMsg.text}

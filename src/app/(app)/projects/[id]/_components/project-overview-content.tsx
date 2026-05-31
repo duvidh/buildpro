@@ -116,7 +116,7 @@ export async function ProjectOverviewContent({ projectId }: { projectId: string 
                     variant="outline"
                     className={`text-[10px] h-4 px-1.5 py-0 ${TASK_STATUS_CLS[task.status] ?? ""}`}
                   >
-                    {t(`taskStatus.${task.status}` as Parameters<typeof t>[0], undefined, { fallback: task.status })}
+                    {t(`taskStatus.${task.status}` as Parameters<typeof t>[0])}
                   </Badge>
                   {task.dueDate && (
                     <span className="text-[11px] text-muted-foreground">{fmtDate(task.dueDate)}</span>
@@ -158,7 +158,7 @@ export async function ProjectOverviewContent({ projectId }: { projectId: string 
                 </div>
                 <span className="text-xs font-medium">{m.user.name}</span>
                 <span className="text-[10px] text-muted-foreground">
-                  {t(`memberRole.${m.role}` as Parameters<typeof t>[0], undefined, { fallback: m.role })}
+                  {t(`memberRole.${m.role}` as Parameters<typeof t>[0])}
                 </span>
               </div>
             ))}

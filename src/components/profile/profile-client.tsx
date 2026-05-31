@@ -42,7 +42,7 @@ export function ProfileClient({ user }: { user: User }) {
   const [, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const roleLabel = t(`roleLabels.${user.role}` as Parameters<typeof t>[0], undefined, { fallback: user.role });
+  const roleLabel = t(`roleLabels.${user.role}` as Parameters<typeof t>[0]);
   const roleCls = ROLE_CLS[user.role] ?? "";
   const initials = user.name
     .split(" ")

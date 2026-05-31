@@ -31,7 +31,7 @@ export function AcceptForm({
   const [done,     setDone]     = useState(false);
   const [loading,  setLoading]  = useState(false);
 
-  const roleLabel = t(`roleLabels.${role}` as Parameters<typeof t>[0], undefined, { fallback: role });
+  const roleLabel = t(`roleLabels.${role}` as Parameters<typeof t>[0]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

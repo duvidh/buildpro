@@ -278,7 +278,7 @@ function InlineContractPaymentRow({
   const [error, setError]         = useState("");
 
   const csCls    = CONTRACT_STATUS_CLS[contract.status] ?? "";
-  const csLabel  = t(`contractStatus.${contract.status}` as Parameters<typeof t>[0], undefined, { fallback: contract.status });
+  const csLabel  = t(`contractStatus.${contract.status}` as Parameters<typeof t>[0]) ?? contract.status;
   const balance  = contract.value - contract.paidAmount;
   const settled  = balance <= 0;
 

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/lib/auth-utils";
+import { MobileTabSelect } from "@/components/layout/mobile-tab-select";
 
 type Settings = {
   qcEnabled: boolean;
@@ -101,35 +102,53 @@ export function ProjectTabsNav({
 
   const allTabs = [...coreTabs, ...optionalTabs, ...settingsTabs];
 
-  return (
-    <nav className="flex overflow-x-auto gap-0 -mb-px" aria-label="project tabs">
-      {allTabs.map((tab) => {
-        const isActive =
-          tab.href === `/projects/${projectId}`
-            ? pathname === tab.href
-            : pathname.startsWith(tab.href);
+  const isTabActive = (href: string) =>
+    href === `/projects/${projectId}` ? pathname === href : pathname.startsWith(href);
 
-        return (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 whitespace-nowrap transition-colors shrink-0",
-              isActive
-                ? "border-primary text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-            )}
-          >
-            <tab.icon className="h-4 w-4" />
-            {t(tab.labelKey as Parameters<typeof t>[0])}
-            {tab.count != null && tab.count > 0 && (
-              <span className="ms-1 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-muted text-[10px] font-medium text-muted-foreground">
-                {tab.count}
-              </span>
-            )}
-          </Link>
-        );
-      })}
-    </nav>
+  return (
+    <>
+      {/* Mobile: dropdown selector (no horizontal scrolling) */}
+      <div className="md:hidden">
+        <MobileTabSelect
+          ariaLabel="project tabs"
+          items={allTabs.map((tab) => ({
+            id:     tab.href,
+            label:  t(tab.labelKey as Parameters<typeof t>[0]),
+            icon:   tab.icon,
+            count:  tab.count,
+            active: isTabActive(tab.href),
+            href:   tab.href,
+          }))}
+        />
+      </div>
+
+      {/* Desktop: horizontal tab row */}
+      <nav className="hidden md:flex overflow-x-auto gap-0 -mb-px" aria-label="project tabs">
+        {allTabs.map((tab) => {
+          const isActive = isTabActive(tab.href);
+
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 whitespace-nowrap transition-colors shrink-0",
+                isActive
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+              )}
+            >
+              <tab.icon className="h-4 w-4" />
+              {t(tab.labelKey as Parameters<typeof t>[0])}
+              {tab.count != null && tab.count > 0 && (
+                <span className="ms-1 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-muted text-[10px] font-medium text-muted-foreground">
+                  {tab.count}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+    </>
   );
 }

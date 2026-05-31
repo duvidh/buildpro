@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/lib/auth-utils";
+import { MobileTabSelect } from "@/components/layout/mobile-tab-select";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -182,7 +183,23 @@ export function ProjectFocusOverlay({
       </h2>
 
       {/* ── Tab nav ──────────────────────────────────────────────────────── */}
-      <div className="border-b border-border/60 -mx-4 sm:-mx-6 px-4 sm:px-6 mb-4">
+      {/* Mobile: dropdown selector (no horizontal scrolling) */}
+      <div className="md:hidden mb-4">
+        <MobileTabSelect
+          ariaLabel="project focus tabs"
+          items={allTabs.map((tab) => ({
+            id:      tab.id,
+            label:   tab.label,
+            icon:    tab.icon,
+            count:   tab.count,
+            active:  tab.id === activeTab,
+            onSelect: () => goTab(tab.id),
+          }))}
+        />
+      </div>
+
+      {/* Desktop: horizontal tab row */}
+      <div className="hidden md:block border-b border-border/60 -mx-4 sm:-mx-6 px-4 sm:px-6 mb-4">
         <nav className="flex overflow-x-auto gap-0 -mb-px scrollbar-none" aria-label="project focus tabs">
           {allTabs.map((tab) => {
             const isActive = tab.id === activeTab;

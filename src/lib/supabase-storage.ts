@@ -36,6 +36,27 @@ function getStorageClient(): SupabaseClient {
 }
 
 /**
+ * Supabase Storage keys must be ASCII-safe: non-ASCII characters (e.g. Hebrew)
+ * and many symbols/spaces are rejected with "Invalid key". Sanitize each path
+ * segment to `[a-zA-Z0-9._-]`, preserving the "/" structure and the file
+ * extension. The original (possibly Hebrew) filename is kept separately in the
+ * DB for display — only the storage key is sanitized.
+ */
+function sanitizeStorageKey(path: string): string {
+  return path
+    .split("/")
+    .map((segment) =>
+      segment
+        .normalize("NFKD")
+        .replace(/[^a-zA-Z0-9._-]+/g, "_") // spaces, Hebrew, etc. → "_"
+        .replace(/_+/g, "_")               // collapse repeats
+        .replace(/^[_.]+/, ""),            // no leading "_" or "."
+    )
+    .filter(Boolean)
+    .join("/");
+}
+
+/**
  * Upload a file to the storage bucket and return its public URL.
  * Throws on failure (callers should wrap in try/catch).
  */
@@ -44,10 +65,11 @@ export async function uploadToStorage(
   file: File,
 ): Promise<string> {
   const client = getStorageClient();
+  const key = sanitizeStorageKey(path);
 
   const { error } = await client.storage
     .from(STORAGE_BUCKET)
-    .upload(path, file, {
+    .upload(key, file, {
       contentType: file.type || "application/octet-stream",
       upsert: true,
     });
@@ -56,7 +78,7 @@ export async function uploadToStorage(
     throw new Error(`Supabase storage upload failed: ${error.message}`);
   }
 
-  const { data } = client.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+  const { data } = client.storage.from(STORAGE_BUCKET).getPublicUrl(key);
   return data.publicUrl;
 }
 

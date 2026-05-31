@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getLocale } from "next-intl/server";
 import { requireRole, ADMIN_ROLES } from "@/lib/auth-utils";
+import { uploadToStorage } from "@/lib/supabase-storage";
 
 const SETTING_KEYS = [
   // Company identity
@@ -12,6 +13,7 @@ const SETTING_KEYS = [
   "company_email",
   "company_address",
   "company_vat",
+  "company_logo",
   // Financials
   "vat_rate",
   "default_currency",
@@ -88,4 +90,39 @@ export async function saveAllSettings(data: Partial<Record<SettingKey, string>>)
   }
   revalidatePath("/settings");
   return { success: true as const };
+}
+
+/**
+ * Upload a company logo to Supabase Storage and persist its public URL
+ * under the `company_logo` system setting.
+ */
+export async function uploadCompanyLogo(formData: FormData) {
+  await requireRole(ADMIN_ROLES);
+
+  const file = formData.get("file");
+  if (!file || !(file instanceof File) || file.size === 0) {
+    return { success: false as const, error: "invalid_file" as const };
+  }
+  if (!file.type.startsWith("image/")) {
+    return { success: false as const, error: "not_image" as const };
+  }
+
+  const storagePath = `company/logo/${Date.now()}-${file.name}`;
+
+  let logoUrl: string;
+  try {
+    logoUrl = await uploadToStorage(storagePath, file);
+  } catch (err) {
+    console.error("[uploadCompanyLogo] Supabase storage upload failed:", err);
+    return { success: false as const, error: "upload_failed" as const };
+  }
+
+  await db.systemSetting.upsert({
+    where:  { key: "company_logo" },
+    update: { value: logoUrl },
+    create: { key: "company_logo", value: logoUrl, description: "Company logo" },
+  });
+
+  revalidatePath("/settings");
+  return { success: true as const, url: logoUrl };
 }

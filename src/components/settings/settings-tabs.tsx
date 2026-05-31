@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 import { useTranslations, useLocale } from "next-intl";
 import {
@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Loader2,
   Mail,
+  Upload,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +45,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { saveAllSettings } from "@/actions/settings";
+import { saveAllSettings, uploadCompanyLogo } from "@/actions/settings";
 import { updateUserRole, toggleUserActive } from "@/actions/users";
 import { inviteUser, cancelInvitation, resendInvitation } from "@/actions/invitations";
 import { SUPPORTED_CURRENCIES } from "@/lib/formatters";
@@ -145,11 +146,33 @@ function CompanyTab({ initial }: { initial: Record<string, string> }) {
   const [saved, setSaved]           = useState(false);
   const [, startTransition]         = useTransition();
 
+  // ── Logo upload state ──────────────────────────────────────────────────────
+  const [logoUrl, setLogoUrl]       = useState(initial.company_logo ?? "");
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError]   = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
   function handleSave() {
     startTransition(async () => {
       await saveAllSettings(form);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+    });
+  }
+
+  function handleLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file
+    if (!file) return;
+    setLogoError(false);
+    setLogoUploading(true);
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await uploadCompanyLogo(fd);
+      setLogoUploading(false);
+      if (res.success) setLogoUrl(res.url);
+      else setLogoError(true);
     });
   }
 
@@ -216,14 +239,45 @@ function CompanyTab({ initial }: { initial: Record<string, string> }) {
         </div>
         <Separator />
         <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/30 text-muted-foreground text-xs text-center p-1">
-            {t("company.logo.placeholder")}
+          <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-border bg-muted/30 text-muted-foreground text-xs text-center p-1">
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt={t("company.logo.title")} className="h-full w-full object-contain" />
+            ) : (
+              t("company.logo.placeholder")
+            )}
           </div>
           <div className="space-y-1.5">
-            <Button variant="outline" size="sm" className="text-xs">
-              {t("company.logo.upload")}
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleLogoFile}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              disabled={logoUploading}
+              onClick={() => logoInputRef.current?.click()}
+            >
+              {logoUploading ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 me-1.5 animate-spin" />
+                  {t("company.logo.uploading")}
+                </>
+              ) : (
+                <>
+                  <Upload className="h-3.5 w-3.5 me-1.5" />
+                  {t("company.logo.upload")}
+                </>
+              )}
             </Button>
             <p className="text-[11px] text-muted-foreground">{t("company.logo.hint")}</p>
+            {logoError && (
+              <p className="text-[11px] text-destructive">{t("company.logo.error")}</p>
+            )}
           </div>
         </div>
       </div>

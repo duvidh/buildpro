@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { put, del } from "@vercel/blob";
+import { uploadToStorage, deleteFromStorage } from "@/lib/supabase-storage";
 import { db } from "@/lib/db";
 import type { FileCategory } from "@/generated/prisma/client";
 import { getSession } from "@/lib/session";
@@ -22,11 +22,11 @@ export async function getProjectFiles(projectId: string) {
 // ─── Upload ───────────────────────────────────────────────────────────────────
 
 /**
- * Upload a file to Vercel Blob and record it in the database.
+ * Upload a file to Supabase Storage and record it in the database.
  *
- * Requires the BLOB_READ_WRITE_TOKEN environment variable (Vercel project env).
- * Server Actions can stream files up to the configured bodySizeLimit
- * (default 4.5 MB; raise via next.config experimental.serverActions.bodySizeLimit).
+ * Requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY, plus a public
+ * "uploads" bucket. Server Actions stream files up to the configured
+ * bodySizeLimit (default 4.5 MB; raise via next.config serverActions.bodySizeLimit).
  */
 export async function uploadProjectFile(projectId: string, formData: FormData) {
   const file        = formData.get("file");
@@ -44,18 +44,17 @@ export async function uploadProjectFile(projectId: string, formData: FormData) {
       ? (rawCategory as FileCategory)
       : "OTHER";
 
-  // Unique blob path avoids collisions across projects / re-uploads
-  const blobPath = `projects/${projectId}/${Date.now()}-${file.name}`;
+  // Unique path avoids collisions across projects / re-uploads
+  const storagePath = `projects/${projectId}/${Date.now()}-${file.name}`;
 
   let blobUrl: string;
   try {
-    const blob = await put(blobPath, file, { access: "public" });
-    blobUrl = blob.url;
+    blobUrl = await uploadToStorage(storagePath, file);
   } catch (err) {
-    console.error("[uploadProjectFile] Vercel Blob put failed:", err);
+    console.error("[uploadProjectFile] Supabase storage upload failed:", err);
     return {
       success: false as const,
-      error: "שגיאה בהעלאת הקובץ לאחסון. ודא שהסביבה מוגדרת עם BLOB_READ_WRITE_TOKEN.",
+      error: "שגיאה בהעלאת הקובץ לאחסון. ודא שהסביבה מוגדרת עם Supabase Storage.",
     };
   }
 
@@ -141,17 +140,16 @@ export async function uploadCrmFile(
       : "OTHER";
 
   const prefix = opts.leadId ? `leads/${opts.leadId}` : `clients/${opts.clientId}`;
-  const blobPath = `${prefix}/${Date.now()}-${file.name}`;
+  const storagePath = `${prefix}/${Date.now()}-${file.name}`;
 
   let blobUrl: string;
   try {
-    const blob = await put(blobPath, file, { access: "public" });
-    blobUrl = blob.url;
+    blobUrl = await uploadToStorage(storagePath, file);
   } catch (err) {
-    console.error("[uploadCrmFile] Vercel Blob put failed:", err);
+    console.error("[uploadCrmFile] Supabase storage upload failed:", err);
     return {
       success: false as const,
-      error: "שגיאה בהעלאת הקובץ לאחסון. ודא שהסביבה מוגדרת עם BLOB_READ_WRITE_TOKEN.",
+      error: "שגיאה בהעלאת הקובץ לאחסון. ודא שהסביבה מוגדרת עם Supabase Storage.",
     };
   }
 
@@ -186,7 +184,7 @@ export async function deleteCrmFile(
   const file = await db.projectFile.findUnique({ where: { id: fileId } });
   if (!file) return { success: false as const, error: "קובץ לא נמצא" };
 
-  try { await del(file.url); } catch { /* Blob deletion is non-fatal */ }
+  try { await deleteFromStorage(file.url); } catch { /* storage deletion is non-fatal */ }
 
   await db.projectFile.delete({ where: { id: fileId } });
 
@@ -202,11 +200,11 @@ export async function deleteProjectFile(fileId: string, projectId: string) {
   const file = await db.projectFile.findUnique({ where: { id: fileId } });
   if (!file) return { success: false as const, error: "קובץ לא נמצא" };
 
-  // Best-effort: remove from Vercel Blob (may not exist if env is missing)
+  // Best-effort: remove from Supabase Storage (may not exist if env is missing)
   try {
-    await del(file.url);
+    await deleteFromStorage(file.url);
   } catch {
-    // Blob deletion failure is non-fatal — DB record is still removed
+    // Storage deletion failure is non-fatal — DB record is still removed
   }
 
   await db.projectFile.delete({ where: { id: fileId } });

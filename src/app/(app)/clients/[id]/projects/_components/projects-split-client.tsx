@@ -50,7 +50,7 @@ function progressBarColor(pct: number): string {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function ProjectsSplitClient({
-  clientId: _clientId,
+  clientId,
   projects,
   selectedProjectId,
 }: Props) {
@@ -68,6 +68,12 @@ export function ProjectsSplitClient({
     router.push(`${pathname}?selectedProjectId=${id}`, { scroll: false });
   }
 
+  // New project launched from the client card: scope it to this client and
+  // return to this same projects tab with the new project opened inline.
+  const newProjectHref =
+    `/projects/new?clientId=${clientId}` +
+    `&returnTo=${encodeURIComponent(`/clients/${clientId}/projects`)}`;
+
   return (
     <div className="space-y-2 pb-2 max-w-5xl" dir={dir}>
       {/* Header row */}
@@ -76,7 +82,7 @@ export function ProjectsSplitClient({
           {t("projectsList.count", { n: projects.length })}
         </h2>
         <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
-          <Link href="/projects">
+          <Link href={newProjectHref}>
             <Plus className="h-3.5 w-3.5" />
             {tCommon("newProject")}
           </Link>

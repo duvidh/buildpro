@@ -29,7 +29,19 @@ import { PROJECT_STATUS_VALUES } from "@/lib/constants/project-enums";
 
 type ClientOption = { id: string; name: string; address: string };
 
-export function NewProjectForm({ clients }: { clients: ClientOption[] }) {
+type NewProjectFormProps = {
+  clients: ClientOption[];
+  /** When set, the client field is preselected and locked (e.g. launched from a client card). */
+  lockedClientId?: string | null;
+  /**
+   * Where to navigate after a successful create. The new project id is appended
+   * as a `selectedProjectId` search param so client-card flows open it inline.
+   * When omitted, falls back to the standalone project page `/projects/<id>`.
+   */
+  returnTo?: string | null;
+};
+
+export function NewProjectForm({ clients, lockedClientId, returnTo }: NewProjectFormProps) {
   const t       = useTranslations("projects");
   const tCommon = useTranslations("common");
   const [isPending, startTransition] = useTransition();
@@ -43,6 +55,10 @@ export function NewProjectForm({ clients }: { clients: ClientOption[] }) {
     [t]
   );
 
+  const lockedClient = lockedClientId
+    ? clients.find((c) => c.id === lockedClientId)
+    : undefined;
+
   const {
     register,
     handleSubmit,
@@ -50,7 +66,12 @@ export function NewProjectForm({ clients }: { clients: ClientOption[] }) {
     formState: { errors },
   } = useForm<CreateProjectInput>({
     resolver: zodResolver(schema),
-    defaultValues: { status: "PLANNING" },
+    defaultValues: {
+      status: "PLANNING",
+      ...(lockedClient
+        ? { clientId: lockedClient.id, address: lockedClient.address || undefined }
+        : {}),
+    },
   });
 
   const clientComboOptions = clients.map((c) => ({ value: c.id, label: c.name }));
@@ -66,7 +87,12 @@ export function NewProjectForm({ clients }: { clients: ClientOption[] }) {
       const res = await createProject(data);
       if (res.success) {
         toast.success(t("new.toastSuccess"));
-        router.push(`/projects/${res.projectId}`);
+        if (returnTo) {
+          const sep = returnTo.includes("?") ? "&" : "?";
+          router.push(`${returnTo}${sep}selectedProjectId=${res.projectId}`);
+        } else {
+          router.push(`/projects/${res.projectId}`);
+        }
       } else {
         toast.error(t("new.toastError"));
       }
@@ -107,13 +133,17 @@ export function NewProjectForm({ clients }: { clients: ClientOption[] }) {
                 <Building2 className="inline h-3.5 w-3.5 me-1 mb-0.5 text-muted-foreground" />
                 {tf("form.fields.client")} <span className="text-destructive">*</span>
               </Label>
-              <Combobox
-                options={clientComboOptions}
-                onValueChange={handleClientChange}
-                placeholder={tf("form.placeholders.client")}
-                searchPlaceholder={tf("form.placeholders.clientSearch")}
-                emptyText={tf("form.placeholders.clientEmpty")}
-              />
+              {lockedClient ? (
+                <Input value={lockedClient.name} disabled readOnly />
+              ) : (
+                <Combobox
+                  options={clientComboOptions}
+                  onValueChange={handleClientChange}
+                  placeholder={tf("form.placeholders.client")}
+                  searchPlaceholder={tf("form.placeholders.clientSearch")}
+                  emptyText={tf("form.placeholders.clientEmpty")}
+                />
+              )}
               {errors.clientId && (
                 <p className="text-xs text-destructive">{errors.clientId.message}</p>
               )}
@@ -211,7 +241,7 @@ export function NewProjectForm({ clients }: { clients: ClientOption[] }) {
         {/* ── Actions ── */}
         <div className="flex items-center justify-end gap-3 pb-8">
           <Button type="button" variant="ghost" asChild>
-            <Link href="/projects">{tCommon("cancel")}</Link>
+            <Link href={returnTo ?? "/projects"}>{tCommon("cancel")}</Link>
           </Button>
           <Button type="submit" size="lg" disabled={isPending} className="min-w-[160px]">
             {isPending ? (

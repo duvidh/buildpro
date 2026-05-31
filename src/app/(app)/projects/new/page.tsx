@@ -7,7 +7,17 @@ import { Button } from "@/components/ui/button";
 import { getClients } from "@/actions/clients";
 import { NewProjectForm } from "./_components/new-project-form";
 
-export default async function NewProjectPage() {
+export default async function NewProjectPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const lockedClientId =
+    typeof sp.clientId === "string" ? sp.clientId : undefined;
+  const returnTo =
+    typeof sp.returnTo === "string" ? sp.returnTo : undefined;
+
   const [rawClients, t] = await Promise.all([
     getClients(),
     getTranslations("projects"),
@@ -19,13 +29,16 @@ export default async function NewProjectPage() {
     address: c.address ?? "",
   }));
 
+  // When launched from a client card, the back button should return there.
+  const backHref = returnTo ?? "/projects";
+
   return (
     <div className="w-full space-y-6">
 
       {/* ── Page header ── */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" asChild>
-          <Link href="/projects">
+          <Link href={backHref}>
             <ArrowRight className="h-4 w-4" />
           </Link>
         </Button>
@@ -38,7 +51,11 @@ export default async function NewProjectPage() {
         </div>
       </div>
 
-      <NewProjectForm clients={clients} />
+      <NewProjectForm
+        clients={clients}
+        lockedClientId={lockedClientId}
+        returnTo={returnTo}
+      />
     </div>
   );
 }

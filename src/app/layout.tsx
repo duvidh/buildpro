@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
-import { Direction } from "radix-ui";
+import { DirectionProvider } from "@/components/providers/direction-provider";
 
 const heebo = Heebo({
   variable: "--font-heebo",
@@ -69,9 +69,9 @@ export default async function RootLayout({
           <NextIntlClientProvider locale={locale} messages={messages}>
             {/* Tell Radix primitives (dropdowns, selects, …) the text direction
                 so they open/align per locale instead of always LTR. */}
-            <Direction.DirectionProvider dir={dir}>
+            <DirectionProvider dir={dir}>
               <TooltipProvider>{children}</TooltipProvider>
-            </Direction.DirectionProvider>
+            </DirectionProvider>
           </NextIntlClientProvider>
           <Toaster />
         </ThemeProvider>

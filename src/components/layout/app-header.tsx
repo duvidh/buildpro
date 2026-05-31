@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useRef, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import {
   Menu,
   Search,
@@ -63,6 +63,9 @@ export function AppHeader({
   const tAppHeader        = useTranslations("appHeader");
   const [searchValue, setSearchValue] = useState("");
   const tHeader           = useTranslations("header");
+  const locale            = useLocale();
+  // RTL (Hebrew) opens from the right; LTR (English) opens from the left.
+  const sheetSide         = locale === "he" ? "right" : "left";
   const debounceRef       = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [, startTransition] = useTransition();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -93,7 +96,7 @@ export function AppHeader({
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="right" className="p-0 w-64">
+        <SheetContent side={sheetSide} className="p-0 w-64">
           <AppSidebar user={user} mobile onNavigate={() => setMobileNavOpen(false)} />
         </SheetContent>
       </Sheet>

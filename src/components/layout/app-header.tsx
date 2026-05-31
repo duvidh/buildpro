@@ -65,6 +65,7 @@ export function AppHeader({
   const tHeader           = useTranslations("header");
   const debounceRef       = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [, startTransition] = useTransition();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Request browser push-notification permission once on mount
   usePushNotifications();
@@ -86,14 +87,14 @@ export function AppHeader({
   return (
     <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-background/80 glass-header sticky top-0 z-30 px-4 sm:px-6">
       {/* Mobile sidebar trigger */}
-      <Sheet>
+      <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
         <SheetTrigger asChild>
           <Button variant="ghost" size="icon" className="shrink-0 md:hidden" aria-label={tAppHeader("openMenu")}>
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
         <SheetContent side="right" className="p-0 w-64">
-          <AppSidebar user={user} />
+          <AppSidebar user={user} mobile onNavigate={() => setMobileNavOpen(false)} />
         </SheetContent>
       </Sheet>
 

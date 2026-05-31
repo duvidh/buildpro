@@ -76,9 +76,15 @@ const navGroups: NavGroup[] = [
 export function AppSidebar({
   user,
   companyName,
+  mobile = false,
+  onNavigate,
 }: {
   user: SessionUser;
   companyName?: string;
+  /** When true, render the full expanded layout unconditionally (mobile drawer). */
+  mobile?: boolean;
+  /** Called when a nav item is tapped — used to close the mobile drawer. */
+  onNavigate?: () => void;
 }) {
   const pathname  = usePathname();
   const t         = useTranslations("nav");
@@ -110,8 +116,16 @@ export function AppSidebar({
   const canViewSettings = user.role !== "FIELD_WORKER";
   const displayName = companyName || APP_CONFIG.companyName;
 
+  // When in the mobile drawer, the sidebar is always fully expanded: full width
+  // and all labels visible. On desktop it stays the hover-to-expand icon rail.
+  const widthClass = mobile ? "w-full" : "w-16 hover:w-64";
+  const labelClass = mobile ? "opacity-100" : "opacity-0 group-hover:opacity-100";
+
   return (
-    <aside className="group flex h-screen w-16 hover:w-64 shrink-0 flex-col bg-sidebar/90 glass-sidebar border-e border-sidebar-border transition-[width] duration-300 ease-in-out overflow-x-hidden">
+    <aside className={cn(
+      "group flex h-screen shrink-0 flex-col bg-sidebar/90 glass-sidebar border-e border-sidebar-border transition-[width] duration-300 ease-in-out overflow-x-hidden",
+      widthClass
+    )}>
 
       {/* ── Brand ── */}
       <div className="flex h-16 items-center border-b border-sidebar-border shrink-0 overflow-hidden">
@@ -122,7 +136,10 @@ export function AppSidebar({
           </div>
         </div>
         {/* Text — fades in on hover */}
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-100 whitespace-nowrap overflow-hidden pe-3">
+        <div className={cn(
+          "transition-opacity duration-200 delay-100 whitespace-nowrap overflow-hidden pe-3",
+          labelClass
+        )}>
           <p className="text-sm font-bold text-sidebar-foreground leading-none">{displayName}</p>
           <p className="text-[11px] text-sidebar-foreground/50 mt-0.5">{t("tagline")}</p>
         </div>
@@ -133,7 +150,10 @@ export function AppSidebar({
         {visibleGroups.map((group) => (
           <div key={group.groupKey}>
             {/* Section label — hidden when collapsed */}
-            <p className="mb-2 px-2 text-[10px] font-semibold tracking-wide text-sidebar-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-75 whitespace-nowrap">
+            <p className={cn(
+              "mb-2 px-2 text-[10px] font-semibold tracking-wide text-sidebar-foreground/40 transition-opacity duration-200 delay-75 whitespace-nowrap",
+              labelClass
+            )}>
               {t(group.groupKey as Parameters<typeof t>[0])}
             </p>
             <ul className="space-y-0.5">
@@ -145,6 +165,7 @@ export function AppSidebar({
                   <li key={item.href}>
                     <Link
                       href={item.href}
+                      onClick={onNavigate}
                       className={cn(
                         "group/item flex items-center rounded-lg py-2 text-sm font-medium transition-colors overflow-hidden",
                         isActive
@@ -157,7 +178,10 @@ export function AppSidebar({
                         <item.icon className="h-4 w-4 transition-all duration-200 group-hover/item:scale-110 group-hover/item:text-primary" />
                       </span>
                       {/* Label */}
-                      <span className="whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-100 leading-none">
+                      <span className={cn(
+                        "whitespace-nowrap transition-opacity duration-200 delay-100 leading-none",
+                        labelClass
+                      )}>
                         {t(item.labelKey as Parameters<typeof t>[0])}
                       </span>
                     </Link>
@@ -174,6 +198,7 @@ export function AppSidebar({
         {canViewSettings && (
           <Link
             href="/settings"
+            onClick={onNavigate}
             className={cn(
               "group/item flex items-center rounded-lg py-2 text-sm font-medium transition-colors overflow-hidden",
               pathname === "/settings"
@@ -184,7 +209,10 @@ export function AppSidebar({
             <span className="flex w-12 shrink-0 items-center justify-center">
               <Settings className="h-4 w-4 transition-all duration-200 group-hover/item:scale-110 group-hover/item:text-primary" />
             </span>
-            <span className="whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-100 leading-none">
+            <span className={cn(
+              "whitespace-nowrap transition-opacity duration-200 delay-100 leading-none",
+              labelClass
+            )}>
               {t("settings")}
             </span>
           </Link>
@@ -202,7 +230,10 @@ export function AppSidebar({
             </Avatar>
           </div>
           <div
-            className="min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-100 overflow-hidden pe-3"
+            className={cn(
+              "min-w-0 transition-opacity duration-200 delay-100 overflow-hidden pe-3",
+              labelClass
+            )}
             dir={locale === "he" ? "rtl" : "ltr"}
           >
             <p className="text-sm font-medium text-sidebar-foreground truncate leading-none whitespace-nowrap">

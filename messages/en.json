@@ -355,8 +355,51 @@
       "toastUpdated": "Lead details updated",
       "toastError": "Error saving"
     },
-    "defaultCities": ["תל אביב", "ירושלים", "חיפה", "ראשון לציון", "פתח תקווה", "אשדוד", "נתניה", "באר שבע", "בני ברק", "רמת גן", "הרצליה", "רעננה", "כפר סבא", "מודיעין", "אשקלון", "רחובות", "בת ים", "בית שמש", "הוד השרון", "חולון", "אילת", "טבריה", "נצרת", "עכו", "נהריה", "קריית שמונה", "לוד", "רמלה", "יהוד", "גבעתיים"],
-    "defaultConstructionTypes": ["בנייה חדשה", "שיפוץ", "תוספת בנייה", "הריסה ובנייה", "שיקום מבנה", "עבודות פנים", "עבודות חוץ", "בנייה מסחרית", "בנייה תעשייתית", "בנייה ציבורית / מוסדית", "תשתיות"]
+    "defaultCities": [
+      "תל אביב",
+      "ירושלים",
+      "חיפה",
+      "ראשון לציון",
+      "פתח תקווה",
+      "אשדוד",
+      "נתניה",
+      "באר שבע",
+      "בני ברק",
+      "רמת גן",
+      "הרצליה",
+      "רעננה",
+      "כפר סבא",
+      "מודיעין",
+      "אשקלון",
+      "רחובות",
+      "בת ים",
+      "בית שמש",
+      "הוד השרון",
+      "חולון",
+      "אילת",
+      "טבריה",
+      "נצרת",
+      "עכו",
+      "נהריה",
+      "קריית שמונה",
+      "לוד",
+      "רמלה",
+      "יהוד",
+      "גבעתיים"
+    ],
+    "defaultConstructionTypes": [
+      "בנייה חדשה",
+      "שיפוץ",
+      "תוספת בנייה",
+      "הריסה ובנייה",
+      "שיקום מבנה",
+      "עבודות פנים",
+      "עבודות חוץ",
+      "בנייה מסחרית",
+      "בנייה תעשייתית",
+      "בנייה ציבורית / מוסדית",
+      "תשתיות"
+    ]
   },
   "clients": {
     "page": {
@@ -1503,7 +1546,8 @@
     "toast": {
       "exportEmpty": "Catalog is empty",
       "exportSuccess": "Exported {count} items",
-      "templateSuccess": "Template file downloaded"
+      "templateSuccess": "Template file downloaded",
+      "bulkDeleteSuccess": "{count} items deleted"
     },
     "templateRows": {
       "name1": "Sample Item",
@@ -1516,6 +1560,12 @@
     "validation": {
       "nameRequired": "Item name must be at least 2 characters",
       "unitRequired": "Unit is required"
+    },
+    "selection": {
+      "selectAll": "Select all",
+      "selectedCount": "{count} selected",
+      "clear": "Clear",
+      "deleteSelected": "Delete selected ({count})"
     }
   },
   "finance": {

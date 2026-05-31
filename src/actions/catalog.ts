@@ -58,6 +58,17 @@ export async function deleteCatalogItem(id: string) {
   return { success: true as const };
 }
 
+export async function bulkDeleteCatalogItems(ids: string[]) {
+  const validIds = ids.filter(Boolean);
+  if (validIds.length === 0) return { success: false as const, count: 0 };
+  await db.catalogItem.updateMany({
+    where: { id: { in: validIds } },
+    data: { active: false },
+  });
+  revalidatePath("/catalog");
+  return { success: true as const, count: validIds.length };
+}
+
 // ─── Bulk import ──────────────────────────────────────────────────────────────
 
 type ImportRow = {

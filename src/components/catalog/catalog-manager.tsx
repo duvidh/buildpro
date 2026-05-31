@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/table";
 import {
   createCatalogItem, updateCatalogItem, deleteCatalogItem,
-  seedCatalogItems, bulkImportCatalogItems,
+  seedCatalogItems, bulkImportCatalogItems, bulkDeleteCatalogItems,
 } from "@/actions/catalog";
 import { buildCatalogItemSchema, type CatalogItemInput } from "@/lib/schemas/catalog-schema";
 
@@ -337,6 +337,38 @@ export function CatalogManager({ initialItems }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  // ── Multi-select state ──────────────────────────────────────────────────────
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const allIds = useMemo(() => initialItems.map((i) => i.id), [initialItems]);
+  const allSelected = allIds.length > 0 && selectedIds.size === allIds.length;
+
+  function toggleOne(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setSelectedIds((prev) => (prev.size === allIds.length ? new Set() : new Set(allIds)));
+  }
+
+  function handleBulkDelete() {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    startTransition(async () => {
+      const res = await bulkDeleteCatalogItems(ids);
+      if (res.success) {
+        toast.success(t("toast.bulkDeleteSuccess", { count: res.count }));
+        setSelectedIds(new Set());
+        router.refresh();
+      }
+    });
+  }
+
   const dateLocale = locale === "he" ? "he-IL" : "en-US";
 
   const csvHeaders = [
@@ -357,6 +389,11 @@ export function CatalogManager({ initialItems }: Props) {
   function handleDelete(id: string) {
     startTransition(async () => {
       await deleteCatalogItem(id);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       router.refresh();
     });
   }
@@ -392,7 +429,18 @@ export function CatalogManager({ initialItems }: Props) {
 
       {/* ── Toolbar ── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+        <div className="flex items-center gap-3">
+          {initialItems.length > 0 && (
+            <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="h-4 w-4 cursor-pointer accent-primary"
+                checked={allSelected}
+                onChange={toggleAll}
+              />
+              {t("selection.selectAll")}
+            </label>
+          )}
           <p className="text-sm text-muted-foreground">
             {t("itemCount", { count: initialItems.length })}
           </p>
@@ -439,6 +487,30 @@ export function CatalogManager({ initialItems }: Props) {
         </div>
       </div>
 
+      {/* ── Selection action bar ── */}
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2.5">
+          <span className="text-sm font-medium text-foreground">
+            {t("selection.selectedCount", { count: selectedIds.size })}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+              {t("selection.clear")}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="gap-2"
+              onClick={handleBulkDelete}
+              disabled={isPending}
+            >
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              {t("selection.deleteSelected", { count: selectedIds.size })}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* ── Empty state ── */}
       {initialItems.length === 0 && (
         <div className="flex flex-col items-center gap-4 py-16 text-center text-muted-foreground">
@@ -450,6 +522,18 @@ export function CatalogManager({ initialItems }: Props) {
       {/* ── Table per category ── */}
       {categories.map((cat) => {
         const catItems = initialItems.filter((i) => (i.category ?? t("defaultCategory")) === cat);
+        const catAllSelected = catItems.length > 0 && catItems.every((i) => selectedIds.has(i.id));
+        const toggleCategory = () => {
+          setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (catItems.every((i) => next.has(i.id))) {
+              catItems.forEach((i) => next.delete(i.id));
+            } else {
+              catItems.forEach((i) => next.add(i.id));
+            }
+            return next;
+          });
+        };
         return (
           <div key={cat}>
             <div className="flex items-center gap-2 mb-2">
@@ -460,6 +544,15 @@ export function CatalogManager({ initialItems }: Props) {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/40">
+                    <TableHead className="w-10">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 cursor-pointer accent-primary align-middle"
+                        checked={catAllSelected}
+                        onChange={toggleCategory}
+                        aria-label={t("selection.selectAll")}
+                      />
+                    </TableHead>
                     <TableHead className="font-semibold">{t("table.name")}</TableHead>
                     <TableHead className="w-28 font-semibold">{t("table.sku")}</TableHead>
                     <TableHead className="w-20 text-center font-semibold">{t("table.unit")}</TableHead>
@@ -470,7 +563,19 @@ export function CatalogManager({ initialItems }: Props) {
                 </TableHeader>
                 <TableBody>
                   {catItems.map((item) => (
-                    <TableRow key={item.id} className="hover:bg-muted/20">
+                    <TableRow
+                      key={item.id}
+                      className={`hover:bg-muted/20 ${selectedIds.has(item.id) ? "bg-primary/5" : ""}`}
+                    >
+                      <TableCell className="w-10">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 cursor-pointer accent-primary align-middle"
+                          checked={selectedIds.has(item.id)}
+                          onChange={() => toggleOne(item.id)}
+                          aria-label={item.name}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{item.name}</TableCell>
                       <TableCell className="text-muted-foreground text-xs font-mono" dir="ltr">
                         {item.sku ?? <span className="opacity-40">—</span>}

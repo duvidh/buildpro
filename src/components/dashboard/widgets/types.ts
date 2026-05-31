@@ -27,6 +27,18 @@ export type DashboardProject = {
   contractValue: number;
   progressPercent: number;
   client: { name: string };
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+};
+
+export type DashboardMapProject = {
+  id: string;
+  name: string;
+  status: string;
+  address: string | null;
+  latitude: number;
+  longitude: number;
 };
 
 export type DashboardPayment = {
@@ -82,6 +94,7 @@ export type DashboardData = {
   upcomingMilestones: DashboardMilestone[];
   invoicesDue: DashboardInvoiceDue[];
   recentActivity: DashboardActivity[];
+  mapProjects: DashboardMapProject[];
 };
 
 // Layout item (superset of react-grid-layout's Layout)

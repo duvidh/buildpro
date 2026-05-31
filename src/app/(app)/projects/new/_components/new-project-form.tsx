@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Combobox } from "@/components/ui/combobox";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { buildCreateProjectSchema, type CreateProjectInput } from "@/lib/schemas/project-schema";
 import { createProject } from "@/actions/projects";
 import { PROJECT_STATUS_VALUES } from "@/lib/constants/project-enums";
@@ -63,6 +64,7 @@ export function NewProjectForm({ clients, lockedClientId, returnTo }: NewProject
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<CreateProjectInput>({
     resolver: zodResolver(schema),
@@ -74,12 +76,20 @@ export function NewProjectForm({ clients, lockedClientId, returnTo }: NewProject
     },
   });
 
+  const addressValue = watch("address") ?? "";
+
   const clientComboOptions = clients.map((c) => ({ value: c.id, label: c.name }));
 
   function handleClientChange(clientId: string) {
     setValue("clientId", clientId);
     const client = clients.find((c) => c.id === clientId);
-    if (client?.address) setValue("address", client.address);
+    if (client?.address) {
+      setValue("address", client.address);
+      // Prefilled address from the client has no coordinates until the user
+      // picks an autocomplete suggestion.
+      setValue("latitude", null);
+      setValue("longitude", null);
+    }
   }
 
   function onSubmit(data: CreateProjectInput) {
@@ -197,10 +207,22 @@ export function NewProjectForm({ clients, lockedClientId, returnTo }: NewProject
                 <MapPin className="inline h-3.5 w-3.5 me-1 mb-0.5 text-muted-foreground" />
                 {tf("form.fields.address")}
               </Label>
-              <Input
+              <AddressAutocomplete
                 id="address"
+                dir="rtl"
+                value={addressValue}
                 placeholder={tf("form.placeholders.address")}
-                {...register("address")}
+                onChange={(v) => {
+                  setValue("address", v);
+                  // Free-typing invalidates any previously-picked coordinates.
+                  setValue("latitude", null);
+                  setValue("longitude", null);
+                }}
+                onSelect={(r) => {
+                  setValue("address", r.label);
+                  setValue("latitude", r.lat);
+                  setValue("longitude", r.lon);
+                }}
               />
             </div>
 

@@ -26,6 +26,8 @@ export function buildCreateProjectSchema(msgs: ProjectValidationMessages = {}) {
     startDate:     z.string().optional(),
     endDate:       z.string().optional(),
     contractValue: z.string().optional(),
+    latitude:      z.number().optional().nullable(),
+    longitude:     z.number().optional().nullable(),
   });
 }
 
@@ -39,6 +41,8 @@ export function buildUpdateProjectSchema(msgs: ProjectValidationMessages = {}) {
     startDate:     z.string().optional(),
     endDate:       z.string().optional(),
     contractValue: z.string().optional(),
+    latitude:      z.number().optional().nullable(),
+    longitude:     z.number().optional().nullable(),
   });
 }
 

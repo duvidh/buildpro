@@ -14,9 +14,14 @@ export async function createClient(raw: ClientInput) {
   if (!parsed.success) {
     return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאה" };
   }
-  const { email, ...rest } = parsed.data;
+  const { email, latitude, longitude, ...rest } = parsed.data;
   const client = await db.client.create({
-    data: { ...rest, email: email || null },
+    data: {
+      ...rest,
+      email: email || null,
+      latitude: latitude ?? null,
+      longitude: longitude ?? null,
+    },
   });
   revalidatePath("/clients");
   return { success: true as const, clientId: client.id };
@@ -41,10 +46,15 @@ export async function updateClient(id: string, raw: ClientInput) {
   if (!parsed.success) {
     return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאה" };
   }
-  const { email, ...rest } = parsed.data;
+  const { email, latitude, longitude, ...rest } = parsed.data;
   await db.client.update({
     where: { id },
-    data: { ...rest, email: email || null },
+    data: {
+      ...rest,
+      email: email || null,
+      latitude: latitude ?? null,
+      longitude: longitude ?? null,
+    },
   });
   revalidatePath("/clients");
   revalidatePath(`/clients/${id}`);
@@ -83,6 +93,8 @@ export const getClientHeader = cache(async (id: string) => {
       phone2: true,
       email: true,
       address: true,
+      latitude: true,
+      longitude: true,
       companyNumber: true,
       notes: true,
       _count: { select: { projects: true, quotes: true, invoices: true } },

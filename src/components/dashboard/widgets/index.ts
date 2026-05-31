@@ -1,7 +1,7 @@
 import {
   BarChart3, TrendingUp, CheckSquare, FolderKanban,
   CreditCard, LayoutDashboard, Clock, Flag,
-  FileText, Activity, Zap,
+  FileText, Activity, Zap, Map as MapIcon,
 } from "lucide-react";
 import type { WidgetLayoutItem } from "./types";
 import type React from "react";
@@ -17,6 +17,7 @@ export { MilestonesWidget }       from "./MilestonesWidget";
 export { InvoicesDueWidget }      from "./InvoicesDueWidget";
 export { ActivityWidget }         from "./ActivityWidget";
 export { QuickActionsWidget }     from "./QuickActionsWidget";
+export { MapWidget }              from "./MapWidget";
 export type { DashboardData, WidgetLayoutItem } from "./types";
 
 // ─── Widget definitions ───────────────────────────────────────────────────────
@@ -119,6 +120,14 @@ export const WIDGET_DEFS: Record<string, WidgetDef> = {
     accentColor: "from-fuchsia-500 to-purple-500",
     defaultSize: { w: 4, h: 4, minW: 3, minH: 3 },
   },
+  map: {
+    labelKey: "dashboard.widgetDefs.map.label",
+    icon: MapIcon,
+    descriptionKey: "dashboard.widgetDefs.map.description",
+    category: "projects",
+    accentColor: "from-teal-500 to-cyan-500",
+    defaultSize: { w: 8, h: 5, minW: 4, minH: 4 },
+  },
 };
 
 // ─── Layout version ───────────────────────────────────────────────────────────
@@ -126,7 +135,7 @@ export const WIDGET_DEFS: Record<string, WidgetDef> = {
 // from compactType="vertical" to compactType={null}).  Saved layouts that
 // don't carry this version marker are automatically discarded and replaced
 // with DEFAULT_LAYOUT on the next page load.
-export const LAYOUT_VERSION = 2;
+export const LAYOUT_VERSION = 3;
 
 // ─── Default layout ───────────────────────────────────────────────────────────
 
@@ -145,4 +154,6 @@ export const DEFAULT_LAYOUT: WidgetLayoutItem[] = [
   { i: "invoices_due", x: 0, y: 12, w: 4,  h: 4,  minW: 3,  minH: 3 },
   { i: "milestones",   x: 4, y: 12, w: 4,  h: 4,  minW: 3,  minH: 3 },
   { i: "activity",     x: 8, y: 12, w: 4,  h: 4,  minW: 3,  minH: 3 },
+  // Row 16-20: projects map (full width)
+  { i: "map",          x: 0, y: 16, w: 12, h: 5,  minW: 4,  minH: 4 },
 ];

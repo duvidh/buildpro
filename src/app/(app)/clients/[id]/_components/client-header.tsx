@@ -36,6 +36,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { updateClient, deleteClient } from "@/actions/clients";
 import { buildClientSchema, type ClientInput } from "@/lib/schemas/client-schema";
 
@@ -49,6 +50,8 @@ type Client = {
   address?: string | null;
   companyNumber?: string | null;
   notes?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 function getInitials(name: string) {
@@ -90,8 +93,12 @@ export function ClientHeader({
       address:       client.address      ?? "",
       companyNumber: client.companyNumber ?? "",
       notes:         client.notes        ?? "",
+      latitude:      client.latitude     ?? null,
+      longitude:     client.longitude    ?? null,
     },
   });
+
+  const addressValue = form.watch("address") ?? "";
 
   function handleSave(data: ClientInput) {
     startSave(async () => {
@@ -276,7 +283,23 @@ export function ClientHeader({
 
               <div className="sm:col-span-2">
                 <Label htmlFor="edit-address">{tf("form.fields.address")}</Label>
-                <Input id="edit-address" {...form.register("address")} className="mt-1" />
+                <div className="mt-1">
+                  <AddressAutocomplete
+                    id="edit-address"
+                    dir="rtl"
+                    value={addressValue}
+                    onChange={(v) => {
+                      form.setValue("address", v);
+                      form.setValue("latitude", null);
+                      form.setValue("longitude", null);
+                    }}
+                    onSelect={(r) => {
+                      form.setValue("address", r.label);
+                      form.setValue("latitude", r.lat);
+                      form.setValue("longitude", r.lon);
+                    }}
+                  />
+                </div>
               </div>
 
               <div className="sm:col-span-2">

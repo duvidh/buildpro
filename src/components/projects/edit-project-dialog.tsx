@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { updateProject } from "@/actions/projects";
 import { buildUpdateProjectSchema, type UpdateProjectInput } from "@/lib/schemas/project-schema";
 import { PROJECT_STATUS_VALUES } from "@/lib/constants/project-enums";
@@ -38,6 +39,8 @@ type ProjectForEdit = {
   startDate:     string | null;
   endDate:       string | null;
   contractValue: number;
+  latitude?:     number | null;
+  longitude?:    number | null;
 };
 
 function isoToDateInput(iso: string | null): string {
@@ -61,6 +64,7 @@ export function EditProjectDialog({ project }: { project: ProjectForEdit }) {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<UpdateProjectInput>({
     resolver: zodResolver(schema),
@@ -72,8 +76,12 @@ export function EditProjectDialog({ project }: { project: ProjectForEdit }) {
       startDate:     isoToDateInput(project.startDate),
       endDate:       isoToDateInput(project.endDate),
       contractValue: project.contractValue > 0 ? String(project.contractValue) : "",
+      latitude:      project.latitude ?? null,
+      longitude:     project.longitude ?? null,
     },
   });
+
+  const addressValue = watch("address") ?? "";
 
   async function onSubmit(data: UpdateProjectInput) {
     setServerError(null);
@@ -143,10 +151,21 @@ export function EditProjectDialog({ project }: { project: ProjectForEdit }) {
 
           <div className="space-y-1.5">
             <Label htmlFor="ep-address">{tf("form.fields.address")}</Label>
-            <Input
+            <AddressAutocomplete
               id="ep-address"
-              {...register("address")}
+              dir="rtl"
+              value={addressValue}
               placeholder={tf("form.placeholders.address")}
+              onChange={(v) => {
+                setValue("address", v);
+                setValue("latitude", null);
+                setValue("longitude", null);
+              }}
+              onSelect={(r) => {
+                setValue("address", r.label);
+                setValue("latitude", r.lat);
+                setValue("longitude", r.lon);
+              }}
             />
           </div>
 

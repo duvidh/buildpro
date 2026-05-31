@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { HE_MONTHS } from "@/lib/utils";
+import type { DashboardMapProject } from "@/components/dashboard/widgets/types";
 
 // ─── Empty-data fallback ──────────────────────────────────────────────────────
 
@@ -28,6 +29,7 @@ function buildEmptyData(now: Date) {
     upcomingMilestones: [] as never[],
     invoicesDue: [] as never[],
     recentActivity: [] as never[],
+    mapProjects: [] as DashboardMapProject[],
   };
 }
 
@@ -55,6 +57,7 @@ export async function getDashboardData() {
     upcomingMilestones,
     invoicesDue,
     recentActivity,
+    mapProjectsRaw,
   ] = await Promise.all([
     db.lead.count({ where: { status: { notIn: ["CONVERTED", "LOST"] } } }),
     db.lead.count({ where: { status: "NEW" } }),
@@ -139,7 +142,29 @@ export async function getDashboardData() {
         user: { select: { name: true } },
       },
     }),
+
+    // ALL projects that have coordinates — for the map widget
+    db.project.findMany({
+      where: { latitude: { not: null }, longitude: { not: null } },
+      select: {
+        id: true, name: true, status: true, address: true,
+        latitude: true, longitude: true,
+      },
+    }),
   ]);
+
+  // The where-clause guarantees coordinates are present, but Prisma still types
+  // them as number | null — narrow them here.
+  const mapProjects: DashboardMapProject[] = mapProjectsRaw
+    .filter((p) => p.latitude != null && p.longitude != null)
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      status: p.status,
+      address: p.address,
+      latitude: p.latitude as number,
+      longitude: p.longitude as number,
+    }));
 
   // Build 6-month chart data
   const chartData = Array.from({ length: 6 }, (_, i) => {
@@ -180,6 +205,7 @@ export async function getDashboardData() {
     upcomingMilestones,
     invoicesDue,
     recentActivity,
+    mapProjects,
   };
   } catch (err) {
     // Rethrow Next.js internal signals (redirect, notFound, etc.) — never swallow them.

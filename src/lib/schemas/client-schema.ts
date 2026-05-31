@@ -25,6 +25,8 @@ export function buildClientSchema(msgs: ClientValidationMessages = {}) {
     address:       z.string().optional(),
     companyNumber: z.string().optional(),
     notes:         z.string().optional(),
+    latitude:      z.number().optional().nullable(),
+    longitude:     z.number().optional().nullable(),
   });
 }
 

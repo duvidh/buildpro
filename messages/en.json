@@ -171,6 +171,10 @@
       "quick_actions": {
         "label": "Quick Actions",
         "description": "Shortcuts to common actions"
+      },
+      "map": {
+        "label": "Projects map",
+        "description": "All projects with a location shown on a map"
       }
     },
     "unknownWidget": "Unknown widget",
@@ -196,6 +200,10 @@
       "fieldReport": "Field Report",
       "suppliers": "Suppliers",
       "comingSoon": "Coming Soon"
+    },
+    "map": {
+      "empty": "No projects with a location yet — pick an address from the suggestions when creating a project.",
+      "openProject": "Open project"
     }
   },
   "leads": {
@@ -2447,5 +2455,10 @@
         "amber": "Amber"
       }
     }
+  },
+  "address": {
+    "searching": "Searching…",
+    "noResults": "No results found",
+    "typeMore": "Keep typing…"
   }
 }

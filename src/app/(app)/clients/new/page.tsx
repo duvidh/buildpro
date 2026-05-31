@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { createClient } from "@/actions/clients";
 import { buildClientSchema, type ClientInput } from "@/lib/schemas/client-schema";
 
@@ -32,14 +33,19 @@ export default function NewClientPage() {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ClientInput>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: "", contactName: "", phone: "", phone2: "",
       email: "", address: "", companyNumber: "", notes: "",
+      latitude: null, longitude: null,
     },
   });
+
+  const addressValue = watch("address") ?? "";
 
   async function onSubmit(data: ClientInput) {
     const res = await createClient(data);
@@ -187,10 +193,21 @@ export default function NewClientPage() {
             <div className="p-5 space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="address">{tf("form.fields.address")}</Label>
-                <Input
+                <AddressAutocomplete
                   id="address"
+                  dir="rtl"
+                  value={addressValue}
                   placeholder={tf("form.placeholders.address")}
-                  {...register("address")}
+                  onChange={(v) => {
+                    setValue("address", v);
+                    setValue("latitude", null);
+                    setValue("longitude", null);
+                  }}
+                  onSelect={(r) => {
+                    setValue("address", r.label);
+                    setValue("latitude", r.lat);
+                    setValue("longitude", r.lon);
+                  }}
                 />
               </div>
               <div className="space-y-1.5">

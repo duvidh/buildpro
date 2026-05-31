@@ -34,8 +34,8 @@ export async function createProject(raw: CreateProjectInput) {
   if (!parsed.success) {
     return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאת ולידציה" };
   }
-  const { name, description, address, clientId, status, startDate, endDate, contractValue } =
-    parsed.data;
+  const { name, description, address, clientId, status, startDate, endDate, contractValue,
+    latitude, longitude } = parsed.data;
 
   const project = await db.project.create({
     data: {
@@ -47,6 +47,8 @@ export async function createProject(raw: CreateProjectInput) {
       startDate: startDate ? new Date(startDate) : null,
       endDate: endDate ? new Date(endDate) : null,
       contractValue: contractValue ? parseFloat(contractValue) || 0 : 0,
+      latitude: latitude ?? null,
+      longitude: longitude ?? null,
       settings: {
         create: {
           qcEnabled: true,
@@ -73,7 +75,8 @@ export async function updateProject(id: string, raw: UpdateProjectInput) {
   if (!parsed.success) {
     return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאת ולידציה" };
   }
-  const { name, description, address, status, startDate, endDate, contractValue } = parsed.data;
+  const { name, description, address, status, startDate, endDate, contractValue,
+    latitude, longitude } = parsed.data;
   await db.project.update({
     where: { id },
     data: {
@@ -84,6 +87,8 @@ export async function updateProject(id: string, raw: UpdateProjectInput) {
       startDate: startDate ? new Date(startDate) : null,
       endDate: endDate ? new Date(endDate) : null,
       contractValue: contractValue ? parseFloat(contractValue) || 0 : 0,
+      latitude: latitude ?? null,
+      longitude: longitude ?? null,
     },
   });
   revalidatePath(`/projects/${id}`);
@@ -149,6 +154,8 @@ export const getProjectHeader = cache(async (id: string) => {
       contractValue: true,
       progressPercent: true,
       address: true,
+      latitude: true,
+      longitude: true,
       startDate: true,
       endDate: true,
       client: { select: { id: true, name: true } },

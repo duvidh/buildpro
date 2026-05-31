@@ -36,6 +36,8 @@ type HeaderProject = {
   contractValue: number;
   progressPercent: number;
   address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   startDate?: string | null;
   endDate?: string | null;
   client: { id: string; name: string };
@@ -132,6 +134,8 @@ export function ProjectHeader({ project, canDelete = false }: ProjectHeaderProps
               startDate:     project.startDate?.slice(0, 10) ?? null,
               endDate:       project.endDate?.slice(0, 10) ?? null,
               contractValue: project.contractValue,
+              latitude:      project.latitude ?? null,
+              longitude:     project.longitude ?? null,
             }}
           />
           {canDelete && (

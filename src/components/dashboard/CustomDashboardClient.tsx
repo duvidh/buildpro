@@ -22,7 +22,7 @@ import {
   KpiWidget, LeadsWidget, TasksWidget,
   FinanceWidget, ProjectsWidget, PaymentsWidget,
   ClockWidget, MilestonesWidget, InvoicesDueWidget,
-  ActivityWidget, QuickActionsWidget,
+  ActivityWidget, QuickActionsWidget, MapWidget,
 } from "./widgets";
 import type { DashboardData, WidgetLayoutItem } from "./widgets";
 
@@ -87,6 +87,7 @@ function WidgetContent({ id, data }: { id: string; data: DashboardData }) {
     case "invoices_due":  return <InvoicesDueWidget data={data} />;
     case "activity":      return <ActivityWidget data={data} />;
     case "quick_actions": return <QuickActionsWidget />;
+    case "map":           return <MapWidget data={data} />;
     default: return (
       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
         {t("unknownWidget")}

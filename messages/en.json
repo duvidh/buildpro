@@ -2509,5 +2509,11 @@
     "deactivateSuccess": "Employee deactivated",
     "empty": "No employees yet — invite your first teammate.",
     "roleChangeSuccess": "Role updated"
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "subtitle": "A new version may have been deployed. Try again or reload the page.",
+    "retry": "Try again",
+    "reload": "Reload page"
   }
 }

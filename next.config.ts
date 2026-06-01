@@ -8,13 +8,23 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 // ─── PWA ─────────────────────────────────────────────────────────────────────
 const withPWA = withPWAInit({
   dest: "public",
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
+  // NOTE: cacheOnFrontEndNav + aggressiveFrontEndNavCaching were removed.
+  // They made the service worker cache JS chunks aggressively across client-side
+  // navigations; after a new deploy the SW would serve stale chunks whose hashed
+  // siblings no longer exist on the server, producing a ChunkLoadError and the
+  // "please refresh the page" prompt (most visible right after a locale switch,
+  // which triggers a full reload). Letting Workbox skipWaiting + clientsClaim and
+  // not pre-caching navigations keeps each deploy's chunks consistent.
   reloadOnOnline: true,
   // SW is disabled in development so hot-reload stays clean.
   disable: process.env.NODE_ENV === "development",
   workboxOptions: {
     disableDevLogs: true,
+    skipWaiting: true,
+    clientsClaim: true,
+    // Drop precaches from previous deployments so old chunk references are
+    // never served after an update.
+    cleanupOutdatedCaches: true,
   },
 });
 

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { ContractStatus, SupplierType } from "@/generated/prisma/client";
+import { currentCompanyId } from "@/lib/tenant";
 
 export async function createProjectContract(data: {
   projectId: string;
@@ -13,8 +14,10 @@ export async function createProjectContract(data: {
   endDate?: string;
   retentionPercent?: number;
 }) {
+  const cid = await currentCompanyId();
   await db.contract.create({
     data: {
+      companyId: cid,
       projectId: data.projectId,
       supplierId: data.supplierId,
       description: data.description || null,
@@ -30,6 +33,8 @@ export async function createProjectContract(data: {
 }
 
 export async function seedProcurement(projectId: string) {
+  const cid = await currentCompanyId().catch(() => null);
+  if (cid) return { success: true as const, skipped: true };
   const existing = await db.contract.count({ where: { projectId } });
   if (existing > 0) return { success: true as const, skipped: true };
 
@@ -95,15 +100,17 @@ export async function createContractSimple(data: {
   value: number;
   retentionPercent?: number;
 }) {
-  const existing = await db.supplier.findFirst({ where: { name: data.supplierName } });
+  const cid = await currentCompanyId();
+  const existing = await db.supplier.findFirst({ where: { name: data.supplierName, companyId: cid } });
   const supplier =
     existing ??
     (await db.supplier.create({
-      data: { name: data.supplierName, type: data.supplierType as SupplierType, active: true },
+      data: { companyId: cid, name: data.supplierName, type: data.supplierType as SupplierType, active: true },
     }));
 
   await db.contract.create({
     data: {
+      companyId: cid,
       projectId: data.projectId,
       supplierId: supplier.id,
       description: data.description || null,

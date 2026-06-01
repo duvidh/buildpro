@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { ExpenseCategory } from "@/generated/prisma/client";
 import { getSession } from "@/lib/session";
+import { currentCompanyId } from "@/lib/tenant";
 
 // ─── Aggregate page fetch ─────────────────────────────────────────────────────
 
@@ -38,16 +39,18 @@ export async function getFieldPageData(projectId: string) {
 // ─── Fetch ────────────────────────────────────────────────────────────────────
 
 export async function getEmployees() {
+  const cid = await currentCompanyId();
   return db.employee.findMany({
-    where: { active: true },
+    where: { active: true, companyId: cid },
     orderBy: { name: "asc" },
     select: { id: true, name: true, hourlyRate: true },
   });
 }
 
 export async function getActiveProjects() {
+  const cid = await currentCompanyId();
   return db.project.findMany({
-    where: { status: { in: ["ACTIVE", "PLANNING"] } },
+    where: { status: { in: ["ACTIVE", "PLANNING"] }, companyId: cid },
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });
@@ -78,7 +81,9 @@ export async function getDailyLogsByProject(projectId: string) {
 }
 
 export async function getAllDailyLogs() {
+  const cid = await currentCompanyId();
   return db.dailyLog.findMany({
+    where: { companyId: cid },
     orderBy: { date: "desc" },
     take: 100,
     include: {
@@ -162,8 +167,10 @@ export async function createDailyLog(data: {
     return { success: false as const, error: "יומן עבודה כבר קיים לתאריך זה." };
   }
 
+  const cid = await currentCompanyId();
   const log = await db.dailyLog.create({
     data: {
+      companyId: cid,
       projectId,
       date: new Date(date),
       weatherConditions: weatherConditions || null,

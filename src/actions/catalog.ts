@@ -3,10 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { catalogItemSchema, type CatalogItemInput } from "@/lib/schemas/catalog-schema";
+import { currentCompanyId } from "@/lib/tenant";
 
 export async function getCatalogItems() {
+  const cid = await currentCompanyId();
   return db.catalogItem.findMany({
-    where: { active: true },
+    where: { active: true, companyId: cid },
     orderBy: [{ category: "asc" }, { name: "asc" }],
   });
 }
@@ -17,8 +19,10 @@ export async function createCatalogItem(raw: CatalogItemInput) {
     return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאה" };
   }
   const { name, sku, unit, unitCost, category, description } = parsed.data;
+  const cid = await currentCompanyId();
   await db.catalogItem.create({
     data: {
+      companyId:   cid,
       name,
       sku:         sku         || null,
       unit,
@@ -53,6 +57,9 @@ export async function updateCatalogItem(id: string, raw: CatalogItemInput) {
 }
 
 export async function deleteCatalogItem(id: string) {
+  const cid = await currentCompanyId();
+  const owned = await db.catalogItem.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const };
   await db.catalogItem.update({ where: { id }, data: { active: false } });
   revalidatePath("/catalog");
   return { success: true as const };
@@ -61,8 +68,9 @@ export async function deleteCatalogItem(id: string) {
 export async function bulkDeleteCatalogItems(ids: string[]) {
   const validIds = ids.filter(Boolean);
   if (validIds.length === 0) return { success: false as const, count: 0 };
+  const cid = await currentCompanyId();
   await db.catalogItem.updateMany({
-    where: { id: { in: validIds } },
+    where: { id: { in: validIds }, companyId: cid },
     data: { active: false },
   });
   revalidatePath("/catalog");
@@ -85,8 +93,10 @@ export async function bulkImportCatalogItems(rows: ImportRow[]) {
   if (valid.length === 0) {
     return { success: false as const, error: "לא נמצאו שורות תקינות לייבוא" };
   }
+  const cid = await currentCompanyId();
   await db.catalogItem.createMany({
     data: valid.map((r) => ({
+      companyId:   cid,
       name:        r.name.trim(),
       sku:         r.sku?.trim()         || null,
       category:    r.category?.trim()    || null,
@@ -103,6 +113,8 @@ export async function bulkImportCatalogItems(rows: ImportRow[]) {
 // ─── Seed demo data ───────────────────────────────────────────────────────────
 
 export async function seedCatalogItems() {
+  const cid = await currentCompanyId().catch(() => null);
+  if (cid) return { success: true as const, skipped: true };
   const existing = await db.catalogItem.count({ where: { active: true } });
   if (existing > 0) return { success: true as const, skipped: true };
 

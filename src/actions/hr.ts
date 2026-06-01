@@ -3,9 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireRole, ADMIN_ROLES, DELETE_ROLES, PROJECT_ROLES } from "@/lib/auth-utils";
+import { currentCompanyId } from "@/lib/tenant";
 
 export async function getEmployees() {
+  const cid = await currentCompanyId();
   return db.employee.findMany({
+    where: { companyId: cid },
     orderBy: [{ active: "desc" }, { name: "asc" }],
     include: {
       _count: { select: { timeEntries: true } },
@@ -23,8 +26,10 @@ export async function createEmployee(data: {
 }) {
   try {
     await requireRole(PROJECT_ROLES);
+    const cid = await currentCompanyId();
     await db.employee.create({
       data: {
+        companyId: cid,
         name: data.name,
         trade: data.trade || null,
         phone: data.phone || null,
@@ -48,6 +53,9 @@ export async function updateEmployee(
 ) {
   try {
     await requireRole(PROJECT_ROLES);
+    const cid = await currentCompanyId();
+    const owned = await db.employee.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+    if (!owned) return { success: false as const, error: "שגיאה בעדכון העובד." };
     await db.employee.update({
       where: { id },
       data: {
@@ -70,6 +78,9 @@ export async function updateEmployee(
 export async function deleteEmployee(id: string) {
   try {
     await requireRole(DELETE_ROLES);
+    const cid = await currentCompanyId();
+    const owned = await db.employee.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+    if (!owned) return { success: false as const, error: "לא ניתן למחוק עובד עם נתונים משויכים." };
     await db.employee.delete({ where: { id } });
     revalidatePath("/hr");
     return { success: true as const };
@@ -80,12 +91,17 @@ export async function deleteEmployee(id: string) {
 
 export async function toggleEmployeeActive(id: string, active: boolean) {
   await requireRole(ADMIN_ROLES);
+  const cid = await currentCompanyId();
+  const owned = await db.employee.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const, error: "not_found" as const };
   await db.employee.update({ where: { id }, data: { active } });
   revalidatePath("/hr");
   return { success: true as const };
 }
 
 export async function seedHRData() {
+  const cid = await currentCompanyId().catch(() => null);
+  if (cid) return { success: true as const, skipped: true };
   const count = await db.employee.count();
   if (count > 0) return { success: true as const, skipped: true };
 

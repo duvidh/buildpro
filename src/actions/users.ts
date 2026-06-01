@@ -8,6 +8,7 @@ import { requireRole, ADMIN_ROLES } from "@/lib/auth-utils";
 import { getSession } from "@/lib/session";
 import { DEFAULT_PASSWORD } from "@/lib/auth-constants";
 import { sendCredentialsEmail } from "@/lib/email";
+import { currentCompanyId } from "@/lib/tenant";
 
 export async function getUsers() {
   const session = await getSession();
@@ -316,6 +317,8 @@ export async function removeEmployee(id: string) {
 }
 
 export async function seedUsers() {
+  const cid = await currentCompanyId().catch(() => null);
+  if (cid) return { success: true as const, skipped: true };
   const count = await db.user.count();
   if (count > 0) return { success: true as const, skipped: true };
 

@@ -3,9 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { SupplierType } from "@/generated/prisma/client";
+import { currentCompanyId } from "@/lib/tenant";
 
 export async function getSubcontractors() {
+  const cid = await currentCompanyId();
   return db.supplier.findMany({
+    where: { companyId: cid },
     orderBy: { name: "asc" },
     include: {
       _count: { select: { contracts: true } },
@@ -22,8 +25,10 @@ export async function createSubcontractor(data: {
   address?: string;
   notes?: string;
 }) {
+  const cid = await currentCompanyId();
   await db.supplier.create({
     data: {
+      companyId: cid,
       name: data.name,
       type: data.type as SupplierType,
       contactName: data.contactName || null,
@@ -41,6 +46,9 @@ export async function updateSubcontractor(
   id: string,
   data: { name: string; type: string; contactName?: string; phone?: string; email?: string; address?: string; notes?: string }
 ) {
+  const cid = await currentCompanyId();
+  const owned = await db.supplier.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const };
   await db.supplier.update({
     where: { id },
     data: {
@@ -59,6 +67,9 @@ export async function updateSubcontractor(
 
 export async function deleteSubcontractor(id: string) {
   try {
+    const cid = await currentCompanyId();
+    const owned = await db.supplier.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+    if (!owned) return { success: false as const, error: "לא ניתן למחוק ספק עם חוזים משויכים." };
     await db.supplier.delete({ where: { id } });
     revalidatePath("/subcontractors");
     return { success: true as const };

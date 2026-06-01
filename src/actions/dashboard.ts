@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { HE_MONTHS } from "@/lib/utils";
+import { currentCompanyId } from "@/lib/tenant";
 import type { DashboardMapProject } from "@/components/dashboard/widgets/types";
 
 // ─── Empty-data fallback ──────────────────────────────────────────────────────
@@ -37,6 +38,7 @@ export async function getDashboardData() {
   const now = new Date();
 
   try {
+  const cid = await currentCompanyId();
   const monthStart    = new Date(now.getFullYear(), now.getMonth(), 1);
   const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const sixMonthsAgo  = new Date(now.getFullYear(), now.getMonth() - 5, 1);
@@ -59,17 +61,17 @@ export async function getDashboardData() {
     recentActivity,
     mapProjectsRaw,
   ] = await Promise.all([
-    db.lead.count({ where: { status: { notIn: ["CONVERTED", "LOST"] } } }),
-    db.lead.count({ where: { status: "NEW" } }),
-    db.project.count({ where: { status: "ACTIVE" } }),
-    db.project.count({ where: { status: "ON_HOLD" } }),
-    db.task.count({ where: { status: { not: "DONE" } } }),
-    db.task.count({ where: { status: { not: "DONE" }, dueDate: { lt: now } } }),
-    db.invoice.aggregate({ where: { date: { gte: monthStart } }, _sum: { paidAmount: true } }),
-    db.invoice.aggregate({ where: { date: { gte: prevMonthStart, lt: monthStart } }, _sum: { paidAmount: true } }),
+    db.lead.count({ where: { status: { notIn: ["CONVERTED", "LOST"] }, companyId: cid } }),
+    db.lead.count({ where: { status: "NEW", companyId: cid } }),
+    db.project.count({ where: { status: "ACTIVE", companyId: cid } }),
+    db.project.count({ where: { status: "ON_HOLD", companyId: cid } }),
+    db.task.count({ where: { status: { not: "DONE" }, companyId: cid } }),
+    db.task.count({ where: { status: { not: "DONE" }, dueDate: { lt: now }, companyId: cid } }),
+    db.invoice.aggregate({ where: { date: { gte: monthStart }, companyId: cid }, _sum: { paidAmount: true } }),
+    db.invoice.aggregate({ where: { date: { gte: prevMonthStart, lt: monthStart }, companyId: cid }, _sum: { paidAmount: true } }),
 
     db.project.findMany({
-      where: { status: { in: ["ACTIVE", "PLANNING"] } },
+      where: { status: { in: ["ACTIVE", "PLANNING"] }, companyId: cid },
       orderBy: { updatedAt: "desc" },
       take: 6,
       select: {
@@ -80,7 +82,7 @@ export async function getDashboardData() {
     }),
 
     db.task.findMany({
-      where: { status: { not: "DONE" }, dueDate: { not: null } },
+      where: { status: { not: "DONE" }, dueDate: { not: null }, companyId: cid },
       orderBy: { dueDate: "asc" },
       take: 6,
       select: {
@@ -90,11 +92,12 @@ export async function getDashboardData() {
     }),
 
     db.invoice.findMany({
-      where: { date: { gte: sixMonthsAgo } },
+      where: { date: { gte: sixMonthsAgo }, companyId: cid },
       select: { date: true, paidAmount: true },
     }),
 
     db.payment.findMany({
+      where: { invoice: { companyId: cid } },
       orderBy: { date: "desc" },
       take: 6,
       select: {
@@ -111,7 +114,7 @@ export async function getDashboardData() {
 
     // Upcoming milestones (not completed, future dates)
     db.milestone.findMany({
-      where: { completed: false },
+      where: { completed: false, project: { companyId: cid } },
       orderBy: { date: "asc" },
       take: 6,
       select: {
@@ -122,7 +125,7 @@ export async function getDashboardData() {
 
     // Unpaid / partially paid invoices
     db.invoice.findMany({
-      where: { status: { in: ["SENT", "OVERDUE", "PARTIALLY_PAID"] } },
+      where: { status: { in: ["SENT", "OVERDUE", "PARTIALLY_PAID"] }, companyId: cid },
       orderBy: [{ status: "desc" }, { dueDate: "asc" }],
       take: 6,
       select: {
@@ -135,6 +138,7 @@ export async function getDashboardData() {
 
     // Recent activity log
     db.activityLog.findMany({
+      where: { companyId: cid },
       orderBy: { createdAt: "desc" },
       take: 10,
       select: {
@@ -145,7 +149,7 @@ export async function getDashboardData() {
 
     // ALL projects that have coordinates — for the map widget
     db.project.findMany({
-      where: { latitude: { not: null }, longitude: { not: null } },
+      where: { latitude: { not: null }, longitude: { not: null }, companyId: cid },
       select: {
         id: true, name: true, status: true, address: true,
         latitude: true, longitude: true,

@@ -5,11 +5,13 @@ import { db } from "@/lib/db";
 import { requireRole, FINANCE_WRITE_ROLES } from "@/lib/auth-utils";
 import { getSession } from "@/lib/session";
 import { logActivity } from "@/lib/activity";
+import { currentCompanyId } from "@/lib/tenant";
 
 // ─── Auto-generate next invoice number ───────────────────────────────────────
 
-async function nextInvoiceNumber(): Promise<string> {
+async function nextInvoiceNumber(cid: string | null): Promise<string> {
   const last = await db.invoice.findFirst({
+    where:   { companyId: cid },
     orderBy: { createdAt: "desc" },
     select:  { invoiceNumber: true },
   });
@@ -44,9 +46,10 @@ export async function createInvoice(data: {
   const session      = await getSession();
   const actorId      = session?.userId ?? null;
   const actorName    = session?.name   ?? "מישהו";
+  const cid          = await currentCompanyId();
   const taxAmount    = Math.round(data.amount * (data.taxPercent / 100) * 100) / 100;
   const total        = Math.round((data.amount + taxAmount) * 100) / 100;
-  const invoiceNumber = data.invoiceNumber?.trim() || await nextInvoiceNumber();
+  const invoiceNumber = data.invoiceNumber?.trim() || await nextInvoiceNumber(cid);
 
   // Verify uniqueness
   const existing = await db.invoice.findUnique({ where: { invoiceNumber } });
@@ -56,6 +59,7 @@ export async function createInvoice(data: {
 
   const invoice = await db.invoice.create({
     data: {
+      companyId:     cid,
       clientId:      data.clientId,
       projectId:     data.projectId,
       invoiceNumber,

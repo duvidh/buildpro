@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { clientSchema, type ClientInput } from "@/lib/schemas/client-schema";
 import { requireRole, CLIENT_ROLES, DELETE_ROLES } from "@/lib/auth-utils";
+import { currentCompanyId } from "@/lib/tenant";
 
 export async function createClient(raw: ClientInput) {
   try { await requireRole(CLIENT_ROLES); }
@@ -15,9 +16,11 @@ export async function createClient(raw: ClientInput) {
     return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאה" };
   }
   const { email, latitude, longitude, ...rest } = parsed.data;
+  const cid = await currentCompanyId();
   const client = await db.client.create({
     data: {
       ...rest,
+      companyId: cid,
       email: email || null,
       latitude: latitude ?? null,
       longitude: longitude ?? null,
@@ -28,7 +31,9 @@ export async function createClient(raw: ClientInput) {
 }
 
 export async function getClients() {
+  const cid = await currentCompanyId();
   return db.client.findMany({
+    where: { companyId: cid },
     orderBy: { createdAt: "desc" },
     include: {
       _count: { select: { projects: true, invoices: true } },
@@ -47,6 +52,9 @@ export async function updateClient(id: string, raw: ClientInput) {
     return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאה" };
   }
   const { email, latitude, longitude, ...rest } = parsed.data;
+  const cid = await currentCompanyId();
+  const owned = await db.client.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const, error: "אין הרשאה לבצע פעולה זו" };
   await db.client.update({
     where: { id },
     data: {
@@ -64,6 +72,10 @@ export async function updateClient(id: string, raw: ClientInput) {
 export async function deleteClient(id: string) {
   try { await requireRole(DELETE_ROLES); }
   catch { return { success: false as const, error: "אין הרשאה לבצע פעולה זו" }; }
+
+  const cid = await currentCompanyId();
+  const owned = await db.client.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const, error: "אין הרשאה לבצע פעולה זו" };
 
   try {
     // All child relations (Projects, Invoices, Quotes, Tasks, Files, etc.)

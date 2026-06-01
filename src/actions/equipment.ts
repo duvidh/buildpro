@@ -3,9 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { EquipmentStatus } from "@/generated/prisma/client";
+import { currentCompanyId } from "@/lib/tenant";
 
 export async function getEquipmentWithProjects() {
+  const cid = await currentCompanyId();
   return db.equipment.findMany({
+    where: { companyId: cid },
     orderBy: [{ status: "asc" }, { name: "asc" }],
     include: {
       logs: {
@@ -26,8 +29,10 @@ export async function createEquipment(data: {
   notes?: string;
 }) {
   try {
+    const cid = await currentCompanyId();
     await db.equipment.create({
       data: {
+        companyId: cid,
         name: data.name,
         code: data.code || null,
         value: data.value ?? null,
@@ -89,6 +94,9 @@ export async function unassignEquipment(equipmentId: string) {
 
 export async function deleteEquipment(id: string) {
   try {
+    const cid = await currentCompanyId();
+    const owned = await db.equipment.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+    if (!owned) return { success: false as const, error: "לא ניתן למחוק ציוד עם רשומות שיוך משויכות." };
     await db.equipment.delete({ where: { id } });
     revalidatePath("/equipment");
     return { success: true as const };
@@ -98,12 +106,17 @@ export async function deleteEquipment(id: string) {
 }
 
 export async function updateEquipmentStatus(id: string, status: EquipmentStatus) {
+  const cid = await currentCompanyId();
+  const owned = await db.equipment.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const };
   await db.equipment.update({ where: { id }, data: { status } });
   revalidatePath("/equipment");
   return { success: true as const };
 }
 
 export async function seedEquipmentData() {
+  const cid = await currentCompanyId().catch(() => null);
+  if (cid) return { success: true as const, skipped: true };
   const count = await db.equipment.count();
   if (count > 0) return { success: true as const, skipped: true };
 

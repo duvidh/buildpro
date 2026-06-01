@@ -5,11 +5,14 @@ import { db } from "@/lib/db";
 import { type CreateQuoteInput, type UpdateQuoteHeaderInput } from "@/lib/schemas/quote-schema";
 import type { QuoteStatusValue } from "@/lib/constants/quote-enums";
 import { requireRole, PROJECT_ROLES, DELETE_ROLES } from "@/lib/auth-utils";
+import { currentCompanyId } from "@/lib/tenant";
 
 // ─── Read ──────────────────────────────────────────────────────────────────────
 
 export async function getQuotes() {
+  const cid = await currentCompanyId();
   return db.quote.findMany({
+    where: { companyId: cid },
     orderBy: { createdAt: "desc" },
     include: {
       client: { select: { id: true, name: true } },
@@ -40,11 +43,14 @@ export async function getQuoteById(id: string) {
 
 // ─── Quote CRUD ───────────────────────────────────────────────────────────────
 
-async function generateQuoteNumber(tx: Parameters<Parameters<typeof db.$transaction>[0]>[0]): Promise<string> {
+async function generateQuoteNumber(
+  tx: Parameters<Parameters<typeof db.$transaction>[0]>[0],
+  cid: string | null,
+): Promise<string> {
   const year   = new Date().getFullYear();
   const prefix = `Q${year}-`;
   const last   = await tx.quote.findFirst({
-    where: { quoteNumber: { startsWith: prefix } },
+    where: { quoteNumber: { startsWith: prefix }, companyId: cid },
     orderBy: { quoteNumber: "desc" },
     select: { quoteNumber: true },
   });
@@ -54,10 +60,12 @@ async function generateQuoteNumber(tx: Parameters<Parameters<typeof db.$transact
 
 export async function createQuote(data: CreateQuoteInput) {
   await requireRole(PROJECT_ROLES);
+  const cid = await currentCompanyId();
   const quote = await db.$transaction(async (tx) => {
-    const quoteNumber = await generateQuoteNumber(tx);
+    const quoteNumber = await generateQuoteNumber(tx, cid);
     return tx.quote.create({
       data: {
+        companyId: cid,
         clientId:  data.clientId  || null,
         leadId:    data.leadId    || null,
         projectId: data.projectId || null,
@@ -92,6 +100,9 @@ export async function updateQuoteHeader(id: string, data: UpdateQuoteHeaderInput
 
 export async function updateQuoteStatus(id: string, status: QuoteStatusValue) {
   await requireRole(PROJECT_ROLES);
+  const cid = await currentCompanyId();
+  const owned = await db.quote.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const };
   await db.quote.update({ where: { id }, data: { status } });
   revalidatePath(`/quotes/${id}`);
   revalidatePath("/quotes");
@@ -100,6 +111,9 @@ export async function updateQuoteStatus(id: string, status: QuoteStatusValue) {
 
 export async function deleteQuote(id: string) {
   await requireRole(DELETE_ROLES);
+  const cid = await currentCompanyId();
+  const owned = await db.quote.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const };
   await db.quote.delete({ where: { id } });
   revalidatePath("/quotes");
   return { success: true as const };

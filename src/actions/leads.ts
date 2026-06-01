@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import type { LeadStatusValue } from "@/lib/constants/lead-enums";
 import { createLeadSchema, type CreateLeadInput } from "@/lib/schemas/lead-schema";
 import { requireRole, CLIENT_ROLES, DELETE_ROLES } from "@/lib/auth-utils";
+import { currentCompanyId } from "@/lib/tenant";
 
 export const getLeadById = cache(async (id: string) => {
   return db.lead.findUnique({
@@ -17,7 +18,9 @@ export const getLeadById = cache(async (id: string) => {
 });
 
 export async function getLeads() {
+  const cid = await currentCompanyId();
   return db.lead.findMany({
+    where: { companyId: cid },
     orderBy: { createdAt: "desc" },
     include: {
       assignedTo: { select: { id: true, name: true } },
@@ -38,10 +41,12 @@ export async function createLead(raw: CreateLeadInput) {
   const { budget, estimatedSize, email, assignedEmployeeId, constructionTypes, ...rest } = parsed.data;
   const budgetNum = budget ? parseFloat(budget.replace(/,/g, "")) : null;
   const sizeNum = estimatedSize ? parseFloat(estimatedSize) : null;
+  const cid = await currentCompanyId();
 
   await db.lead.create({
     data: {
       ...rest,
+      companyId: cid,
       email: email || null,
       budget: budgetNum && !isNaN(budgetNum) ? budgetNum : null,
       estimatedSize: sizeNum && !isNaN(sizeNum) ? sizeNum : null,
@@ -65,6 +70,9 @@ export async function updateLead(id: string, raw: CreateLeadInput) {
   const { budget, estimatedSize, email, assignedEmployeeId, constructionTypes, ...rest } = parsed.data;
   const budgetNum = budget ? parseFloat(budget.replace(/,/g, "")) : null;
   const sizeNum = estimatedSize ? parseFloat(estimatedSize) : null;
+  const cid = await currentCompanyId();
+  const owned = await db.lead.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const, error: "אין הרשאה לבצע פעולה זו" };
   await db.lead.update({
     where: { id },
     data: {
@@ -84,6 +92,10 @@ export async function deleteLead(id: string) {
   try { await requireRole(DELETE_ROLES); }
   catch { return { success: false as const, error: "אין הרשאה לבצע פעולה זו" }; }
 
+  const cid = await currentCompanyId();
+  const owned = await db.lead.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const, error: "לא ניתן למחוק את הליד" };
+
   try {
     await db.lead.delete({ where: { id } });
     revalidatePath("/leads");
@@ -96,6 +108,9 @@ export async function deleteLead(id: string) {
 export async function updateLeadStatus(id: string, status: LeadStatusValue) {
   try {
     await requireRole(CLIENT_ROLES);
+    const cid = await currentCompanyId();
+    const owned = await db.lead.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+    if (!owned) return { success: false as const, error: "לא ניתן לעדכן את סטטוס הליד." };
     await db.lead.update({ where: { id }, data: { status } });
     revalidatePath("/leads");
     return { success: true as const };
@@ -105,8 +120,9 @@ export async function updateLeadStatus(id: string, status: LeadStatusValue) {
 }
 
 export async function getLeadsForSelect() {
+  const cid = await currentCompanyId();
   return db.lead.findMany({
-    where: { status: { not: "CONVERTED" } },
+    where: { status: { not: "CONVERTED" }, companyId: cid },
     select: { id: true, name: true },
     orderBy: { createdAt: "desc" },
   });
@@ -126,6 +142,7 @@ export async function convertLeadToClient(leadId: string) {
   const client = await db.$transaction(async (tx) => {
     const newClient = await tx.client.create({
       data: {
+        companyId: lead.companyId,
         name: lead.name,
         phone: lead.phone,
         phone2: lead.phone2 ?? undefined,

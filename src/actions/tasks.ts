@@ -8,6 +8,7 @@ import { TaskPriority, TaskType } from "@/generated/prisma/client";
 import { getSession } from "@/lib/session";
 import { requireRole, DELETE_ROLES, PROJECT_ROLES } from "@/lib/auth-utils";
 import { logActivity, sendNotification } from "@/lib/activity";
+import { currentCompanyId } from "@/lib/tenant";
 
 // ─── Label maps ───────────────────────────────────────────────────────────────
 
@@ -27,7 +28,9 @@ const TASK_INCLUDE = {
 
 /** Global /tasks page — all tasks ordered by urgency. */
 export async function getAllTasks() {
+  const cid = await currentCompanyId();
   return db.task.findMany({
+    where: { companyId: cid },
     orderBy: [{ status: "asc" }, { dueDate: "asc" }, { createdAt: "desc" }],
     include: TASK_INCLUDE,
     take: 500,
@@ -54,23 +57,25 @@ export async function getClientTasks(clientId: string) {
 
 /** Fetch all select-list data for the New Task form in one round-trip. */
 export async function getTaskSelectData() {
+  const cid = await currentCompanyId();
   const [projects, clients, leads, users] = await Promise.all([
     db.project.findMany({
-      where:   { status: { in: ["PLANNING", "ACTIVE"] } },
+      where:   { status: { in: ["PLANNING", "ACTIVE"] }, companyId: cid },
       select:  { id: true, name: true },
       orderBy: { name: "asc" },
     }),
     db.client.findMany({
+      where:   { companyId: cid },
       select:  { id: true, name: true },
       orderBy: { name: "asc" },
     }),
     db.lead.findMany({
-      where:   { status: { notIn: ["CONVERTED", "LOST"] } },
+      where:   { status: { notIn: ["CONVERTED", "LOST"] }, companyId: cid },
       select:  { id: true, name: true },
       orderBy: { name: "asc" },
     }),
     db.user.findMany({
-      where:   { active: true },
+      where:   { active: true, companyId: cid },
       select:  { id: true, name: true },
       orderBy: { name: "asc" },
     }),
@@ -110,9 +115,11 @@ export async function createTask(raw: CreateTaskInput) {
   const session   = await requireRole(PROJECT_ROLES);
   const actorId   = session.userId;
   const actorName = session.name;
+  const cid       = await currentCompanyId();
 
   const task = await db.task.create({
     data: {
+      companyId:    cid,
       projectId:    projectId    || null,
       leadId:       leadId       || null,
       clientId:     clientId     || null,

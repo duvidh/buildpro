@@ -11,9 +11,12 @@ import {
   requireRole,
   PROJECT_ROLES, DELETE_ROLES, FINANCE_VIEW_ROLES,
 } from "@/lib/auth-utils";
+import { currentCompanyId } from "@/lib/tenant";
 
 export async function getProjects() {
+  const cid = await currentCompanyId();
   return db.project.findMany({
+    where: { companyId: cid },
     orderBy: { createdAt: "desc" },
     include: {
       client: { select: { id: true, name: true } },
@@ -37,8 +40,11 @@ export async function createProject(raw: CreateProjectInput) {
   const { name, description, address, clientId, status, startDate, endDate, contractValue,
     latitude, longitude } = parsed.data;
 
+  const cid = await currentCompanyId();
+
   const project = await db.project.create({
     data: {
+      companyId: cid,
       name,
       description: description || null,
       address: address || null,
@@ -77,6 +83,11 @@ export async function updateProject(id: string, raw: UpdateProjectInput) {
   }
   const { name, description, address, status, startDate, endDate, contractValue,
     latitude, longitude } = parsed.data;
+
+  const cid = await currentCompanyId();
+  const owned = await db.project.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const, error: "אין הרשאה לבצע פעולה זו" };
+
   await db.project.update({
     where: { id },
     data: {
@@ -100,6 +111,10 @@ export async function updateProject(id: string, raw: UpdateProjectInput) {
 export async function deleteProject(id: string) {
   try { await requireRole(DELETE_ROLES); }
   catch { return { success: false as const, error: "אין הרשאה לבצע פעולה זו" }; }
+
+  const cid = await currentCompanyId();
+  const owned = await db.project.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const, error: "אין הרשאה לבצע פעולה זו" };
 
   try {
     // All child relations now have onDelete: Cascade in the schema —

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { HelpGuide } from "@/components/layout/help-guide";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 import type { UserRole } from "@/lib/auth-utils";
 import { Button } from "@/components/ui/button";
@@ -116,6 +117,9 @@ export function AppHeader({
           className="pe-9 text-sm bg-muted/50 border-transparent focus:border-border focus:bg-background"
         />
       </div>
+
+      {/* Help / user guide — sits right next to the search bar */}
+      <HelpGuide />
 
       <div className="flex-1" />
 

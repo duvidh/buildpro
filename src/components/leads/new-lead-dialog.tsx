@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Combobox } from "@/components/ui/combobox";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -257,6 +258,8 @@ export function LeadFormBody({
   const [constructionTypes, setConstructionTypes] = useState<string[]>(
     defaultValues?.constructionTypes ?? []
   );
+  // City is no longer a separate field — it's captured automatically from the
+  // selected address suggestion (kept in state so it still saves to the DB).
   const [city, setCity] = useState(defaultValues?.city ?? "");
 
   const employeeOptions = employees.map((e) => ({ value: e.id, label: e.name }));
@@ -279,6 +282,8 @@ export function LeadFormBody({
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const assignedEmployeeId = watch("assignedEmployeeId");
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const addressValue = watch("propertyAddress") ?? "";
 
   async function handleFormSubmit(data: CreateLeadInput) {
     await onSubmit(data, constructionTypes, city);
@@ -337,20 +342,19 @@ export function LeadFormBody({
         </div>
       </div>
 
-      {/* Address + City */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="lf-address">{tf("form.fields.address")}</Label>
-          <Input
-            id="lf-address"
-            placeholder={tf("form.placeholders.address")}
-            {...register("propertyAddress")}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>{tf("form.fields.city")}</Label>
-          <CreatableCitySelect value={city} onChange={setCity} />
-        </div>
+      {/* Address (with autocomplete — city is captured automatically on select) */}
+      <div className="space-y-1.5">
+        <Label htmlFor="lf-address">{tf("form.fields.address")}</Label>
+        <AddressAutocomplete
+          id="lf-address"
+          value={addressValue}
+          placeholder={tf("form.placeholders.address")}
+          onChange={(v) => setValue("propertyAddress", v)}
+          onSelect={(r) => {
+            setValue("propertyAddress", r.label);
+            if (r.city) setCity(r.city);
+          }}
+        />
       </div>
 
       {/* Lead Source + Assigned Rep */}

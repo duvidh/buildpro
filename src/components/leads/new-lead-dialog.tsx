@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Loader2, ChevronDown, Check, X } from "lucide-react";
@@ -451,22 +452,20 @@ export function LeadFormBody({
   );
 }
 
-// ─── Main export: button + inline expandable form ─────────────────────────────
+// ─── Main export: quick-action button (used on the dashboard) ─────────────────
+// Links to the Leads page with ?new=1, which auto-opens the inline form there.
+// (Previously this rendered a broken empty div on click.)
 
-export function NewLeadDialog({ employees: _employees = [] }: { employees?: EmployeeOption[] }) {
-  const t    = useTranslations("leads");
-  const [open, setOpen] = useState(false);
-
-  if (!open) {
-    return (
-      <Button size="sm" onClick={() => setOpen(true)}>
+export function NewLeadDialog() {
+  const t = useTranslations("leads");
+  return (
+    <Button asChild size="sm">
+      <Link href="/leads?new=1">
         <Plus className="h-4 w-4 me-1.5" />
         {t("newLead")}
-      </Button>
-    );
-  }
-
-  return <div className="col-span-full w-full" />;
+      </Link>
+    </Button>
+  );
 }
 
 // ─── Section wrapper used in leads page ──────────────────────────────────────
@@ -474,7 +473,9 @@ export function NewLeadDialog({ employees: _employees = [] }: { employees?: Empl
 export function NewLeadSection({ employees = [] }: { employees?: EmployeeOption[] }) {
   const t      = useTranslations("leads");
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const searchParams = useSearchParams();
+  // Auto-open when arriving from the dashboard quick-action (/leads?new=1).
+  const [open, setOpen] = useState(searchParams.get("new") === "1");
 
   async function handleSubmit(data: CreateLeadInput, constructionTypes: string[], city: string) {
     const res = await createLead({ ...data, constructionTypes, city: city || undefined });

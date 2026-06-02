@@ -44,7 +44,8 @@
     "groups": {
       "management": "Management",
       "field": "Field & Resources",
-      "finance": "Procurement & Finance"
+      "finance": "Procurement & Finance",
+      "platform": "Platform"
     },
     "dashboard": "Dashboard",
     "leads": "Leads & Sales",
@@ -60,7 +61,8 @@
     "catalog": "Catalog",
     "finance": "Finance",
     "settings": "Settings",
-    "employees": "Employees"
+    "employees": "Employees",
+    "adminConsole": "Super Admin"
   },
   "common": {
     "newClient": "New Client",
@@ -2515,5 +2517,30 @@
     "subtitle": "A new version may have been deployed. Try again or reload the page.",
     "retry": "Try again",
     "reload": "Reload page"
+  },
+  "admin": {
+    "title": "Super Admin Console",
+    "subtitle": "Manage all companies and users registered in the system",
+    "stats": {
+      "companies": "Companies",
+      "users": "Users",
+      "activeUsers": "Active",
+      "unassigned": "No company"
+    },
+    "companiesTitle": "Registered Companies",
+    "noCompanies": "No companies registered yet",
+    "colCompany": "Company",
+    "colUsers": "Users",
+    "colProjects": "Projects",
+    "colCreated": "Joined",
+    "viewUsers": "View users",
+    "unassignedTitle": "Users without a company",
+    "unassignedHint": "Users who signed up but have not yet created or joined a company.",
+    "colUser": "User",
+    "colActive": "Active",
+    "noUsers": "No users in this company",
+    "saved": "Updated",
+    "saveError": "Update failed",
+    "loadError": "Failed to load users"
   }
 }

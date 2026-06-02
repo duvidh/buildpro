@@ -6,6 +6,7 @@ import {
   getRedirectUri,
   type GoogleProfile,
 } from "@/lib/google-oauth";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 import { UserRole } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -74,6 +75,12 @@ export async function GET(req: NextRequest) {
       email: user.email,
       companyId: user.companyId,
     });
+
+    // Platform owner goes straight to the cross-tenant admin console and never
+    // hits the company-onboarding flow.
+    if (isSuperAdminEmail(user.email)) {
+      return NextResponse.redirect(new URL("/admin", req.url));
+    }
 
     // Core requirement: company → dashboard, otherwise onboarding.
     return NextResponse.redirect(

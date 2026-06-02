@@ -19,6 +19,7 @@ import {
   Building2,
   HardHat,
   UsersRound,
+  ShieldAlert,
 } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { cn } from "@/lib/utils";
@@ -80,6 +81,7 @@ export function AppSidebar({
   companyName,
   mobile = false,
   onNavigate,
+  isSuperAdmin = false,
 }: {
   user: SessionUser;
   companyName?: string;
@@ -87,6 +89,8 @@ export function AppSidebar({
   mobile?: boolean;
   /** Called when a nav item is tapped — used to close the mobile drawer. */
   onNavigate?: () => void;
+  /** Platform owner — shows the cross-tenant admin console link. */
+  isSuperAdmin?: boolean;
 }) {
   const pathname  = usePathname();
   const t         = useTranslations("nav");
@@ -114,6 +118,15 @@ export function AppSidebar({
       ),
     }))
     .filter((group) => group.items.length > 0);
+
+  // Platform-owner-only group (cross-tenant console). Appended last; shown only
+  // to the super admin regardless of company role.
+  if (isSuperAdmin) {
+    visibleGroups.push({
+      groupKey: "groups.platform",
+      items: [{ href: "/admin", icon: ShieldAlert, labelKey: "adminConsole" }],
+    });
+  }
 
   const canViewSettings = user.role !== "FIELD_WORKER";
   const displayName = companyName || APP_CONFIG.companyName;

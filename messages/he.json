@@ -44,7 +44,8 @@
     "groups": {
       "management": "ניהול",
       "field": "שטח ומשאבים",
-      "finance": "רכש וכספים"
+      "finance": "רכש וכספים",
+      "platform": "פלטפורמה"
     },
     "dashboard": "לוח בקרה",
     "leads": "לידים ומכירות",
@@ -60,7 +61,8 @@
     "catalog": "קטלוג",
     "finance": "כספים",
     "settings": "הגדרות",
-    "employees": "צוות"
+    "employees": "צוות",
+    "adminConsole": "ניהול-על"
   },
   "common": {
     "newClient": "לקוח חדש",
@@ -2515,5 +2517,30 @@
     "subtitle": "ייתכן שעודכנה גרסה חדשה. נסה שוב או רענן את הדף.",
     "retry": "נסה שוב",
     "reload": "רענן את הדף"
+  },
+  "admin": {
+    "title": "לוח בקרת-על",
+    "subtitle": "ניהול כל החברות והמשתמשים שנרשמו למערכת",
+    "stats": {
+      "companies": "חברות",
+      "users": "משתמשים",
+      "activeUsers": "פעילים",
+      "unassigned": "ללא חברה"
+    },
+    "companiesTitle": "חברות רשומות",
+    "noCompanies": "עדיין לא נרשמו חברות",
+    "colCompany": "חברה",
+    "colUsers": "משתמשים",
+    "colProjects": "פרויקטים",
+    "colCreated": "תאריך הצטרפות",
+    "viewUsers": "צפה במשתמשים",
+    "unassignedTitle": "משתמשים ללא חברה",
+    "unassignedHint": "משתמשים שנרשמו אך טרם הקימו או הצטרפו לחברה.",
+    "colUser": "משתמש",
+    "colActive": "פעיל",
+    "noUsers": "אין משתמשים בחברה זו",
+    "saved": "עודכן",
+    "saveError": "העדכון נכשל",
+    "loadError": "טעינת המשתמשים נכשלה"
   }
 }

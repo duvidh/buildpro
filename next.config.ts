@@ -46,7 +46,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://*.supabase.co https://*.tile.openstreetmap.org",
       "font-src 'self'",
-      "connect-src 'self' https://*.supabase.co https://photon.komoot.io https://*.tile.openstreetmap.org",
+      "connect-src 'self' https://*.supabase.co https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org",
       "frame-ancestors 'none'",
     ].join("; "),
   },

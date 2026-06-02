@@ -1,6 +1,8 @@
-// Client-safe geocoding helper backed by Photon (https://photon.komoot.io).
-// Photon is free, CORS-enabled, requires no API key, and returns local/Hebrew
-// names for Israeli queries regardless of the requested language.
+// Client-safe geocoding helper backed by Nominatim (OpenStreetMap's official
+// geocoder). Unlike Photon, Nominatim honours `accept-language` (so Hebrew
+// queries return real Hebrew labels) and matches Israeli street addresses far
+// more accurately. It's free and CORS-enabled; usage policy asks for a
+// descriptive request and <=1 req/sec (the caller debounces typing).
 
 export type GeoResult = {
   label: string;
@@ -9,65 +11,75 @@ export type GeoResult = {
   city?: string;
 };
 
-type PhotonProperties = {
-  name?: string;
-  street?: string;
-  housenumber?: string;
+type NominatimAddress = {
+  road?: string;
+  house_number?: string;
+  pedestrian?: string;
+  neighbourhood?: string;
+  suburb?: string;
   city?: string;
   town?: string;
   village?: string;
-  locality?: string;
-  district?: string;
+  municipality?: string;
   state?: string;
   country?: string;
-  postcode?: string;
 };
 
-type PhotonFeature = {
-  geometry?: { coordinates?: [number, number] };
-  properties?: PhotonProperties;
+type NominatimResult = {
+  lat?: string;
+  lon?: string;
+  display_name?: string;
+  name?: string;
+  address?: NominatimAddress;
 };
-
-type PhotonResponse = { features?: PhotonFeature[] };
 
 /**
- * Search addresses via Photon.
+ * Search addresses via Nominatim.
  * @param query free-text address query (Hebrew works natively)
- * @param lang  current app locale ("he" | "en" | ...)
+ * @param lang  current app locale ("he" | "en" | ...) — drives result language
  */
 export async function searchAddress(query: string, lang: string): Promise<GeoResult[]> {
   const q = query.trim();
   if (q.length < 3) return [];
 
-  // Photon only supports a handful of UI languages (en/de/fr/it). For English we
-  // request English labels; otherwise we omit the lang param so the local
-  // (Hebrew/Arabic/etc.) names are returned.
-  const langParam = lang === "en" ? "&lang=en" : "";
-  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6${langParam}`;
+  const params = new URLSearchParams({
+    q,
+    format: "jsonv2",
+    addressdetails: "1",
+    limit: "6",
+    // Return labels in the user's language (Hebrew names for he, etc.).
+    "accept-language": lang || "he",
+  });
+  const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
 
   try {
     const res = await fetch(url, { headers: { Accept: "application/json" } });
     if (!res.ok) return [];
-    const data = (await res.json()) as PhotonResponse;
-    const features = data.features ?? [];
+    const data = (await res.json()) as NominatimResult[];
+    if (!Array.isArray(data)) return [];
 
-    return features
-      .map((f): GeoResult | null => {
-        const coords = f.geometry?.coordinates;
-        if (!coords || coords.length < 2) return null;
-        const [lon, lat] = coords;
-        const p = f.properties ?? {};
+    return data
+      .map((item): GeoResult | null => {
+        const lat = parseFloat(item.lat ?? "");
+        const lon = parseFloat(item.lon ?? "");
+        if (Number.isNaN(lat) || Number.isNaN(lon)) return null;
 
-        const city = p.city || p.town || p.village || p.locality || undefined;
+        const a = item.address ?? {};
+        const city =
+          a.city || a.town || a.village || a.municipality || a.suburb || undefined;
 
+        const streetName = a.road || a.pedestrian || item.name || undefined;
         const street =
-          p.street && p.housenumber
-            ? `${p.street} ${p.housenumber}`
-            : p.street || undefined;
+          streetName && a.house_number
+            ? `${streetName} ${a.house_number}`
+            : streetName || undefined;
 
-        const label = [p.name || street, city, p.state, p.country]
+        // Prefer a concise "street, city, state, country" label; fall back to
+        // Nominatim's full display_name when we can't compose one.
+        const composed = [street, city, a.state, a.country]
           .filter(Boolean)
           .join(", ");
+        const label = composed || item.display_name || "";
 
         if (!label) return null;
         return { label, lat, lon, city };

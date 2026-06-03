@@ -487,12 +487,18 @@ export function QuoteCalculator({
   }
 
   // ── Mobile card layout (< md) ──────────────────────────────────────────────
+  // Contains every field from the desktop table, organised into logical rows.
   function renderItemRowMobile(item: LineItem, idx: number) {
+    const marginPct = calcMarginPct(item.unitPrice, item.costPrice);
+
     return (
-      <div key={item.id} className="px-3 py-2.5 space-y-2">
-        {/* Row 1: index + description + delete */}
+      <div key={item.id} className="px-3 py-3 space-y-2.5 border-b last:border-b-0">
+
+        {/* ── Row 1: index · Description · Delete ── */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground w-5 text-center shrink-0">{idx + 1}</span>
+          <span className="text-xs text-muted-foreground w-5 text-center shrink-0 tabular-nums">
+            {idx + 1}
+          </span>
           <Input
             value={item.name}
             onChange={(e) => updateItem(item.id, { name: e.target.value })}
@@ -508,18 +514,11 @@ export function QuoteCalculator({
           </Button>
         </div>
 
-        {/* Row 2: unit | dim1 | sell price */}
+        {/* ── Row 2: Qty (dim1) · Dim2 · Unit ── */}
+        {/* dim1 labelled "כמות/Qty" to fix the corrupted "מ'1" label */}
         <div className="grid grid-cols-3 gap-1.5 ms-7">
           <div className="space-y-0.5">
-            <p className="text-[10px] text-muted-foreground text-center">{t("calc.colUnit")}</p>
-            <Input
-              value={item.unit}
-              onChange={(e) => updateItem(item.id, { unit: e.target.value })}
-              className="h-8 text-sm text-center px-1"
-            />
-          </div>
-          <div className="space-y-0.5">
-            <p className="text-[10px] text-muted-foreground text-center">{t("calc.colDim1")}</p>
+            <p className="text-[10px] text-muted-foreground text-center">{t("calc.colQty")}</p>
             <Input
               type="number" min={0} step="any"
               value={item.dim1 || ""}
@@ -527,6 +526,59 @@ export function QuoteCalculator({
               className="h-8 text-sm text-center px-1"
             />
           </div>
+          <div className="space-y-0.5">
+            <p className="text-[10px] text-muted-foreground text-center">{t("calc.colDim2")}</p>
+            <Input
+              type="number" min={0} step="any"
+              value={item.dim2 ?? ""}
+              onChange={(e) => {
+                const v = e.target.value === "" ? null : parseFloat(e.target.value);
+                updateItem(item.id, { dim2: v });
+              }}
+              className="h-8 text-sm text-center px-1"
+              placeholder="—"
+            />
+          </div>
+          <div className="space-y-0.5">
+            <p className="text-[10px] text-muted-foreground text-center">{t("calc.colUnit")}</p>
+            <Input
+              value={item.unit}
+              onChange={(e) => updateItem(item.id, { unit: e.target.value })}
+              className="h-8 text-sm text-center px-1"
+              placeholder={t("calc.unitDefault")}
+            />
+          </div>
+        </div>
+
+        {/* ── Row 3: Cost (editable) · Margin % (read-only) — management data ── */}
+        <div className="grid grid-cols-2 gap-1.5 ms-7">
+          <div className="space-y-0.5">
+            <p className="text-[10px] text-amber-600/80 text-center">{t("calc.colCost")}</p>
+            <Input
+              type="number" min={0} step="any"
+              value={item.costPrice || ""}
+              onChange={(e) => handleCostPriceChange(item.id, e.target.value)}
+              className="h-8 text-sm text-center px-1 border-amber-300/60 bg-amber-50/30 focus:border-amber-400"
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-0.5">
+            <p className="text-[10px] text-emerald-600/80 text-center">{t("calc.colMarginPct")}</p>
+            <div className={cn(
+              "h-8 flex items-center justify-center text-xs rounded-md border px-1 bg-emerald-50/30",
+              marginPct < 0  ? "text-destructive border-destructive/30" :
+              marginPct < 10 ? "text-amber-600 border-amber-300/40" :
+                               "text-emerald-600 border-emerald-300/40",
+            )}>
+              {item.unitPrice > 0
+                ? `${marginPct > 0 ? "+" : ""}${marginPct.toFixed(1)}%`
+                : "—"}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Row 4: Sell Price (editable) · Total (read-only) ── */}
+        <div className="grid grid-cols-2 gap-1.5 ms-7">
           <div className="space-y-0.5">
             <p className="text-[10px] text-muted-foreground text-center">{t("calc.colUnitPrice")}</p>
             <Input
@@ -536,12 +588,31 @@ export function QuoteCalculator({
               className="h-8 text-sm text-center px-1 font-medium"
             />
           </div>
+          <div className="space-y-0.5">
+            <p className="text-[10px] text-muted-foreground text-center">{t("calc.colTotal")}</p>
+            <div className="h-8 flex items-center justify-center text-sm font-semibold text-primary rounded-md border border-border bg-primary/5 px-1 tabular-nums">
+              {fmtShekel(item.linePrice)}
+            </div>
+          </div>
         </div>
 
-        {/* Row 3: total read-out */}
-        <div className="flex items-center justify-end gap-1.5 ms-7">
-          <span className="text-xs text-muted-foreground">{t("calc.colTotal")}:</span>
-          <span className="text-sm font-semibold text-primary">{fmtShekel(item.linePrice)}</span>
+        {/* ── Row 5: Catalog picker (full width) ── */}
+        <div className="ms-7">
+          <Select
+            value={item.catalogItemId ?? ""}
+            onValueChange={(val) => handleCatalogSelect(item.id, val)}
+          >
+            <SelectTrigger className="h-8 text-xs w-full">
+              <SelectValue placeholder={t("calc.selectCatalog")} />
+            </SelectTrigger>
+            <SelectContent>
+              {catalogItems.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id} className="text-xs">
+                  {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
     );

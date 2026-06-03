@@ -30,13 +30,29 @@ const d = (offsetDays: number): Date => {
 async function main() {
   console.log("\n🏗️  BuildPro E2E Simulation Seed\n");
 
-  // ─── Guard: skip if already seeded ───────────────────────────────────────────
+  const ts = Date.now();
+
+  // ─── Guard: delete existing test data then re-seed (fully idempotent) ─────────
   const existing = await db.company.findFirst({
     where: { name: "בניה ישראלית בע״מ" },
   });
   if (existing) {
-    console.log("⚠️  Company 'בניה ישראלית בע״מ' already exists — skipping seed.");
-    return;
+    console.log("🗑️  Found existing 'בניה ישראלית בע״מ' — deleting all data before re-seeding...");
+    const cid = existing.id;
+    // Delete in FK-safe order: children before parents, explicit before cascades
+    await db.communicationLog.deleteMany({ where: { companyId: cid } });
+    await db.activityLog.deleteMany({ where: { companyId: cid } });
+    await db.task.deleteMany({ where: { companyId: cid } });
+    await db.project.deleteMany({ where: { companyId: cid } }); // cascades: invoices→payments, contracts→supplierPayments, QC, NCR, risk, CR, WP, milestones, projectMembers, timeEntries, expenses, dailyLogs
+    await db.client.deleteMany({ where: { companyId: cid } });
+    await db.lead.deleteMany({ where: { companyId: cid } });
+    await db.employee.deleteMany({ where: { companyId: cid } });
+    await db.supplier.deleteMany({ where: { companyId: cid } });
+    await db.invitation.deleteMany({ where: { companyId: cid } });
+    await db.notification.deleteMany({ where: { companyId: cid } });
+    await db.user.deleteMany({ where: { companyId: cid } });
+    await db.company.delete({ where: { id: cid } });
+    console.log("✅  Cleanup done. Starting fresh seed...\n");
   }
 
   // ─── 1. Company ───────────────────────────────────────────────────────────────
@@ -51,12 +67,22 @@ async function main() {
     data: {
       companyId:    company.id,
       name:         "ישראל ישראלי",
-      email:        `admin-e2e-${Date.now()}@buildpro-demo.co.il`,
+      email:        `admin-e2e-${ts}@buildpro-demo.co.il`,
       passwordHash: "$2b$10$placeholder_hash_not_real",
       role:         "ADMIN",
       phone:        "050-1234567",
     },
   });
+
+  // ─── 2b. Worker users (User IDs used for Task.assignedToId) ──────────────────
+  // Task.assignedToId → User.id, not Employee.id — each trade worker needs a User record.
+  const [foremanUser, craneUser, tilerUser, electricianUser, plumberUser] = await Promise.all([
+    db.user.create({ data: { companyId: company.id, name: "יוסף לוי",   email: `foreman-e2e-${ts}@buildpro-demo.co.il`,     passwordHash: "$2b$10$placeholder_hash_not_real", role: "PROJECT_MANAGER" } }),
+    db.user.create({ data: { companyId: company.id, name: "מוחמד עבאס", email: `crane-e2e-${ts}@buildpro-demo.co.il`,        passwordHash: "$2b$10$placeholder_hash_not_real", role: "FIELD_WORKER"  } }),
+    db.user.create({ data: { companyId: company.id, name: "שלמה כהן",   email: `tiler-e2e-${ts}@buildpro-demo.co.il`,        passwordHash: "$2b$10$placeholder_hash_not_real", role: "FIELD_WORKER"  } }),
+    db.user.create({ data: { companyId: company.id, name: "ג׳מאל חסן",  email: `electrician-e2e-${ts}@buildpro-demo.co.il`,  passwordHash: "$2b$10$placeholder_hash_not_real", role: "FIELD_WORKER"  } }),
+    db.user.create({ data: { companyId: company.id, name: "רוני פרץ",   email: `plumber-e2e-${ts}@buildpro-demo.co.il`,      passwordHash: "$2b$10$placeholder_hash_not_real", role: "FIELD_WORKER"  } }),
+  ]);
 
   // ─── 3. Employees ─────────────────────────────────────────────────────────────
   console.log("3/14  Creating employees...");
@@ -67,7 +93,7 @@ async function main() {
         name:       "יוסף לוי",
         trade:      "מנהל עבודה",
         phone:      "050-9876543",
-        idNumber:   `e2e-001-${Date.now()}`,
+        idNumber:   `e2e-001-${ts}`,
         hourlyRate: 120,
         startDate:  new Date("2020-03-01"),
       },
@@ -78,7 +104,7 @@ async function main() {
         name:       "מוחמד עבאס",
         trade:      "מנופאי",
         phone:      "052-1122334",
-        idNumber:   `e2e-002-${Date.now()}`,
+        idNumber:   `e2e-002-${ts}`,
         hourlyRate: 150,
         startDate:  new Date("2019-07-15"),
       },
@@ -89,7 +115,7 @@ async function main() {
         name:       "שלמה כהן",
         trade:      "רצף",
         phone:      "054-5566778",
-        idNumber:   `e2e-003-${Date.now()}`,
+        idNumber:   `e2e-003-${ts}`,
         hourlyRate: 90,
         startDate:  new Date("2022-01-10"),
       },
@@ -100,7 +126,7 @@ async function main() {
         name:       "ג׳מאל חסן",
         trade:      "חשמלאי",
         phone:      "053-9900112",
-        idNumber:   `e2e-004-${Date.now()}`,
+        idNumber:   `e2e-004-${ts}`,
         hourlyRate: 110,
         startDate:  new Date("2021-05-20"),
       },
@@ -111,7 +137,7 @@ async function main() {
         name:       "רוני פרץ",
         trade:      "אינסטלטור",
         phone:      "050-3344556",
-        idNumber:   `e2e-005-${Date.now()}`,
+        idNumber:   `e2e-005-${ts}`,
         hourlyRate: 100,
         startDate:  new Date("2023-03-01"),
       },
@@ -230,24 +256,24 @@ async function main() {
   await db.task.createMany({
     data: [
       // Completed tasks
-      { companyId: company.id, projectId: project.id, milestoneId: milestones[0].id, name: "פירוק ריצוף ישן — כל הדירה", priority: "HIGH",   status: "DONE",        assignedToId: foreman.id,     completedAt: d(-52), dueDate: d(-50) },
-      { companyId: company.id, projectId: project.id, milestoneId: milestones[0].id, name: "הריסת קירות לא נושאים",        priority: "HIGH",   status: "DONE",        assignedToId: foreman.id,     completedAt: d(-50), dueDate: d(-48) },
-      { companyId: company.id, projectId: project.id, milestoneId: milestones[1].id, name: "חפירה וחיזוק יסוד גג",         priority: "URGENT", status: "DONE",        assignedToId: crane.id,       completedAt: d(-22), dueDate: d(-20) },
-      { companyId: company.id, projectId: project.id, milestoneId: milestones[1].id, name: "יציקת יסודות — עמוד A1",       priority: "HIGH",   status: "DONE",        assignedToId: foreman.id,     completedAt: d(-19), dueDate: d(-18) },
-      { companyId: company.id, projectId: project.id, milestoneId: milestones[1].id, name: "יציקת יסודות — עמוד A2",       priority: "HIGH",   status: "DONE",        assignedToId: foreman.id,     completedAt: d(-18), dueDate: d(-17) },
-      { companyId: company.id, projectId: project.id, milestoneId: milestones[1].id, name: "הנחת אינסטלציה תת-קרקעית",    priority: "MEDIUM", status: "DONE",        assignedToId: plumber.id,     completedAt: d(-15), dueDate: d(-14) },
+      { companyId: company.id, projectId: project.id, milestoneId: milestones[0].id, name: "פירוק ריצוף ישן — כל הדירה", priority: "HIGH",   status: "DONE",        assignedToId: foremanUser.id,     completedAt: d(-52), dueDate: d(-50) },
+      { companyId: company.id, projectId: project.id, milestoneId: milestones[0].id, name: "הריסת קירות לא נושאים",        priority: "HIGH",   status: "DONE",        assignedToId: foremanUser.id,     completedAt: d(-50), dueDate: d(-48) },
+      { companyId: company.id, projectId: project.id, milestoneId: milestones[1].id, name: "חפירה וחיזוק יסוד גג",         priority: "URGENT", status: "DONE",        assignedToId: craneUser.id,       completedAt: d(-22), dueDate: d(-20) },
+      { companyId: company.id, projectId: project.id, milestoneId: milestones[1].id, name: "יציקת יסודות — עמוד A1",       priority: "HIGH",   status: "DONE",        assignedToId: foremanUser.id,     completedAt: d(-19), dueDate: d(-18) },
+      { companyId: company.id, projectId: project.id, milestoneId: milestones[1].id, name: "יציקת יסודות — עמוד A2",       priority: "HIGH",   status: "DONE",        assignedToId: foremanUser.id,     completedAt: d(-18), dueDate: d(-17) },
+      { companyId: company.id, projectId: project.id, milestoneId: milestones[1].id, name: "הנחת אינסטלציה תת-קרקעית",    priority: "MEDIUM", status: "DONE",        assignedToId: plumberUser.id,     completedAt: d(-15), dueDate: d(-14) },
       // Active tasks
-      { companyId: company.id, projectId: project.id, milestoneId: milestones[2].id, name: "קירוי קומת גג — שלד פלדה",     priority: "HIGH",   status: "IN_PROGRESS", assignedToId: crane.id,       dueDate: d(10) },
-      { companyId: company.id, projectId: project.id, milestoneId: milestones[2].id, name: "הנחת כלונסאות תקרה",           priority: "HIGH",   status: "IN_PROGRESS", assignedToId: foreman.id,     dueDate: d(14) },
-      { companyId: company.id, projectId: project.id, name: "חיפוי חיצוני — קיר מזרח",       priority: "MEDIUM", status: "IN_PROGRESS", assignedToId: foreman.id },
+      { companyId: company.id, projectId: project.id, milestoneId: milestones[2].id, name: "קירוי קומת גג — שלד פלדה",     priority: "HIGH",   status: "IN_PROGRESS", assignedToId: craneUser.id,       dueDate: d(10) },
+      { companyId: company.id, projectId: project.id, milestoneId: milestones[2].id, name: "הנחת כלונסאות תקרה",           priority: "HIGH",   status: "IN_PROGRESS", assignedToId: foremanUser.id,     dueDate: d(14) },
+      { companyId: company.id, projectId: project.id, name: "חיפוי חיצוני — קיר מזרח",       priority: "MEDIUM", status: "IN_PROGRESS", assignedToId: foremanUser.id },
       // Blocked
       { companyId: company.id, projectId: project.id, name: "אישור מהנדס קונסטרוקציה",       priority: "URGENT", status: "BLOCKED",     description: "ממתין לאישור מהנדס חיצוני ד׳ זילברמן — חוות דעת על שינוי תכנון גג", dueDate: d(5) },
       // Upcoming
-      { companyId: company.id, projectId: project.id, milestoneId: milestones[3].id, name: "התקנת לוח חשמל ראשי",          priority: "HIGH",   status: "TODO",        assignedToId: electrician.id, dueDate: d(25) },
-      { companyId: company.id, projectId: project.id, milestoneId: milestones[3].id, name: "הנחת צנרת חשמל — קומת גג",     priority: "HIGH",   status: "TODO",        assignedToId: electrician.id, dueDate: d(30) },
+      { companyId: company.id, projectId: project.id, milestoneId: milestones[3].id, name: "התקנת לוח חשמל ראשי",          priority: "HIGH",   status: "TODO",        assignedToId: electricianUser.id, dueDate: d(25) },
+      { companyId: company.id, projectId: project.id, milestoneId: milestones[3].id, name: "הנחת צנרת חשמל — קומת גג",     priority: "HIGH",   status: "TODO",        assignedToId: electricianUser.id, dueDate: d(30) },
       { companyId: company.id, projectId: project.id, milestoneId: milestones[3].id, name: "טיח פנים — כל חדרי הדירה",     priority: "MEDIUM", status: "TODO",        dueDate: d(40) },
-      { companyId: company.id, projectId: project.id, milestoneId: milestones[3].id, name: "ריצוף סלון ופינת אוכל — פורצלן 90x90", priority: "MEDIUM", status: "TODO", assignedToId: tiler.id, dueDate: d(55) },
-      { companyId: company.id, projectId: project.id, milestoneId: milestones[3].id, name: "ריצוף חדרי שינה — פרקט",       priority: "LOW",    status: "TODO",        assignedToId: tiler.id, dueDate: d(60) },
+      { companyId: company.id, projectId: project.id, milestoneId: milestones[3].id, name: "ריצוף סלון ופינת אוכל — פורצלן 90x90", priority: "MEDIUM", status: "TODO", assignedToId: tilerUser.id, dueDate: d(55) },
+      { companyId: company.id, projectId: project.id, milestoneId: milestones[3].id, name: "ריצוף חדרי שינה — פרקט",       priority: "LOW",    status: "TODO",        assignedToId: tilerUser.id, dueDate: d(60) },
       { companyId: company.id, projectId: project.id, milestoneId: milestones[3].id, name: "צביעה — כל הדירה",             priority: "LOW",    status: "TODO",        dueDate: d(70) },
       { companyId: company.id, projectId: project.id, milestoneId: milestones[3].id, name: "התקנת מטבח",                   priority: "MEDIUM", status: "TODO",        dueDate: d(75) },
       { companyId: company.id, projectId: project.id, milestoneId: milestones[4].id, name: "בדיקת אטימות גג",              priority: "HIGH",   status: "TODO",        dueDate: d(100) },

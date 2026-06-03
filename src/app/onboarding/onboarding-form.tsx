@@ -26,7 +26,7 @@ export function OnboardingForm() {
       return;
     }
     startTransition(async () => {
-      const res = await createCompany(name);
+      const res = await createCompany(name, locale === "he" ? "he" : "en");
       // On success the action redirects server-side; we only get here on error.
       if (res?.error) {
         setError(res.error === "name_required" ? t("errorRequired") : t("errorGeneric"));

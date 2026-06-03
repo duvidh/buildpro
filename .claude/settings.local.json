@@ -116,7 +116,32 @@
       "Bash(git commit -m 'feat: Multi-tenant SaaS architecture phase 1 & Google Auth prep' -m 'Add Company model and nullable companyId \\(onDelete: SetNull\\) to 16 operational *)",
       "Bash(xargs grep -l \"google/callback\")",
       "Bash(git commit -m 'feat: company admins can invite/manage employees \\(Google pre-registration\\)' -m 'Adds an admin-only /employees page where company admins invite teammates by *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git --no-pager log --oneline -6)",
+      "Bash(git --no-pager show 718ceea --stat)",
+      "Bash(git --no-pager log -1 --format=\"%an <%ae>%n%cn\" 718ceea)",
+      "Bash(git --no-pager show 718ceea -- src/actions/users.ts src/app/api/auth/google/callback/route.ts)",
+      "Bash(xargs grep -i \"intl-messageformat\\\\|formatjs\")",
+      "Bash(PORT=3123 npm run start)",
+      "Bash(echo \"server starting, pid $!\")",
+      "Bash(kill %1)",
+      "Bash(pkill -f \"next start\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git commit -m 'feat: add Help button with bilingual 0-to-100 user guide next to search' -m 'A Help \\(?\\) button beside the search bar opens a scrollable dialog with a full *)",
+      "Bash(git commit -m 'feat: address autocomplete on leads form, remove separate city field' -m 'The lead form now uses the same AddressAutocomplete \\(OSM/Photon\\) as clients *)",
+      "Bash(git commit -m 'fix: dashboard '\\\\''New Lead'\\\\'' button now opens the lead form' -m 'NewLeadDialog was broken — clicking set open=true which rendered an empty *)",
+      "Bash(git commit -m 'fix: address autocomplete returns Hebrew + accurate street matches \\(Nominatim\\)' -m 'Photon returned English/Latin labels for Hebrew queries and matched POIs *)",
+      "Bash(git commit -m 'feat: super-admin console to view/manage all companies & users' -m 'Adds a platform-owner console at /admin, locked to a single hard-coded email *)",
+      "Bash(awk '/^model Invoice \\\\{/,/^\\\\}/' prisma/schema.prisma)",
+      "Bash(awk '/^model Payment \\\\{/,/^\\\\}/' prisma/schema.prisma)",
+      "Bash(git commit -m 'feat: invoice description field, shown prominently in the list' -m 'Invoices can now have a human-readable description \\(e.g. '\\\\''10% on signing'\\\\''\\) *)",
+      "Bash(grep -rn \"/invoices/\\\\${\" src/)",
+      "Bash(awk '/^enum PaymentMethod/,/^\\\\}/' prisma/schema.prisma)",
+      "Bash(sed -n '2070,2085p' messages/he.json)",
+      "Bash(sed -n '225,235p' src/app/'\\(app\\)'/projects/'[id]'/_components/financials-client.tsx)",
+      "Bash(awk 'NR<=2075 && /^  \"[a-zA-Z]+\": \\\\{/ {ns=$0} END{}' messages/he.json)",
+      "Bash(awk -F: '$1<=2075')",
+      "Bash(git commit -m 'fix: add the missing invoice detail page \\(clicking an invoice 404'\\\\''d\\)' -m 'Invoice rows linked to /invoices/[id] but that route never existed, so *)"
     ]
   }
 }

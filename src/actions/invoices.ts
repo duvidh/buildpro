@@ -82,29 +82,33 @@ export async function createInvoice(data: {
   const total        = Math.round((data.amount + taxAmount) * 100) / 100;
   const invoiceNumber = data.invoiceNumber?.trim() || await nextInvoiceNumber(cid);
 
-  // Verify uniqueness
-  const existing = await db.invoice.findUnique({ where: { invoiceNumber } });
-  if (existing) {
-    return { success: false as const, error: `מספר חשבונית ${invoiceNumber} כבר קיים` };
+  let invoice;
+  try {
+    invoice = await db.invoice.create({
+      data: {
+        companyId:     cid,
+        clientId:      data.clientId,
+        projectId:     data.projectId,
+        invoiceNumber,
+        description:   data.description?.trim() || null,
+        date:          new Date(data.date),
+        dueDate:       data.dueDate ? new Date(data.dueDate) : null,
+        amount:        data.amount,
+        taxPercent:    data.taxPercent,
+        taxAmount,
+        total,
+        notes:         data.notes || null,
+        status:        "DRAFT",
+      },
+    });
+  } catch (e: unknown) {
+    const isPrismaUniqueViolation =
+      typeof e === "object" && e !== null && "code" in e && (e as { code: string }).code === "P2002";
+    if (isPrismaUniqueViolation) {
+      return { success: false as const, error: `מספר חשבונית ${invoiceNumber} כבר קיים` };
+    }
+    throw e;
   }
-
-  const invoice = await db.invoice.create({
-    data: {
-      companyId:     cid,
-      clientId:      data.clientId,
-      projectId:     data.projectId,
-      invoiceNumber,
-      description:   data.description?.trim() || null,
-      date:          new Date(data.date),
-      dueDate:       data.dueDate ? new Date(data.dueDate) : null,
-      amount:        data.amount,
-      taxPercent:    data.taxPercent,
-      taxAmount,
-      total,
-      notes:         data.notes || null,
-      status:        "DRAFT",
-    },
-  });
 
   await logActivity({
     userId:      actorId,

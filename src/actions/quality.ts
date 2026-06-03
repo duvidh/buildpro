@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { QCResult, NCRSeverity, NCRStatus } from "@/generated/prisma/client";
+import { requireRole, PROJECT_ROLES } from "@/lib/auth-utils";
 
 export async function createQualityCheck(data: {
   projectId: string;
@@ -11,6 +12,7 @@ export async function createQualityCheck(data: {
   inspector?: string;
   notes?: string;
 }) {
+  await requireRole(PROJECT_ROLES);
   await db.qualityCheck.create({
     data: {
       projectId: data.projectId,
@@ -31,6 +33,7 @@ export async function createNCR(data: {
   severity: string;
   assignedTo?: string;
 }) {
+  await requireRole(PROJECT_ROLES);
   await db.nCR.create({
     data: {
       projectId: data.projectId,
@@ -46,6 +49,7 @@ export async function createNCR(data: {
 }
 
 export async function updateNCRStatus(id: string, status: NCRStatus, projectId: string) {
+  await requireRole(PROJECT_ROLES);
   await db.nCR.update({ where: { id }, data: { status, closedAt: status === NCRStatus.CLOSED ? new Date() : null } });
   revalidatePath(`/projects/${projectId}`);
   return { success: true as const };

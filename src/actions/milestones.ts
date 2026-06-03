@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { createMilestoneSchema, type CreateMilestoneInput } from "@/lib/schemas/milestone-schema";
+import { requireRole, PROJECT_ROLES, DELETE_ROLES } from "@/lib/auth-utils";
 
 export async function createMilestone(raw: CreateMilestoneInput) {
+  await requireRole(PROJECT_ROLES);
   const parsed = createMilestoneSchema.safeParse(raw);
   if (!parsed.success) {
     return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאת ולידציה" };
@@ -33,6 +35,7 @@ export async function createMilestone(raw: CreateMilestoneInput) {
 }
 
 export async function toggleMilestoneComplete(id: string, completed: boolean) {
+  await requireRole(PROJECT_ROLES);
   const ms = await db.milestone.update({
     where: { id },
     data: { completed, completedAt: completed ? new Date() : null },
@@ -42,6 +45,7 @@ export async function toggleMilestoneComplete(id: string, completed: boolean) {
 }
 
 export async function deleteMilestone(id: string) {
+  await requireRole(DELETE_ROLES);
   const ms = await db.milestone.delete({ where: { id } });
   revalidatePath(`/projects/${ms.projectId}`);
   return { success: true as const };

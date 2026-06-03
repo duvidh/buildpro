@@ -172,6 +172,7 @@ export async function createDailyLog(data: {
     data: {
       companyId: cid,
       projectId,
+      supervisorId: session.userId,
       date: new Date(date),
       weatherConditions: weatherConditions || null,
       visitors: visitors || null,

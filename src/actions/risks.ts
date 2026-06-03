@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { RiskStatus } from "@/generated/prisma/client";
+import { requireRole, PROJECT_ROLES } from "@/lib/auth-utils";
 
 export async function createRisk(data: {
   projectId: string;
@@ -11,6 +12,7 @@ export async function createRisk(data: {
   impact: number;
   mitigation?: string;
 }) {
+  await requireRole(PROJECT_ROLES);
   await db.risk.create({
     data: {
       projectId: data.projectId,
@@ -26,6 +28,7 @@ export async function createRisk(data: {
 }
 
 export async function updateRiskStatus(id: string, status: string, projectId: string) {
+  await requireRole(PROJECT_ROLES);
   await db.risk.update({ where: { id }, data: { status: status as RiskStatus } });
   revalidatePath(`/projects/${projectId}`);
   return { success: true as const };

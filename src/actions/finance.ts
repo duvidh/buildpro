@@ -6,6 +6,7 @@ import { PaymentMethod, InvoiceStatus } from "@/generated/prisma/client";
 import { requireRole, FINANCE_WRITE_ROLES } from "@/lib/auth-utils";
 import { getSession } from "@/lib/session";
 import { logActivity } from "@/lib/activity";
+import { currentCompanyId } from "@/lib/tenant";
 
 // ─── Client Invoice Payments ───────────────────────────────────────────────────
 
@@ -125,8 +126,11 @@ export type LedgerEntry = {
 };
 
 export async function getGlobalLedger(): Promise<LedgerEntry[]> {
+  const cid = await currentCompanyId();
+
   const [payments, supplierPayments, expenses] = await Promise.all([
     db.payment.findMany({
+      where:   { invoice: { companyId: cid } },
       orderBy: { date: "desc" },
       select: {
         id:        true,
@@ -145,6 +149,7 @@ export async function getGlobalLedger(): Promise<LedgerEntry[]> {
       },
     }),
     db.supplierPayment.findMany({
+      where:   { contract: { companyId: cid } },
       orderBy: { date: "desc" },
       select: {
         id:        true,
@@ -162,6 +167,7 @@ export async function getGlobalLedger(): Promise<LedgerEntry[]> {
       },
     }),
     db.expense.findMany({
+      where:   { project: { companyId: cid } },
       orderBy: { date: "desc" },
       select: {
         id:          true,
@@ -222,6 +228,8 @@ export async function getGlobalLedger(): Promise<LedgerEntry[]> {
 import { HE_MONTHS } from "@/lib/utils";
 
 export async function getCompanyFinancials() {
+  const cid = await currentCompanyId();
+
   const twelveAgo = new Date();
   twelveAgo.setMonth(twelveAgo.getMonth() - 11);
   twelveAgo.setDate(1);
@@ -229,18 +237,19 @@ export async function getCompanyFinancials() {
 
   const [allInvoices, allExpenses, allTimeEntries, projects] = await Promise.all([
     db.invoice.findMany({
-      where: { date: { gte: twelveAgo } },
+      where: { companyId: cid, date: { gte: twelveAgo } },
       select: { date: true, paidAmount: true, total: true },
     }),
     db.expense.findMany({
-      where: { date: { gte: twelveAgo } },
+      where: { project: { companyId: cid }, date: { gte: twelveAgo } },
       select: { date: true, amount: true },
     }),
     db.timeEntry.findMany({
-      where: { date: { gte: twelveAgo } },
+      where: { project: { companyId: cid }, date: { gte: twelveAgo } },
       select: { date: true, totalCost: true },
     }),
     db.project.findMany({
+      where: { companyId: cid },
       select: {
         id: true,
         name: true,

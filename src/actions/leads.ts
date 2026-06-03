@@ -9,8 +9,9 @@ import { requireRole, CLIENT_ROLES, DELETE_ROLES } from "@/lib/auth-utils";
 import { currentCompanyId } from "@/lib/tenant";
 
 export const getLeadById = cache(async (id: string) => {
-  return db.lead.findUnique({
-    where: { id },
+  const cid = await currentCompanyId();
+  return db.lead.findFirst({
+    where: { id, companyId: cid },
     include: {
       assignedEmployee: { select: { id: true, name: true } },
     },

@@ -741,6 +741,10 @@
       "emptyTitle": "New project — no data yet.",
       "emptySubtitle": "Go to the Tasks tab to add tasks."
     },
+    "financials": {
+      "accessDeniedTitle": "Financial data access restricted",
+      "accessDeniedBody": "Viewing financial data requires Admin, Office Manager, or Project Manager role. Please contact your system administrator."
+    },
     "taskStatus": {
       "TODO": "To Do",
       "IN_PROGRESS": "In Progress",

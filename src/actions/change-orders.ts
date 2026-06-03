@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { ChangeRequestStatus } from "@/generated/prisma/client";
+import { requireRole, PROJECT_ROLES, FINANCE_WRITE_ROLES } from "@/lib/auth-utils";
 
 export async function createChangeRequest(data: {
   projectId: string;
@@ -11,6 +12,7 @@ export async function createChangeRequest(data: {
   costImpact: number;
   scheduleImpact?: number;
 }) {
+  await requireRole(PROJECT_ROLES);
   await db.changeRequest.create({
     data: {
       projectId: data.projectId,
@@ -31,6 +33,8 @@ export async function updateChangeRequestStatus(
   status: string,
   projectId: string
 ) {
+  // Approving/rejecting a change request carries budget impact — restrict to finance writers
+  await requireRole(FINANCE_WRITE_ROLES);
   await db.changeRequest.update({
     where: { id },
     data: {

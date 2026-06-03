@@ -79,12 +79,18 @@ export async function deleteSubcontractor(id: string) {
 }
 
 export async function updateSubcontractorRating(id: string, rating: number) {
+  const cid = await currentCompanyId();
+  const owned = await db.supplier.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const };
   await db.supplier.update({ where: { id }, data: { rating } });
   revalidatePath("/subcontractors");
   return { success: true as const };
 }
 
 export async function toggleSubcontractorActive(id: string, active: boolean) {
+  const cid = await currentCompanyId();
+  const owned = await db.supplier.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const };
   await db.supplier.update({ where: { id }, data: { active } });
   revalidatePath("/subcontractors");
   return { success: true as const };

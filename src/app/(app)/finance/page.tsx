@@ -17,7 +17,7 @@ import { getCurrencyCode } from "@/actions/settings";
 import { FinanceChart } from "@/components/finance/finance-chart";
 import { LedgerClient } from "@/components/finance/ledger-client";
 import { formatCurrencyCompact } from "@/lib/formatters";
-import { db } from "@/lib/db";
+import { getProjects } from "@/actions/projects";
 
 function ProfitBadge({ margin }: { margin: number }) {
   const isPositive = margin >= 0;
@@ -45,14 +45,15 @@ const STATUS_CLASS: Record<string, string> = {
 };
 
 export default async function FinancePage() {
-  const [data, ledgerEntries, allProjects, t, locale, currencyCode] = await Promise.all([
+  const [data, ledgerEntries, allProjectsRaw, t, locale, currencyCode] = await Promise.all([
     getCompanyFinancials(),
     getGlobalLedger(),
-    db.project.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    getProjects(),
     getTranslations("finance"),
     getLocale(),
     getCurrencyCode(),
   ]);
+  const allProjects = allProjectsRaw.map((p) => ({ id: p.id, name: p.name }));
 
   const intlLocale = locale === "he" ? "he-IL" : "en-US";
   const fmt = (n: number) => formatCurrencyCompact(n, currencyCode, intlLocale);

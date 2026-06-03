@@ -899,6 +899,8 @@
         "successToast": "חשבון העסקה נוצר בהצלחה",
         "errorNoSelection": "יש לבחור לפחות אבן דרך אחת"
       },
+      "whatsapp": "עדכן לקוח ב-WhatsApp",
+      "whatsappCopied": "הועתק ללוח — ניתן להדביק בוואטסאפ",
       "validation": {
         "nameRequired": "שם חייב להכיל לפחות 2 תווים",
         "dateRequired": "תאריך חובה"

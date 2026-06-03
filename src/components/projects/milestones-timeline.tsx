@@ -14,6 +14,7 @@ import {
   RotateCcw,
   Sparkles,
   Receipt,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,9 +34,11 @@ import {
   toggleMilestoneComplete,
   deleteMilestone,
   seedProjectMilestones,
+  logWhatsAppUpdate,
 } from "@/actions/milestones";
 import { generateMilestoneInvoice } from "@/actions/invoices";
 import { buildCreateMilestoneSchema, type CreateMilestoneInput } from "@/lib/schemas/milestone-schema";
+import { generateWhatsAppMessage, buildWhatsAppUrl } from "@/lib/whatsapp";
 import { fmtDate } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -57,6 +60,10 @@ type MilestonesTimelineProps = {
   milestones: MilestoneItem[];
   contractValue: number;
   canCreateInvoice: boolean;
+  clientName: string;
+  clientPhone: string | null;
+  projectName: string;
+  progressPercent: number;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -356,6 +363,70 @@ function SeedDemoButton({ projectId, onDone }: { projectId: string; onDone: () =
   );
 }
 
+// ─── WhatsApp Update Button ───────────────────────────────────────────────────
+
+function WhatsAppButton({
+  projectId,
+  clientName,
+  clientPhone,
+  projectName,
+  progressPercent,
+  milestones,
+}: {
+  projectId: string;
+  clientName: string;
+  clientPhone: string | null;
+  projectName: string;
+  progressPercent: number;
+  milestones: MilestoneItem[];
+}) {
+  const t = useTranslations("projects");
+
+  function handleClick() {
+    const sorted = [...milestones].sort((a, b) => {
+      if (a.completedAt && b.completedAt)
+        return new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime();
+      return a.order - b.order;
+    });
+
+    const lastCompleted = sorted.find((m) => m.completed) ?? null;
+    const nextPending   = [...milestones]
+      .sort((a, b) => a.order - b.order)
+      .find((m) => !m.completed) ?? null;
+
+    const message = generateWhatsAppMessage({
+      clientName:             clientName || "לקוח",
+      projectName:            projectName,
+      progress:               Math.round(progressPercent),
+      lastCompletedMilestone: lastCompleted?.name ?? null,
+      nextPendingMilestone:   nextPending?.name   ?? null,
+    });
+
+    // Fire-and-forget activity log
+    void logWhatsAppUpdate(projectId);
+
+    if (clientPhone) {
+      window.open(buildWhatsAppUrl(clientPhone, message), "_blank", "noopener,noreferrer");
+    } else {
+      navigator.clipboard.writeText(message).then(() => {
+        toast.success(t("milestones.whatsappCopied"));
+      });
+    }
+  }
+
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      className="gap-1.5 h-8 border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300"
+      onClick={handleClick}
+    >
+      <MessageCircle className="h-3.5 w-3.5" />
+      {t("milestones.whatsapp")}
+    </Button>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function MilestonesTimeline({
@@ -363,6 +434,10 @@ export function MilestonesTimeline({
   milestones,
   contractValue,
   canCreateInvoice,
+  clientName,
+  clientPhone,
+  projectName,
+  progressPercent,
 }: MilestonesTimelineProps) {
   const t = useTranslations("projects");
   const router = useRouter();
@@ -421,6 +496,14 @@ export function MilestonesTimeline({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <WhatsAppButton
+            projectId={projectId}
+            clientName={clientName}
+            clientPhone={clientPhone}
+            projectName={projectName}
+            progressPercent={progressPercent}
+            milestones={milestones}
+          />
           {canCreateInvoice && billableCount > 0 && (
             <MilestoneInvoiceDialog
               projectId={projectId}

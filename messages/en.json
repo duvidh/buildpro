@@ -899,6 +899,8 @@
         "successToast": "Progress invoice created successfully",
         "errorNoSelection": "Select at least one milestone"
       },
+      "whatsapp": "Update Client on WhatsApp",
+      "whatsappCopied": "Copied to clipboard — paste in WhatsApp",
       "validation": {
         "nameRequired": "Name must be at least 2 characters",
         "dateRequired": "Date is required"

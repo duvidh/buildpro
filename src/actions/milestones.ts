@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { createMilestoneSchema, type CreateMilestoneInput } from "@/lib/schemas/milestone-schema";
 import { requireRole, PROJECT_ROLES, DELETE_ROLES } from "@/lib/auth-utils";
+import { getSession } from "@/lib/session";
+import { logActivity } from "@/lib/activity";
 
 export async function createMilestone(raw: CreateMilestoneInput) {
   await requireRole(PROJECT_ROLES);
@@ -49,6 +51,19 @@ export async function deleteMilestone(id: string) {
   const ms = await db.milestone.delete({ where: { id } });
   revalidatePath(`/projects/${ms.projectId}`);
   return { success: true as const };
+}
+
+export async function logWhatsAppUpdate(projectId: string) {
+  const session = await getSession();
+  if (!session) return;
+  await logActivity({
+    userId:      session.userId,
+    action:      "WHATSAPP_UPDATE_SENT",
+    entityType:  "PROJECT",
+    entityId:    projectId,
+    projectId,
+    description: "נשלח עדכון סטטוס ללקוח דרך WhatsApp",
+  });
 }
 
 export async function seedProjectMilestones(projectId: string) {

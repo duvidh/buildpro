@@ -147,6 +147,10 @@ export async function ProjectFocusTabContent({
           milestones={milestones}
           contractValue={project?.contractValue ?? 0}
           canCreateInvoice={canCreateInvoice}
+          clientName={project?.client?.name ?? ""}
+          clientPhone={project?.client?.phone ?? null}
+          projectName={project?.name ?? ""}
+          progressPercent={project?.progressPercent ?? 0}
         />
       );
     }

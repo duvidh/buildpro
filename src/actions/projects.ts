@@ -173,7 +173,7 @@ export const getProjectHeader = cache(async (id: string) => {
       longitude: true,
       startDate: true,
       endDate: true,
-      client: { select: { id: true, name: true } },
+      client: { select: { id: true, name: true, phone: true } },
       manager: { select: { id: true, name: true } },
       settings: true,
       _count: {

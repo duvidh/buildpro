@@ -20,16 +20,16 @@ type Chip = RegularChip | VoiceChip;
 const CHIPS: Record<AIContext, Record<"he" | "en", Chip[]>> = {
   project: {
     he: [
-      { label: "📊 התקדמות ותקציב", prompt: "תקציב התקדמות" },
-      { label: "📱 נסח WhatsApp",   prompt: "whatsapp"      },
-      { label: "⚠️ סיכונים באתר",  prompt: "סיכונים"      },
-      { label: "🎙️ הקלט דיווח",    voice: true             },
+      { label: "💰 סטטוס תשלומים ופרויקט", prompt: "תשלומים סטטוס" },
+      { label: "➕ צור משימה למחר",          prompt: "משימה ליצור"  },
+      { label: "📱 נסח WhatsApp ללקוח",      prompt: "whatsapp"     },
+      { label: "🎙️ הקלט משימה/דיווח",       voice: true            },
     ],
     en: [
-      { label: "📊 Status & Budget",    prompt: "budget status" },
-      { label: "📱 Draft WhatsApp",     prompt: "whatsapp"      },
-      { label: "⚠️ Site Risks",         prompt: "risks"         },
-      { label: "🎙️ Record Log",        voice: true             },
+      { label: "💰 Payments & Status", prompt: "payments status" },
+      { label: "➕ Create Task",        prompt: "create task"    },
+      { label: "📱 Draft WhatsApp",     prompt: "whatsapp"       },
+      { label: "🎙️ Record Voice",      voice: true              },
     ],
   },
   client: {
@@ -60,10 +60,17 @@ const CHIPS: Record<AIContext, Record<"he" | "en", Chip[]>> = {
   },
 };
 
-const MOCK_TRANSCRIPTION = {
-  he: "סיימנו היום את יציקות הבטון והיסודות. הכל תקין, אבל חסרים 2 פועלים למחר.",
-  en: "Finished concrete pouring and foundations today. All good, but missing 2 workers for tomorrow.",
-} as const;
+// Two flavours per locale — one task-oriented, one log-oriented — picked at random.
+const MOCK_TRANSCRIPTIONS: Record<"he" | "en", readonly string[]> = {
+  he: [
+    "שים לב, צריך לפתוח משימה דחופה למחר: להביא צינורות 4 צול לאינסטלטור.",
+    "התקדמות יפה היום בשטח, סיימנו ריצוף קומה א׳. הכל תקין, ממשיכים מחר.",
+  ],
+  en: [
+    "Urgent task for tomorrow: bring 4-inch pipes for the plumber — mark it critical.",
+    "Good progress on site today, finished tiling floor 1. All good, continuing tomorrow.",
+  ],
+};
 
 const CONTEXT_TITLE = {
   project: { he: "עוזר פרויקט AI",   en: "AI Project Assistant" },
@@ -192,8 +199,9 @@ export function AIAssistantBar() {
     setIsRecording(true);
     recTimerRef.current = setTimeout(() => {
       setIsRecording(false);
-      const transcript = MOCK_TRANSCRIPTION[locale];
-      ask(transcript);
+      const options = MOCK_TRANSCRIPTIONS[locale];
+      const transcript = options[Math.floor(Math.random() * options.length)];
+      ask(transcript!);
     }, RECORDING_MS);
   }
 
@@ -268,7 +276,7 @@ export function AIAssistantBar() {
             </div>
 
             {/* ── Body (response / hint / recording) ──────────────────────── */}
-            <div className="px-4 pt-3 pb-2 min-h-[68px]">
+            <div className="px-4 pt-3 pb-2 min-h-[68px] max-h-[320px] overflow-y-auto">
               {isRecording ? (
                 /* Recording indicator */
                 <div className="flex items-center gap-4 animate-in fade-in duration-150">
@@ -299,7 +307,7 @@ export function AIAssistantBar() {
               ) : response ? (
                 /* AI response */
                 <div className="space-y-2 animate-in fade-in slide-in-from-bottom-1 duration-250">
-                  <div className="rounded-xl bg-gradient-to-br from-muted/70 to-muted/30 border border-border/30 px-3.5 py-3 text-sm leading-relaxed text-foreground">
+                  <div className="rounded-xl bg-gradient-to-br from-muted/70 to-muted/30 border border-border/30 px-3.5 py-3 text-sm leading-relaxed text-foreground whitespace-pre-wrap font-[inherit]">
                     {response}
                   </div>
                   <button

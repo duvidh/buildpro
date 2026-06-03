@@ -3,10 +3,12 @@ export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import Link from "next/link";
+import { ShieldOff } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getClientHeader, getClientInvoices, getClientProjects } from "@/actions/clients";
 import { getCurrencyCode } from "@/actions/settings";
+import { hasRole, FINANCE_VIEW_ROLES } from "@/lib/auth-utils";
 import { fmtDate } from "@/lib/utils";
 import { formatCurrencyCompact } from "@/lib/formatters";
 import { CreateInvoiceDialog } from "./_components/create-invoice-dialog";
@@ -17,15 +19,32 @@ export default async function ClientInvoicesPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [client, invoices, projects, currencyCode, t, locale] = await Promise.all([
+  const [client, canViewFinance, t] = await Promise.all([
     getClientHeader(id),
+    hasRole(FINANCE_VIEW_ROLES),
+    getTranslations("clients"),
+  ]);
+  if (!client) notFound();
+
+  if (!canViewFinance) {
+    return (
+      <div className="max-w-5xl">
+        <Card className="shadow-sm">
+          <CardContent className="p-10 flex flex-col items-center gap-3 text-center text-muted-foreground">
+            <ShieldOff className="h-8 w-8 text-muted-foreground/50" />
+            <p className="text-sm font-medium">{t("invoices.noAccess")}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const [invoices, projects, currencyCode, locale] = await Promise.all([
     getClientInvoices(id),
     getClientProjects(id),
     getCurrencyCode(),
-    getTranslations("clients"),
     getLocale(),
   ]);
-  if (!client) notFound();
 
   const fmt = (n: number) => formatCurrencyCompact(n, currencyCode);
 
@@ -51,15 +70,16 @@ export default async function ClientInvoicesPage({
     balance:    inv.total - inv.paidAmount,
   }));
 
-  // KPI totals
-  const totalInvoiced = invoices.reduce((s, i) => s + i.total, 0);
-  const totalPaid     = invoices.reduce((s, i) => s + i.paidAmount, 0);
-  const totalOpen     = totalInvoiced - totalPaid;
+  // KPI totals — exclude cancelled invoices from financials
+  const activeInvoices = invoices.filter((i) => i.status !== "CANCELLED");
+  const totalInvoiced  = activeInvoices.reduce((s, i) => s + i.total, 0);
+  const totalPaid      = activeInvoices.reduce((s, i) => s + i.paidAmount, 0);
+  const totalOpen      = totalInvoiced - totalPaid;
 
   return (
     <div className="space-y-4 max-w-5xl">
 
-      {/* Header row */}
+      {/* Summary bar */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span>{t("invoices.count", { n: invoices.length })}</span>
@@ -110,19 +130,30 @@ export default async function ClientInvoicesPage({
                           {statusCfg.label}
                         </Badge>
                       </div>
-                      {/* Invoice number shown as a sub-line when a description is present */}
+
+                      {/* Invoice number sub-line when description is present */}
                       {invoice.description?.trim() && (
                         <p className="text-xs font-medium text-muted-foreground mb-1" dir="ltr">
                           {invoice.invoiceNumber ?? t("invoices.noNumber")}
                         </p>
                       )}
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                         <span dir="ltr">{invoice.dateStr}</span>
                         {invoice.dueDate && (
                           <span>{t("invoices.dueDateLabel")}: <span dir="ltr">{invoice.dueDateStr}</span></span>
                         )}
+                        {invoice.project && (
+                          <Link
+                            href={`/projects/${invoice.project.id}`}
+                            className="text-muted-foreground hover:text-foreground transition-colors truncate max-w-[180px]"
+                          >
+                            {invoice.project.name}
+                          </Link>
+                        )}
                       </div>
                     </div>
+
                     <div className="text-end shrink-0 space-y-0.5">
                       <p className="text-sm font-bold text-foreground">{fmt(invoice.total)}</p>
                       {invoice.paidAmount > 0 && (

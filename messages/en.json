@@ -592,7 +592,8 @@
       "noPayments": "No payments recorded for this invoice yet",
       "methodColumn": "Method",
       "referenceColumn": "Reference",
-      "referencePlaceholder": "Reference no. (optional)"
+      "referencePlaceholder": "Reference no. (optional)",
+      "noAccess": "You don't have permission to view financial data."
     },
     "quotesList": {
       "count": "{n} quotes",

@@ -171,8 +171,9 @@ export async function getClientQuotes(id: string) {
 
 /** Invoices list for the /invoices tab. */
 export async function getClientInvoices(id: string) {
+  const cid = await currentCompanyId();
   return db.invoice.findMany({
-    where: { clientId: id },
+    where: { clientId: id, companyId: cid },
     orderBy: { date: "desc" },
     select: {
       id: true,
@@ -183,6 +184,7 @@ export async function getClientInvoices(id: string) {
       status: true,
       total: true,
       paidAmount: true,
+      project: { select: { id: true, name: true } },
     },
   });
 }

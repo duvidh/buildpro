@@ -592,7 +592,8 @@
       "noPayments": "טרם התקבלו תשלומים על חשבונית זו",
       "methodColumn": "אמצעי תשלום",
       "referenceColumn": "אסמכתא",
-      "referencePlaceholder": "מס׳ אסמכתא (אופציונלי)"
+      "referencePlaceholder": "מס׳ אסמכתא (אופציונלי)",
+      "noAccess": "אין לך הרשאה לצפות בנתוני כספים."
     },
     "quotesList": {
       "count": "{n} הצעות מחיר",

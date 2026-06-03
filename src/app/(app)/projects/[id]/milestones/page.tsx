@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import { getProjectMilestones } from "@/actions/projects";
+import { getProjectMilestones, getProjectHeader } from "@/actions/projects";
+import { hasRole, FINANCE_WRITE_ROLES } from "@/lib/auth-utils";
 import { MilestonesTimeline } from "@/components/projects/milestones-timeline";
 
 export default async function ProjectMilestonesPage({
@@ -9,7 +10,18 @@ export default async function ProjectMilestonesPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const raw = await getProjectMilestones(id);
+  const [raw, project, canCreateInvoice] = await Promise.all([
+    getProjectMilestones(id),
+    getProjectHeader(id),
+    hasRole(FINANCE_WRITE_ROLES),
+  ]);
   const milestones = JSON.parse(JSON.stringify(raw));
-  return <MilestonesTimeline projectId={id} milestones={milestones} />;
+  return (
+    <MilestonesTimeline
+      projectId={id}
+      milestones={milestones}
+      contractValue={project?.contractValue ?? 0}
+      canCreateInvoice={canCreateInvoice}
+    />
+  );
 }

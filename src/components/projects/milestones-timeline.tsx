@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 import {
   Check,
   Plus,
@@ -12,9 +13,11 @@ import {
   Trash2,
   RotateCcw,
   Sparkles,
+  Receipt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +34,7 @@ import {
   deleteMilestone,
   seedProjectMilestones,
 } from "@/actions/milestones";
+import { generateMilestoneInvoice } from "@/actions/invoices";
 import { buildCreateMilestoneSchema, type CreateMilestoneInput } from "@/lib/schemas/milestone-schema";
 import { fmtDate } from "@/lib/utils";
 
@@ -45,11 +49,14 @@ type MilestoneItem = {
   weight: number;
   notes?: string | null;
   order: number;
+  invoiceId: string | null;
 };
 
 type MilestonesTimelineProps = {
   projectId: string;
   milestones: MilestoneItem[];
+  contractValue: number;
+  canCreateInvoice: boolean;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -57,6 +64,169 @@ type MilestonesTimelineProps = {
 function isOverdue(date: Date, completed: boolean) {
   if (completed) return false;
   return new Date(date) < new Date();
+}
+
+function formatILS(amount: number) {
+  return amount.toLocaleString("he-IL", { style: "currency", currency: "ILS", maximumFractionDigits: 0 });
+}
+
+// ─── Milestone Invoice Dialog ─────────────────────────────────────────────────
+
+function MilestoneInvoiceDialog({
+  projectId,
+  milestones,
+  contractValue,
+  onCreated,
+}: {
+  projectId: string;
+  milestones: MilestoneItem[];
+  contractValue: number;
+  onCreated: () => void;
+}) {
+  const t = useTranslations("projects");
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [isPending, startTransition] = useTransition();
+
+  const billable = milestones.filter((m) => m.completed && !m.invoiceId);
+
+  const totalWeight = milestones.reduce((s, m) => s + m.weight, 0);
+  const selectedWeight = billable
+    .filter((m) => selected.has(m.id))
+    .reduce((s, m) => s + m.weight, 0);
+  const proportion = totalWeight > 0 ? selectedWeight / totalWeight : 0;
+  const previewAmount = Math.round(contractValue * proportion * 100) / 100;
+  const previewTotal  = Math.round(previewAmount * 1.17 * 100) / 100;
+
+  function toggleAll() {
+    if (selected.size === billable.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(billable.map((m) => m.id)));
+    }
+  }
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function handleSubmit() {
+    if (!selected.size) {
+      toast.error(t("milestones.invoiceDialog.errorNoSelection"));
+      return;
+    }
+    startTransition(async () => {
+      const res = await generateMilestoneInvoice(projectId, [...selected]);
+      if (res.success) {
+        toast.success(t("milestones.invoiceDialog.successToast"));
+        setOpen(false);
+        setSelected(new Set());
+        onCreated();
+      } else {
+        toast.error(res.error);
+      }
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSelected(new Set()); }}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="gap-1.5 h-8 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300">
+          <Receipt className="h-3.5 w-3.5" />
+          {t("milestones.generateInvoice")}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[460px]">
+        <DialogHeader>
+          <DialogTitle>{t("milestones.invoiceDialog.title")}</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 pt-1">
+          {!contractValue || contractValue <= 0 ? (
+            <p className="text-sm text-amber-600 bg-amber-50 rounded-md px-3 py-2">
+              {t("milestones.invoiceDialog.noBudget")}
+            </p>
+          ) : billable.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">
+              {t("milestones.invoiceDialog.empty")}
+            </p>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground">
+                {t("milestones.invoiceDialog.subtitle")}
+              </p>
+
+              {/* Select-all row */}
+              <div className="flex items-center gap-2 pb-1 border-b">
+                <Checkbox
+                  id="ms-select-all"
+                  checked={selected.size === billable.length && billable.length > 0}
+                  onCheckedChange={toggleAll}
+                />
+                <label htmlFor="ms-select-all" className="text-xs font-medium cursor-pointer select-none">
+                  {t("milestones.invoiceDialog.selectAll")}
+                </label>
+              </div>
+
+              {/* Milestone list */}
+              <div className="space-y-2 max-h-56 overflow-y-auto">
+                {billable.map((m) => {
+                  const itemProportion = totalWeight > 0 ? m.weight / totalWeight : 0;
+                  const itemAmount = Math.round(contractValue * itemProportion * 100) / 100;
+                  return (
+                    <label
+                      key={m.id}
+                      className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-muted/50 cursor-pointer transition-colors"
+                    >
+                      <Checkbox
+                        checked={selected.has(m.id)}
+                        onCheckedChange={() => toggle(m.id)}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{m.name}</p>
+                        <p className="text-xs text-muted-foreground">{fmtDate(m.date)}</p>
+                      </div>
+                      <span className="text-xs tabular-nums text-muted-foreground shrink-0">
+                        {formatILS(itemAmount)}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+
+              {/* Live total */}
+              <div className="rounded-md bg-muted/60 px-3 py-2.5 flex items-center justify-between">
+                <span className="text-sm font-medium">{t("milestones.invoiceDialog.totalLabel")}</span>
+                <div className="text-end">
+                  <p className="text-sm font-bold tabular-nums">{formatILS(previewAmount)}</p>
+                  <p className="text-[11px] text-muted-foreground tabular-nums">
+                    {t("milestones.invoiceDialog.withVat")} {formatILS(previewTotal)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-1">
+                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                  {t("wbs.cancel")}
+                </Button>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isPending || !selected.size}
+                >
+                  {isPending && <Loader2 className="h-4 w-4 animate-spin me-1.5" />}
+                  {t("milestones.invoiceDialog.submit")}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -188,7 +358,12 @@ function SeedDemoButton({ projectId, onDone }: { projectId: string; onDone: () =
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function MilestonesTimeline({ projectId, milestones }: MilestonesTimelineProps) {
+export function MilestonesTimeline({
+  projectId,
+  milestones,
+  contractValue,
+  canCreateInvoice,
+}: MilestonesTimelineProps) {
   const t = useTranslations("projects");
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -213,6 +388,8 @@ export function MilestonesTimeline({ projectId, milestones }: MilestonesTimeline
   const doneWeight = milestones.filter((m) => m.completed).reduce((s, m) => s + m.weight, 0);
   const progress = totalWeight > 0 ? Math.round((doneWeight / totalWeight) * 100) : 0;
 
+  const billableCount = milestones.filter((m) => m.completed && !m.invoiceId).length;
+
   if (milestones.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
@@ -228,7 +405,7 @@ export function MilestonesTimeline({ projectId, milestones }: MilestonesTimeline
   return (
     <div className="space-y-4">
       {/* Header row */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground">
             {doneCount} / {milestones.length} {t("milestones.completedSuffix")}
@@ -243,7 +420,17 @@ export function MilestonesTimeline({ projectId, milestones }: MilestonesTimeline
             <span className="text-xs font-medium text-emerald-600">{progress}%</span>
           </div>
         </div>
-        <NewMilestoneDialog projectId={projectId} onCreated={() => router.refresh()} />
+        <div className="flex items-center gap-2">
+          {canCreateInvoice && billableCount > 0 && (
+            <MilestoneInvoiceDialog
+              projectId={projectId}
+              milestones={milestones}
+              contractValue={contractValue}
+              onCreated={() => router.refresh()}
+            />
+          )}
+          <NewMilestoneDialog projectId={projectId} onCreated={() => router.refresh()} />
+        </div>
       </div>
 
       {/* Timeline */}
@@ -302,6 +489,12 @@ export function MilestonesTimeline({ projectId, milestones }: MilestonesTimeline
                       {m.weight > 1 && (
                         <Badge variant="outline" className="text-[10px] h-4 px-1.5 py-0">
                           {t("milestones.weightBadge", { n: m.weight })}
+                        </Badge>
+                      )}
+                      {m.invoiceId && (
+                        <Badge className="text-[10px] h-4 px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-100">
+                          <Receipt className="h-2.5 w-2.5 me-1" />
+                          {t("milestones.invoiced")}
                         </Badge>
                       )}
                     </div>

@@ -884,6 +884,20 @@
       "markDone": "Done",
       "deleteMilestone": "Delete",
       "seedDemo": "Add Demo Data",
+      "invoiced": "Billed",
+      "generateInvoice": "Generate Progress Invoice",
+      "invoiceDialog": {
+        "title": "Generate Progress Invoice",
+        "subtitle": "Select completed milestones to include in the invoice",
+        "empty": "No completed unbilled milestones",
+        "noBudget": "Contract value not set — cannot calculate amount",
+        "selectAll": "Select All",
+        "totalLabel": "Amount to bill (before VAT):",
+        "withVat": "Including VAT:",
+        "submit": "Create Invoice",
+        "successToast": "Progress invoice created successfully",
+        "errorNoSelection": "Select at least one milestone"
+      },
       "validation": {
         "nameRequired": "Name must be at least 2 characters",
         "dateRequired": "Date is required"

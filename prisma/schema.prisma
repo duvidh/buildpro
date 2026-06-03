@@ -428,6 +428,8 @@ model Milestone {
   completedAt DateTime?
   notes       String?
   order       Int       @default(0)
+  invoiceId   String?
+  invoice     Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 
   tasks Task[]
 }
@@ -766,7 +768,8 @@ model Invoice {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  payments Payment[]
+  payments   Payment[]
+  milestones Milestone[]
 }
 
 model Payment {

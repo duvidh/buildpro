@@ -125,3 +125,111 @@ export async function createInvoice(data: {
 
   return { success: true as const, invoiceId: invoice.id };
 }
+
+// ─── Generate Progress Invoice from Milestones ────────────────────────────────
+
+export async function generateMilestoneInvoice(
+  projectId: string,
+  milestoneIds: string[],
+) {
+  try { await requireRole(FINANCE_WRITE_ROLES); }
+  catch { return { success: false as const, error: "אין הרשאה לבצע פעולה זו" }; }
+
+  if (!milestoneIds.length) {
+    return { success: false as const, error: "יש לבחור לפחות אבן דרך אחת" };
+  }
+
+  const cid = await currentCompanyId();
+
+  const project = await db.project.findFirst({
+    where: { id: projectId, companyId: cid },
+    select: {
+      id: true,
+      clientId: true,
+      contractValue: true,
+      milestones: { select: { id: true, weight: true, invoiceId: true, name: true } },
+    },
+  });
+
+  if (!project) return { success: false as const, error: "פרויקט לא נמצא" };
+  if (!project.contractValue || project.contractValue <= 0) {
+    return { success: false as const, error: "ערך חוזה לא מוגדר לפרויקט" };
+  }
+
+  const selectedMilestones = project.milestones.filter((m) =>
+    milestoneIds.includes(m.id),
+  );
+
+  if (selectedMilestones.some((m) => m.invoiceId)) {
+    return { success: false as const, error: "חלק מאבני הדרך כבר קושרו לחשבונית" };
+  }
+
+  const totalWeight  = project.milestones.reduce((s, m) => s + m.weight, 0);
+  const selectedWeight = selectedMilestones.reduce((s, m) => s + m.weight, 0);
+  const proportion   = totalWeight > 0 ? selectedWeight / totalWeight : 0;
+  const amount       = Math.round(project.contractValue * proportion * 100) / 100;
+
+  if (amount <= 0) return { success: false as const, error: "הסכום המחושב הוא 0 — בדוק ערכי משקל" };
+
+  const description  = `חשבון עסקה - ${selectedMilestones.map((m) => m.name).join(", ")}`;
+  const today        = new Date();
+  const dueDate      = new Date(today);
+  dueDate.setDate(dueDate.getDate() + 30);
+
+  const session    = await getSession();
+  const actorId    = session?.userId ?? null;
+  const actorName  = session?.name   ?? "מישהו";
+  const taxPercent = 17;
+  const taxAmount  = Math.round(amount * (taxPercent / 100) * 100) / 100;
+  const total      = Math.round((amount + taxAmount) * 100) / 100;
+  const invoiceNumber = await nextInvoiceNumber(cid);
+
+  let invoice;
+  try {
+    invoice = await db.invoice.create({
+      data: {
+        companyId: cid,
+        clientId:  project.clientId,
+        projectId,
+        invoiceNumber,
+        description,
+        date:       today,
+        dueDate,
+        amount,
+        taxPercent,
+        taxAmount,
+        total,
+        status: "DRAFT",
+      },
+    });
+  } catch (e: unknown) {
+    const isPrismaUniqueViolation =
+      typeof e === "object" && e !== null && "code" in e &&
+      (e as { code: string }).code === "P2002";
+    if (isPrismaUniqueViolation) {
+      return { success: false as const, error: `מספר חשבונית ${invoiceNumber} כבר קיים` };
+    }
+    throw e;
+  }
+
+  await db.milestone.updateMany({
+    where: { id: { in: milestoneIds } },
+    data:  { invoiceId: invoice.id },
+  });
+
+  await logActivity({
+    userId:      actorId,
+    action:      "INVOICE_CREATED",
+    entityType:  "INVOICE",
+    entityId:    invoice.id,
+    projectId,
+    description: `${actorName} יצר חשבון עסקה #${invoiceNumber} מאבני דרך — ₪${total.toLocaleString("he-IL")}`,
+  });
+
+  revalidatePath(`/projects/${projectId}/milestones`);
+  revalidatePath(`/projects/${projectId}/financials`);
+  revalidatePath(`/clients/${project.clientId}/invoices`);
+  revalidatePath("/finance");
+
+  return { success: true as const, invoiceId: invoice.id };
+}

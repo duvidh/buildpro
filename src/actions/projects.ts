@@ -300,6 +300,11 @@ export async function getProjectMilestones(id: string) {
   return db.milestone.findMany({
     where: { projectId: id },
     orderBy: { order: "asc" },
+    select: {
+      id: true, projectId: true, name: true, date: true,
+      weight: true, completed: true, completedAt: true,
+      notes: true, order: true, invoiceId: true,
+    },
   });
 }
 

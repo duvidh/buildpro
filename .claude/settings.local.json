@@ -142,7 +142,8 @@
       "Bash(awk 'NR<=2075 && /^  \"[a-zA-Z]+\": \\\\{/ {ns=$0} END{}' messages/he.json)",
       "Bash(awk -F: '$1<=2075')",
       "Bash(git commit -m 'fix: add the missing invoice detail page \\(clicking an invoice 404'\\\\''d\\)' -m 'Invoice rows linked to /invoices/[id] but that route never existed, so *)",
-      "Bash(powershell *)"
+      "Bash(powershell *)",
+      "Bash(xargs grep -l \"invoices\")"
     ]
   }
 }

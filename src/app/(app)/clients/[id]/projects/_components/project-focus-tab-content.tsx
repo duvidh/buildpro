@@ -21,7 +21,8 @@ import { getProjectGanttData } from "@/actions/tasks";
 import { getPrefabElements } from "@/actions/prefab";
 import { getSession } from "@/lib/session";
 import type { UserRole } from "@/lib/auth-utils";
-import { DELETE_ROLES } from "@/lib/auth-utils";
+import { DELETE_ROLES, FINANCE_WRITE_ROLES, hasRole } from "@/lib/auth-utils";
+import { getProjectHeader } from "@/actions/projects";
 
 import { ProjectOverviewContent } from "@/app/(app)/projects/[id]/_components/project-overview-content";
 import { TasksKanban } from "@/components/projects/tasks-kanban";
@@ -134,9 +135,20 @@ export async function ProjectFocusTabContent({
 
     // ── Milestones ────────────────────────────────────────────────────────────
     case "milestones": {
-      const raw        = await getProjectMilestones(projectId);
+      const [raw, project, canCreateInvoice] = await Promise.all([
+        getProjectMilestones(projectId),
+        getProjectHeader(projectId),
+        hasRole(FINANCE_WRITE_ROLES),
+      ]);
       const milestones = JSON.parse(JSON.stringify(raw));
-      return <MilestonesTimeline projectId={projectId} milestones={milestones} />;
+      return (
+        <MilestonesTimeline
+          projectId={projectId}
+          milestones={milestones}
+          contractValue={project?.contractValue ?? 0}
+          canCreateInvoice={canCreateInvoice}
+        />
+      );
     }
 
     // ── WBS ───────────────────────────────────────────────────────────────────

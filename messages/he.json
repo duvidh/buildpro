@@ -884,6 +884,20 @@
       "markDone": "הושלם",
       "deleteMilestone": "מחק",
       "seedDemo": "הוסף נתוני דמו",
+      "invoiced": "חויב",
+      "generateInvoice": "צור חשבון עסקה",
+      "invoiceDialog": {
+        "title": "יצירת חשבון עסקה",
+        "subtitle": "בחר אבני דרך שהושלמו לכלול בחשבונית",
+        "empty": "אין אבני דרך שהושלמו ועדיין לא חויבו",
+        "noBudget": "ערך חוזה לא מוגדר — לא ניתן לחשב סכום",
+        "selectAll": "בחר הכל",
+        "totalLabel": "סכום לחיוב (לפני מע\"מ):",
+        "withVat": "כולל מע\"מ:",
+        "submit": "צור חשבונית",
+        "successToast": "חשבון העסקה נוצר בהצלחה",
+        "errorNoSelection": "יש לבחור לפחות אבן דרך אחת"
+      },
       "validation": {
         "nameRequired": "שם חייב להכיל לפחות 2 תווים",
         "dateRequired": "תאריך חובה"

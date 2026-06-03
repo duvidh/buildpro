@@ -59,7 +59,7 @@ export default async function QuoteDetailPage({
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 pb-28 md:pb-0">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild className="text-muted-foreground -me-1">

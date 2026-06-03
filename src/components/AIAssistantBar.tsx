@@ -222,24 +222,44 @@ export function AIAssistantBar() {
 
   return (
     <>
-      {/* ── Collapsed pill ──────────────────────────────────────────────────── */}
+      {/* ── Collapsed: corner FAB on mobile, text pill on desktop ────────────── */}
       {!open && (
-        <button
-          type="button"
-          onClick={handleOpen}
-          className={cn(
-            "fixed bottom-6 left-1/2 z-50 -translate-x-1/2",
-            "flex items-center gap-2 rounded-full select-none",
-            "bg-gradient-to-r from-violet-600 to-indigo-600 text-white",
-            "px-5 py-2.5 text-sm font-semibold shadow-xl",
-            "hover:shadow-[0_8px_30px_rgba(124,58,237,0.4)] hover:scale-105",
-            "active:scale-95 transition-all duration-200",
-            "animate-in fade-in zoom-in-95 duration-200",
-          )}
-        >
-          <Sparkles className="h-4 w-4 shrink-0" />
-          {u.trigger}
-        </button>
+        <>
+          {/* Mobile: round FAB at bottom-end corner so it never covers content */}
+          <button
+            type="button"
+            onClick={handleOpen}
+            aria-label={u.trigger}
+            className={cn(
+              "fixed bottom-4 end-4 z-50 sm:hidden",
+              "flex h-12 w-12 items-center justify-center rounded-full select-none",
+              "bg-gradient-to-br from-violet-600 to-indigo-600 text-white",
+              "shadow-xl hover:shadow-[0_8px_30px_rgba(124,58,237,0.4)] hover:scale-105",
+              "active:scale-95 transition-all duration-200",
+              "animate-in fade-in zoom-in-95 duration-200",
+            )}
+          >
+            <Sparkles className="h-5 w-5" />
+          </button>
+
+          {/* Desktop: wide text pill at bottom-center */}
+          <button
+            type="button"
+            onClick={handleOpen}
+            className={cn(
+              "fixed bottom-6 left-1/2 z-50 -translate-x-1/2 hidden sm:flex",
+              "items-center gap-2 rounded-full select-none",
+              "bg-gradient-to-r from-violet-600 to-indigo-600 text-white",
+              "px-5 py-2.5 text-sm font-semibold shadow-xl",
+              "hover:shadow-[0_8px_30px_rgba(124,58,237,0.4)] hover:scale-105",
+              "active:scale-95 transition-all duration-200",
+              "animate-in fade-in zoom-in-95 duration-200",
+            )}
+          >
+            <Sparkles className="h-4 w-4 shrink-0" />
+            {u.trigger}
+          </button>
+        </>
       )}
 
       {/* ── Expanded panel ──────────────────────────────────────────────────── */}

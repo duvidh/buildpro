@@ -486,6 +486,68 @@ export function QuoteCalculator({
     );
   }
 
+  // ── Mobile card layout (< md) ──────────────────────────────────────────────
+  function renderItemRowMobile(item: LineItem, idx: number) {
+    return (
+      <div key={item.id} className="px-3 py-2.5 space-y-2">
+        {/* Row 1: index + description + delete */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground w-5 text-center shrink-0">{idx + 1}</span>
+          <Input
+            value={item.name}
+            onChange={(e) => updateItem(item.id, { name: e.target.value })}
+            className="h-8 text-sm flex-1 min-w-0"
+            placeholder={t("calc.itemPlaceholder")}
+          />
+          <Button
+            variant="ghost" size="icon"
+            className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+            onClick={() => handleDeleteRow(item.id)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+
+        {/* Row 2: unit | dim1 | sell price */}
+        <div className="grid grid-cols-3 gap-1.5 ms-7">
+          <div className="space-y-0.5">
+            <p className="text-[10px] text-muted-foreground text-center">{t("calc.colUnit")}</p>
+            <Input
+              value={item.unit}
+              onChange={(e) => updateItem(item.id, { unit: e.target.value })}
+              className="h-8 text-sm text-center px-1"
+            />
+          </div>
+          <div className="space-y-0.5">
+            <p className="text-[10px] text-muted-foreground text-center">{t("calc.colDim1")}</p>
+            <Input
+              type="number" min={0} step="any"
+              value={item.dim1 || ""}
+              onChange={(e) => updateItem(item.id, { dim1: parseFloat(e.target.value) || 0 })}
+              className="h-8 text-sm text-center px-1"
+            />
+          </div>
+          <div className="space-y-0.5">
+            <p className="text-[10px] text-muted-foreground text-center">{t("calc.colUnitPrice")}</p>
+            <Input
+              type="number" min={0} step="any"
+              value={item.unitPrice || ""}
+              onChange={(e) => handleUnitPriceChange(item.id, e.target.value)}
+              className="h-8 text-sm text-center px-1 font-medium"
+            />
+          </div>
+        </div>
+
+        {/* Row 3: total read-out */}
+        <div className="flex items-center justify-end gap-1.5 ms-7">
+          <span className="text-xs text-muted-foreground">{t("calc.colTotal")}:</span>
+          <span className="text-sm font-semibold text-primary">{fmtShekel(item.linePrice)}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Desktop grid layout (md+) ────────────────────────────────────────────────
   function renderItemRow(item: LineItem, idx: number) {
     const marginPct  = calcMarginPct(item.unitPrice, item.costPrice);
     const lineProfit = calcLineProfit(item);
@@ -654,8 +716,19 @@ export function QuoteCalculator({
           </div>
         </div>
 
-        {/* Items table */}
-        <ScrollArea className="w-full">
+        {/* Items — mobile cards */}
+        <div className="md:hidden divide-y divide-border">
+          {catItems.length === 0 ? (
+            <div className="py-5 text-center text-sm text-muted-foreground">
+              {t("calc.emptyCategory")}
+            </div>
+          ) : (
+            catItems.map((item, idx) => renderItemRowMobile(item, idx))
+          )}
+        </div>
+
+        {/* Items — desktop scrollable table */}
+        <ScrollArea className="hidden md:block w-full">
           <div style={{ minWidth: 1060 }}>
             {renderTableHeader()}
             {catItems.length === 0 ? (
@@ -706,7 +779,19 @@ export function QuoteCalculator({
           <span className="text-xs font-medium text-muted-foreground">{fmtShekel(uncatTotal)}</span>
         </div>
 
-        <ScrollArea className="w-full">
+        {/* Mobile cards */}
+        <div className="md:hidden divide-y divide-border">
+          {uncatItems.length === 0 ? (
+            <div className="py-6 text-center text-sm text-muted-foreground">
+              {t("calc.emptyUncategorized")}
+            </div>
+          ) : (
+            uncatItems.map((item, idx) => renderItemRowMobile(item, idx))
+          )}
+        </div>
+
+        {/* Desktop scrollable table */}
+        <ScrollArea className="hidden md:block w-full">
           <div style={{ minWidth: 1060 }}>
             {renderTableHeader()}
             {uncatItems.length === 0 ? (
@@ -915,7 +1000,7 @@ export function QuoteCalculator({
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 pb-28 md:pb-0">
       {/* ── View toggle ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 p-1 rounded-lg bg-muted/50 border border-border w-fit">
         <button
@@ -960,13 +1045,13 @@ export function QuoteCalculator({
           {/* Uncategorized section */}
           {renderUncategorizedSection()}
 
-          {/* Bottom actions */}
-          <div className="flex flex-wrap items-center gap-3">
+          {/* Bottom actions — stacked on mobile, inline on desktop */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <Button
               variant="outline" size="sm"
               onClick={handleAddCategory}
               disabled={isPending}
-              className="gap-2"
+              className="gap-2 w-full sm:w-auto"
             >
               {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />}
               {t("calc.addCategory")}
@@ -975,7 +1060,7 @@ export function QuoteCalculator({
             <Button
               onClick={handleSave}
               disabled={isPending}
-              className="gap-2 ms-auto"
+              className="gap-2 w-full sm:w-auto sm:ms-auto"
               size="sm"
             >
               {saved ? (

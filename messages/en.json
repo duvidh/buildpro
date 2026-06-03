@@ -586,7 +586,13 @@
       "descriptionPlaceholder": "e.g. 10% payment on contract signing",
       "descSuggestionDeposit": "10% deposit on signing",
       "descSuggestionMilestone": "Progress payment",
-      "descSuggestionFinal": "Final payment"
+      "descSuggestionFinal": "Final payment",
+      "recordPayment": "Record Payment",
+      "paymentsTitle": "Payments received",
+      "noPayments": "No payments recorded for this invoice yet",
+      "methodColumn": "Method",
+      "referenceColumn": "Reference",
+      "referencePlaceholder": "Reference no. (optional)"
     },
     "quotesList": {
       "count": "{n} quotes",

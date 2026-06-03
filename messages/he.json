@@ -586,7 +586,13 @@
       "descriptionPlaceholder": "למשל: תשלום 10% בחתימת חוזה",
       "descSuggestionDeposit": "מקדמה 10% בחתימת חוזה",
       "descSuggestionMilestone": "תשלום ביניים",
-      "descSuggestionFinal": "תשלום סופי"
+      "descSuggestionFinal": "תשלום סופי",
+      "recordPayment": "רישום תשלום",
+      "paymentsTitle": "תשלומים שהתקבלו",
+      "noPayments": "טרם התקבלו תשלומים על חשבונית זו",
+      "methodColumn": "אמצעי תשלום",
+      "referenceColumn": "אסמכתא",
+      "referencePlaceholder": "מס׳ אסמכתא (אופציונלי)"
     },
     "quotesList": {
       "count": "{n} הצעות מחיר",

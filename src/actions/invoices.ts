@@ -7,6 +7,36 @@ import { getSession } from "@/lib/session";
 import { logActivity } from "@/lib/activity";
 import { currentCompanyId } from "@/lib/tenant";
 
+// ─── Fetch a single invoice (tenant-scoped) ──────────────────────────────────
+
+export async function getInvoiceById(id: string) {
+  const cid = await currentCompanyId();
+  return db.invoice.findFirst({
+    // Scope by company so one tenant can't open another's invoice by id.
+    where: { id, companyId: cid },
+    select: {
+      id: true,
+      invoiceNumber: true,
+      description: true,
+      date: true,
+      dueDate: true,
+      status: true,
+      amount: true,
+      taxPercent: true,
+      taxAmount: true,
+      total: true,
+      paidAmount: true,
+      notes: true,
+      client:  { select: { id: true, name: true } },
+      project: { select: { id: true, name: true } },
+      payments: {
+        orderBy: { date: "desc" },
+        select: { id: true, date: true, amount: true, method: true, reference: true },
+      },
+    },
+  });
+}
+
 // ─── Auto-generate next invoice number ───────────────────────────────────────
 
 async function nextInvoiceNumber(cid: string | null): Promise<string> {

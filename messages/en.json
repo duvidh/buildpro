@@ -2010,6 +2010,21 @@
       "OTHER": "Other"
     }
   },
+  "quickLog": {
+    "fabLabel": "Quick Daily Log",
+    "title": "Daily Work Log",
+    "date": "Date",
+    "weather": "Weather",
+    "weatherPlaceholder": "e.g. ☀️ Sunny, 28°C",
+    "autoFill": "Quick fill",
+    "notes": "Notes / Day Summary",
+    "notesPlaceholder": "What happened on site today? Write freely...",
+    "save": "Save Log",
+    "saving": "Saving...",
+    "toastSuccess": "Log saved successfully",
+    "errorDuplicate": "A log for today already exists in this project",
+    "errorGeneric": "Error saving log"
+  },
   "filesClient": {
     "title": "File & Document Management",
     "filesCount": "{count} files • {cats} categories",

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { ExpenseCategory } from "@/generated/prisma/client";
 import { getSession } from "@/lib/session";
+import { requireRole, type UserRole } from "@/lib/auth-utils";
 import { currentCompanyId } from "@/lib/tenant";
 
 // ─── Aggregate page fetch ─────────────────────────────────────────────────────
@@ -177,6 +178,47 @@ export async function createDailyLog(data: {
       weatherConditions: weatherConditions || null,
       visitors: visitors || null,
       safetyIncidents: safetyIncidents || null,
+      notes: notes || null,
+    },
+    include: { supervisor: { select: { id: true, name: true } } },
+  });
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/field");
+  return { success: true as const, log };
+}
+
+// ─── Quick Mobile Log ─────────────────────────────────────────────────────────
+
+const DAILY_LOG_ROLES: UserRole[] = [
+  "ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER", "FIELD_WORKER",
+];
+
+export async function createQuickDailyLog(data: {
+  projectId: string;
+  notes?: string;
+  weather?: string;
+}) {
+  const session = await requireRole(DAILY_LOG_ROLES);
+  const { projectId, notes, weather } = data;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const existing = await db.dailyLog.findUnique({
+    where: { projectId_date: { projectId, date: today } },
+  });
+  if (existing) {
+    return { success: false as const, error: "duplicate" as const };
+  }
+
+  const cid = await currentCompanyId();
+  const log = await db.dailyLog.create({
+    data: {
+      companyId: cid,
+      projectId,
+      supervisorId: session.userId,
+      date: today,
+      weatherConditions: weather || null,
       notes: notes || null,
     },
     include: { supervisor: { select: { id: true, name: true } } },

@@ -2010,6 +2010,21 @@
       "OTHER": "אחר"
     }
   },
+  "quickLog": {
+    "fabLabel": "יומן יומי מהיר",
+    "title": "יומן עבודה יומי",
+    "date": "תאריך",
+    "weather": "מזג אוויר",
+    "weatherPlaceholder": "לדוגמה ☀️ שמשי, 28°",
+    "autoFill": "מילוי מהיר",
+    "notes": "הערות / תיאור יום העבודה",
+    "notesPlaceholder": "מה קרה היום באתר? כתוב בחופשיות...",
+    "save": "שמור יומן",
+    "saving": "שומר...",
+    "toastSuccess": "היומן נשמר בהצלחה",
+    "errorDuplicate": "כבר קיים יומן להיום בפרויקט זה",
+    "errorGeneric": "שגיאה בשמירת היומן"
+  },
   "filesClient": {
     "title": "ניהול קבצים ומסמכים",
     "filesCount": "{count} קבצים • {cats} קטגוריות",

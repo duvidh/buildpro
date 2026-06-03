@@ -1124,7 +1124,23 @@
     },
     "noPermissionFinance": "No permission to view financial data.",
     "noAccessFinance": "No access to financial data.",
-    "noPermissionSettings": "No permission to view settings."
+    "noPermissionSettings": "No permission to view settings.",
+    "pulse": {
+      "financialPulse": "Financial Pulse",
+      "budget": "Budget",
+      "spent": "Spent",
+      "invoiced": "Invoiced",
+      "collected": "Collected",
+      "physicalProgress": "Physical Progress",
+      "budgetConsumed": "Budget Consumed",
+      "weeklyBurnRate": "Weekly Burn Rate",
+      "perWeek": "/week",
+      "statusOnTrack": "On Track",
+      "statusAtRisk": "At Risk",
+      "statusOverBudget": "Over Budget",
+      "taskProgress": "Task Progress",
+      "tasksDone": "{done} of {total} tasks done"
+    }
   },
   "field": {
     "title": "Field Reports",

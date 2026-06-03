@@ -361,6 +361,18 @@ export async function getProjectWorkPackages(id: string) {
   });
 }
 
+/** Task completion counts — safe for all roles including FIELD_WORKER. */
+export async function getProjectTaskProgress(id: string) {
+  const groups = await db.task.groupBy({
+    by: ["status"],
+    where: { projectId: id },
+    _count: { id: true },
+  });
+  const total = groups.reduce((s, g) => s + g._count.id, 0);
+  const done  = groups.find((g) => g.status === "DONE")?._count.id ?? 0;
+  return { total, done };
+}
+
 // Legacy full-fetch (kept for backwards compatibility)
 export async function getProjectById(id: string) {
   return db.project.findUnique({

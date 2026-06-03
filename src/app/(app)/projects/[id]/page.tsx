@@ -3,10 +3,13 @@ export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { CheckSquare2, Factory, FileText, Activity, FolderOpen } from "lucide-react";
-import { getProjectOverview } from "@/actions/projects";
+import { getProjectOverview, getProjectTaskProgress } from "@/actions/projects";
+import { getProjectPulse } from "@/actions/finance-analytics";
+import { getCurrencyCode } from "@/actions/settings";
 import { getProjectActivity } from "@/actions/notifications";
 import { Badge } from "@/components/ui/badge";
 import { fmtDate } from "@/lib/utils";
+import { ProjectPulseWidget } from "./_components/project-pulse";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -32,7 +35,6 @@ function EntityIcon({ type }: { type: string }) {
   return                        <Activity     className={`${cls} text-slate-400`}   />;
 }
 
-// className-only status maps
 const TASK_STATUS_CLASS: Record<string, string> = {
   TODO:        "bg-slate-100 text-slate-600 border-slate-200",
   IN_PROGRESS: "bg-blue-100 text-blue-700 border-blue-200",
@@ -49,17 +51,20 @@ export default async function ProjectOverviewPage({
 }) {
   const { id } = await params;
 
-  const [data, activityLogs, t, locale] = await Promise.all([
-    getProjectOverview(id),
-    getProjectActivity(id, 15),
-    getTranslations("projects"),
-    getLocale(),
-  ]);
+  const [data, activityLogs, pulse, taskProgress, currencyCode, t, locale] =
+    await Promise.all([
+      getProjectOverview(id),
+      getProjectActivity(id, 15),
+      getProjectPulse(id),
+      getProjectTaskProgress(id),
+      getCurrencyCode(),
+      getTranslations("projects"),
+      getLocale(),
+    ]);
   if (!data) notFound();
 
   const dateLocale = locale === "he" ? "he-IL" : "en-US";
 
-  // Locale-aware relative time
   function relativeTime(date: Date | string): string {
     const ms   = Date.now() - new Date(date).getTime();
     const min  = Math.floor(ms / 60_000);
@@ -73,13 +78,11 @@ export default async function ProjectOverviewPage({
     return new Intl.DateTimeFormat(dateLocale, { day: "2-digit", month: "2-digit" }).format(new Date(date));
   }
 
-  // Helper for dynamic task status labels
   const tTaskStatus = (status: string) => {
     try { return t(`taskStatus.${status}` as Parameters<typeof t>[0]); }
     catch { return status; }
   };
 
-  // Helper for dynamic member role labels
   const tMemberRole = (role: string) => {
     try { return t(`memberRole.${role}` as Parameters<typeof t>[0]); }
     catch { return role; }
@@ -88,8 +91,39 @@ export default async function ProjectOverviewPage({
   const doneTasks    = data.tasks.filter((task) => task.status === "DONE").length;
   const pendingTasks = data.tasks.filter((task) => task.status !== "DONE").length;
 
+  const taskProgressPct = taskProgress.total > 0
+    ? Math.round((taskProgress.done / taskProgress.total) * 100)
+    : 0;
+
   return (
     <div className="space-y-5 max-w-3xl">
+      {/* ── Financial pulse (finance roles) or simplified task progress (field) ── */}
+      {pulse ? (
+        <ProjectPulseWidget pulse={pulse} currencyCode={currencyCode} locale={locale} />
+      ) : (
+        taskProgress.total > 0 && (
+          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-foreground">
+              {t("pulse.taskProgress")}
+            </h3>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">
+                  {t("pulse.tasksDone", { done: taskProgress.done, total: taskProgress.total })}
+                </span>
+                <span className="font-semibold tabular-nums">{taskProgressPct}%</span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                  style={{ width: `${taskProgressPct}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        )
+      )}
+
       {/* ── Stats grid ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[

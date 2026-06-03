@@ -1124,7 +1124,23 @@
     },
     "noPermissionFinance": "אין הרשאה לצפות בנתונים פיננסיים.",
     "noAccessFinance": "אין גישה לנתונים פיננסיים.",
-    "noPermissionSettings": "אין הרשאה לצפות בהגדרות."
+    "noPermissionSettings": "אין הרשאה לצפות בהגדרות.",
+    "pulse": {
+      "financialPulse": "דופק פיננסי",
+      "budget": "תקציב",
+      "spent": "הוצאות",
+      "invoiced": "חויב",
+      "collected": "גבייה",
+      "physicalProgress": "התקדמות פיזית",
+      "budgetConsumed": "תקציב שנוצל",
+      "weeklyBurnRate": "שריפת תקציב שבועית",
+      "perWeek": "/שבוע",
+      "statusOnTrack": "בשליטה",
+      "statusAtRisk": "בסיכון",
+      "statusOverBudget": "חריגה מתקציב",
+      "taskProgress": "התקדמות משימות",
+      "tasksDone": "{done} מתוך {total} משימות הושלמו"
+    }
   },
   "field": {
     "title": "דיווחים מהשטח",

@@ -141,7 +141,8 @@
       "Bash(sed -n '225,235p' src/app/'\\(app\\)'/projects/'[id]'/_components/financials-client.tsx)",
       "Bash(awk 'NR<=2075 && /^  \"[a-zA-Z]+\": \\\\{/ {ns=$0} END{}' messages/he.json)",
       "Bash(awk -F: '$1<=2075')",
-      "Bash(git commit -m 'fix: add the missing invoice detail page \\(clicking an invoice 404'\\\\''d\\)' -m 'Invoice rows linked to /invoices/[id] but that route never existed, so *)"
+      "Bash(git commit -m 'fix: add the missing invoice detail page \\(clicking an invoice 404'\\\\''d\\)' -m 'Invoice rows linked to /invoices/[id] but that route never existed, so *)",
+      "Bash(powershell *)"
     ]
   }
 }

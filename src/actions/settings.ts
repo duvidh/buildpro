@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { getLocale } from "next-intl/server";
 import { requireRole, ADMIN_ROLES } from "@/lib/auth-utils";
 import { uploadToStorage } from "@/lib/supabase-storage";
+import { getSession } from "@/lib/session";
+import { seedDemoProject } from "@/lib/demo-seed";
 
 const SETTING_KEYS = [
   // Company identity
@@ -125,4 +127,30 @@ export async function uploadCompanyLogo(formData: FormData) {
 
   revalidatePath("/settings");
   return { success: true as const, url: logoUrl };
+}
+
+export async function injectDemoData() {
+  const [session, locale] = await Promise.all([
+    getSession(),
+    getLocale().catch(() => "he" as const),
+  ]);
+
+  if (!session?.companyId || !session?.userId) {
+    return { success: false as const, error: "unauthorized" as const };
+  }
+
+  try {
+    await seedDemoProject(
+      session.companyId,
+      session.userId,
+      (locale === "en" ? "en" : "he") as "en" | "he",
+    );
+  } catch (err) {
+    console.error("[injectDemoData]", err);
+    return { success: false as const, error: "seed_failed" as const };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/projects");
+  return { success: true as const };
 }

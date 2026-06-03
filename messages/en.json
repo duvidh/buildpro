@@ -2285,7 +2285,8 @@
       "documents": "Documents",
       "preferences": "Preferences",
       "users": "Users & Roles",
-      "appearance": "Appearance"
+      "appearance": "Appearance",
+      "demo": "Demo Data"
     },
     "roles": {
       "ADMIN": "System Admin",
@@ -2486,6 +2487,20 @@
         "orange": "Sunset Orange",
         "amber": "Amber"
       }
+    },
+    "demo": {
+      "tabLabel": "Demo Data",
+      "title": "Demo Data",
+      "subtitle": "Load a sample project with clients, milestones, invoices, and simulated financials.",
+      "loadBtn": "Load Demo Project",
+      "loading": "Loading...",
+      "confirmTitle": "Load Demo Data",
+      "confirmDesc": "This will add a sample project, dummy clients, and simulated financials to your account. Your existing data will not be affected. Proceed?",
+      "confirmCancel": "Cancel",
+      "confirmOk": "Yes, load demo",
+      "successToast": "Demo project loaded successfully!",
+      "errorToast": "Loading failed. Please try again.",
+      "note": "You can load demo data multiple times — each load creates a separate copy and does not affect existing data."
     }
   },
   "address": {

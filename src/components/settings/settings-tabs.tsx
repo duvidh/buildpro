@@ -20,6 +20,7 @@ import {
   Pencil,
   KeyRound,
   Trash2,
+  FlaskConical,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -43,8 +44,19 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { saveAllSettings, uploadCompanyLogo } from "@/actions/settings";
+import { saveAllSettings, uploadCompanyLogo, injectDemoData } from "@/actions/settings";
 import {
   updateUserRole,
   toggleUserActive,
@@ -1078,6 +1090,65 @@ function AppearanceTab() {
   );
 }
 
+// ─── Demo Tab ─────────────────────────────────────────────────────────────────
+
+function DemoTab() {
+  const t = useTranslations("settings");
+  const [loading, setLoading] = useState(false);
+
+  async function handleInject() {
+    setLoading(true);
+    const res = await injectDemoData();
+    setLoading(false);
+    if (res.success) {
+      toast.success(t("demo.successToast" as Parameters<typeof t>[0]));
+    } else {
+      toast.error(t("demo.errorToast" as Parameters<typeof t>[0]));
+    }
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold">{t("demo.title" as Parameters<typeof t>[0])}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("demo.subtitle" as Parameters<typeof t>[0])}</p>
+        </div>
+        <Separator />
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-sm font-medium">{t("demo.loadBtn" as Parameters<typeof t>[0])}</p>
+            <p className="text-xs text-muted-foreground">{t("demo.note" as Parameters<typeof t>[0])}</p>
+          </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" disabled={loading} className="shrink-0">
+                {loading ? (
+                  <><Loader2 className="h-4 w-4 me-1.5 animate-spin" />{t("demo.loading" as Parameters<typeof t>[0])}</>
+                ) : (
+                  <><FlaskConical className="h-4 w-4 me-1.5" />{t("demo.loadBtn" as Parameters<typeof t>[0])}</>
+                )}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t("demo.confirmTitle" as Parameters<typeof t>[0])}</AlertDialogTitle>
+                <AlertDialogDescription>{t("demo.confirmDesc" as Parameters<typeof t>[0])}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t("demo.confirmCancel" as Parameters<typeof t>[0])}</AlertDialogCancel>
+                <AlertDialogAction onClick={handleInject}>
+                  {t("demo.confirmOk" as Parameters<typeof t>[0])}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const TAB_ICONS = {
@@ -1087,11 +1158,12 @@ const TAB_ICONS = {
   preferences: BellRing,
   users:       Users,
   appearance:  Palette,
+  demo:        FlaskConical,
 } as const;
 
 type TabValue = keyof typeof TAB_ICONS;
 
-const TAB_VALUES: TabValue[] = ["company", "financials", "documents", "preferences", "users", "appearance"];
+const TAB_VALUES: TabValue[] = ["company", "financials", "documents", "preferences", "users", "appearance", "demo"];
 
 export function SettingsTabs({
   systemSettings,
@@ -1129,6 +1201,7 @@ export function SettingsTabs({
       <TabsContent value="preferences" className="pt-5"><PreferencesTab /></TabsContent>
       <TabsContent value="users"       className="pt-5"><UsersTab       initialUsers={users} canManage={canManage} /></TabsContent>
       <TabsContent value="appearance"  className="pt-5"><AppearanceTab  /></TabsContent>
+      <TabsContent value="demo"        className="pt-5"><DemoTab        /></TabsContent>
     </Tabs>
   );
 }

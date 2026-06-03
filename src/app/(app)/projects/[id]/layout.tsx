@@ -7,7 +7,6 @@ import type { UserRole } from "@/lib/auth-utils";
 import { ProjectHeader } from "./_components/project-header";
 import { ProjectTabsNav } from "./_components/project-tabs-nav";
 import { MobileQuickLogButton } from "@/components/MobileQuickLogButton";
-import { AIAssistantBar } from "@/components/AIAssistantBar";
 
 export default async function ProjectLayout({
   children,
@@ -69,9 +68,8 @@ export default async function ProjectLayout({
           />
         </div>
       </div>
-      <div className="px-4 sm:px-6 py-6 pb-24 flex-1">{children}</div>
+      <div className="px-4 sm:px-6 py-6 flex-1">{children}</div>
       <MobileQuickLogButton projectId={id} />
-      <AIAssistantBar projectId={id} />
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { getSystemSettings } from "@/actions/settings";
 import { getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import type { UserRole } from "@/lib/auth-utils";
+import { AIAssistantBar } from "@/components/AIAssistantBar";
 
 async function getNotificationCount(userId: string): Promise<number> {
   try {
@@ -77,6 +78,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       {/* Global offline banner — renders only when navigator.onLine === false */}
       <OfflineIndicator />
+      {/* Global AI Assistant — context-aware floating bar */}
+      <AIAssistantBar />
     </div>
   </MeasurementProvider>
   </CurrencyProvider>

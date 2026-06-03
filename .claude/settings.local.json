@@ -143,7 +143,8 @@
       "Bash(awk -F: '$1<=2075')",
       "Bash(git commit -m 'fix: add the missing invoice detail page \\(clicking an invoice 404'\\\\''d\\)' -m 'Invoice rows linked to /invoices/[id] but that route never existed, so *)",
       "Bash(powershell *)",
-      "Bash(xargs grep -l \"invoices\")"
+      "Bash(xargs grep -l \"invoices\")",
+      "Bash(xargs grep -l \"useParams\\\\|use-params\")"
     ]
   }
 }

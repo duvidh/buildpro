@@ -581,7 +581,12 @@
       "errorInvalidAmount": "Please enter a valid amount",
       "errorCreate": "Error creating invoice",
       "cancel": "Cancel",
-      "create": "Create Invoice"
+      "create": "Create Invoice",
+      "descriptionLabel": "Invoice description",
+      "descriptionPlaceholder": "e.g. 10% payment on contract signing",
+      "descSuggestionDeposit": "10% deposit on signing",
+      "descSuggestionMilestone": "Progress payment",
+      "descSuggestionFinal": "Final payment"
     },
     "quotesList": {
       "count": "{n} quotes",

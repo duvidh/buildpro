@@ -581,7 +581,12 @@
       "errorInvalidAmount": "נא להזין סכום תקין",
       "errorCreate": "שגיאה ביצירת חשבונית",
       "cancel": "ביטול",
-      "create": "צור חשבונית"
+      "create": "צור חשבונית",
+      "descriptionLabel": "תיאור החשבונית",
+      "descriptionPlaceholder": "למשל: תשלום 10% בחתימת חוזה",
+      "descSuggestionDeposit": "מקדמה 10% בחתימת חוזה",
+      "descSuggestionMilestone": "תשלום ביניים",
+      "descSuggestionFinal": "תשלום סופי"
     },
     "quotesList": {
       "count": "{n} הצעות מחיר",

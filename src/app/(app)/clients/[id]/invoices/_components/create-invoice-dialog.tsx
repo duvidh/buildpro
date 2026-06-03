@@ -21,13 +21,21 @@ import { createInvoice } from "@/actions/invoices";
 type Project = { id: string; name: string };
 
 const EMPTY = {
-  projectId:  "",
-  date:       new Date().toISOString().split("T")[0],
-  dueDate:    "",
-  amount:     "",
-  taxPercent: "17",
-  notes:      "",
+  projectId:   "",
+  description: "",
+  date:        new Date().toISOString().split("T")[0],
+  dueDate:     "",
+  amount:      "",
+  taxPercent:  "17",
+  notes:       "",
 };
+
+// Quick-fill suggestion keys (translated at render time).
+const DESCRIPTION_SUGGESTION_KEYS = [
+  "descSuggestionDeposit",
+  "descSuggestionMilestone",
+  "descSuggestionFinal",
+] as const;
 
 export function CreateInvoiceDialog({
   clientId,
@@ -72,12 +80,13 @@ export function CreateInvoiceDialog({
     startTx(async () => {
       const res = await createInvoice({
         clientId,
-        projectId:  form.projectId,
-        date:       form.date,
-        dueDate:    form.dueDate || undefined,
-        amount:     amountNum,
-        taxPercent: taxPct,
-        notes:      form.notes || undefined,
+        projectId:   form.projectId,
+        description: form.description || undefined,
+        date:        form.date,
+        dueDate:     form.dueDate || undefined,
+        amount:      amountNum,
+        taxPercent:  taxPct,
+        notes:       form.notes || undefined,
       });
       if (res.success) {
         setOpen(false);
@@ -129,6 +138,31 @@ export function CreateInvoiceDialog({
                 </SelectContent>
               </Select>
             )}
+          </div>
+
+          {/* Description (prominent — what this invoice is for) */}
+          <div className="space-y-1.5">
+            <Label>{t("invoices.descriptionLabel")}</Label>
+            <Input
+              value={form.description}
+              placeholder={t("invoices.descriptionPlaceholder")}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+            <div className="flex flex-wrap gap-1.5 pt-0.5">
+              {DESCRIPTION_SUGGESTION_KEYS.map((key) => {
+                const label = t(`invoices.${key}` as Parameters<typeof t>[0]);
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setForm({ ...form, description: label })}
+                    className="rounded-full border border-border bg-muted/40 px-2.5 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Date */}

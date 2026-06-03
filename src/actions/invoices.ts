@@ -27,6 +27,7 @@ export async function createInvoice(data: {
   clientId:      string;
   projectId:     string;
   invoiceNumber?: string;
+  description?:  string;
   date:          string;
   dueDate?:      string;
   amount:        number;
@@ -63,6 +64,7 @@ export async function createInvoice(data: {
       clientId:      data.clientId,
       projectId:     data.projectId,
       invoiceNumber,
+      description:   data.description?.trim() || null,
       date:          new Date(data.date),
       dueDate:       data.dueDate ? new Date(data.dueDate) : null,
       amount:        data.amount,

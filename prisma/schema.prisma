@@ -753,6 +753,7 @@ model Invoice {
   quoteId       String?
   quote         Quote?        @relation(fields: [quoteId], references: [id])
   invoiceNumber String        @unique
+  description   String?
   date          DateTime      @default(now())
   dueDate       DateTime?
   status        InvoiceStatus @default(DRAFT)

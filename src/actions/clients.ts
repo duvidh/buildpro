@@ -177,6 +177,7 @@ export async function getClientInvoices(id: string) {
     select: {
       id: true,
       invoiceNumber: true,
+      description: true,
       date: true,
       dueDate: true,
       status: true,

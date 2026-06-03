@@ -102,12 +102,20 @@ export default async function ClientInvoicesPage({
                           href={`/invoices/${invoice.id}`}
                           className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
                         >
-                          {invoice.invoiceNumber ?? t("invoices.noNumber")}
+                          {invoice.description?.trim()
+                            ? invoice.description
+                            : (invoice.invoiceNumber ?? t("invoices.noNumber"))}
                         </Link>
                         <Badge variant="outline" className={`text-xs ${statusCfg.className}`}>
                           {statusCfg.label}
                         </Badge>
                       </div>
+                      {/* Invoice number shown as a sub-line when a description is present */}
+                      {invoice.description?.trim() && (
+                        <p className="text-xs font-medium text-muted-foreground mb-1" dir="ltr">
+                          {invoice.invoiceNumber ?? t("invoices.noNumber")}
+                        </p>
+                      )}
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <span dir="ltr">{invoice.dateStr}</span>
                         {invoice.dueDate && (

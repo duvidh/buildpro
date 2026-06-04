@@ -107,7 +107,10 @@
       "tasks": "משימות",
       "subcontractors": "ספקים וקבלנים",
       "settings": "הגדרות",
-      "profile": "פרופיל אישי"
+      "profile": "פרופיל אישי",
+      "invoices": "חשבוניות",
+      "employees": "צוות",
+      "admin": "ניהול-על"
     }
   },
   "dashboard": {

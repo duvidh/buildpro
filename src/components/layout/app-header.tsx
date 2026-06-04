@@ -43,12 +43,12 @@ function usePageTitle(pathname: string): string {
   // Exact match
   const segments = pathname.split("/").filter(Boolean);
   const root = segments[0] ?? "dashboard";
-  try {
-    // Try to get translation (throws/returns undefined if key missing)
+  // `t.has()` checks the key exists WITHOUT logging a MISSING_MESSAGE error.
+  // (A plain t() on a missing key surfaces a console error / error-boundary.)
+  if (t.has(root as Parameters<typeof t>[0])) {
     return t(root as Parameters<typeof t>[0]);
-  } catch {
-    return "BuildPro";
   }
+  return "BuildPro";
 }
 
 export function AppHeader({

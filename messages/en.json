@@ -107,7 +107,10 @@
       "tasks": "Tasks",
       "subcontractors": "Vendors & Subs",
       "settings": "Settings",
-      "profile": "My Profile"
+      "profile": "My Profile",
+      "invoices": "Invoices",
+      "employees": "Employees",
+      "admin": "Super Admin"
     }
   },
   "dashboard": {

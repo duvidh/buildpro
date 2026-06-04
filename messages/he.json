@@ -2373,7 +2373,9 @@
         "uploading": "מעלה...",
         "error": "העלאת הלוגו נכשלה. נסה שוב.",
         "hint": "PNG, JPG עד 2MB",
-        "placeholder": "לוגו"
+        "placeholder": "לוגו",
+        "remove": "הסר",
+        "replace": "החלף לוגו"
       },
       "systemInfo": {
         "title": "מידע מערכת",

@@ -56,7 +56,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { saveAllSettings, uploadCompanyLogo, injectDemoData } from "@/actions/settings";
+import { saveAllSettings, uploadCompanyLogo, removeCompanyLogo, injectDemoData } from "@/actions/settings";
 import {
   updateUserRole,
   toggleUserActive,
@@ -183,6 +183,17 @@ function CompanyTab({ initial }: { initial: Record<string, string> }) {
     });
   }
 
+  function handleLogoRemove() {
+    setLogoError(false);
+    setLogoUploading(true);
+    startTransition(async () => {
+      const res = await removeCompanyLogo();
+      setLogoUploading(false);
+      if (res.success) setLogoUrl("");
+      else setLogoError(true);
+    });
+  }
+
   // ── Dynamic System Info values ────────────────────────────────────────────
   const activeCurrency = SUPPORTED_CURRENCIES.find((c) => c.code === currencyCode);
   const currencyValueStr = activeCurrency
@@ -262,25 +273,38 @@ function CompanyTab({ initial }: { initial: Record<string, string> }) {
               className="hidden"
               onChange={handleLogoFile}
             />
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs"
-              disabled={logoUploading}
-              onClick={() => logoInputRef.current?.click()}
-            >
-              {logoUploading ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 me-1.5 animate-spin" />
-                  {t("company.logo.uploading")}
-                </>
-              ) : (
-                <>
-                  <Upload className="h-3.5 w-3.5 me-1.5" />
-                  {t("company.logo.upload")}
-                </>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                disabled={logoUploading}
+                onClick={() => logoInputRef.current?.click()}
+              >
+                {logoUploading ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 me-1.5 animate-spin" />
+                    {t("company.logo.uploading")}
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-3.5 w-3.5 me-1.5" />
+                    {logoUrl ? t("company.logo.replace") : t("company.logo.upload")}
+                  </>
+                )}
+              </Button>
+              {logoUrl && !logoUploading && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-destructive hover:text-destructive"
+                  onClick={handleLogoRemove}
+                >
+                  <Trash2 className="h-3.5 w-3.5 me-1.5" />
+                  {t("company.logo.remove")}
+                </Button>
               )}
-            </Button>
+            </div>
             <p className="text-[11px] text-muted-foreground">{t("company.logo.hint")}</p>
             {logoError && (
               <p className="text-[11px] text-destructive">{t("company.logo.error")}</p>

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getLocale } from "next-intl/server";
 import { requireRole, ADMIN_ROLES } from "@/lib/auth-utils";
-import { uploadToStorage } from "@/lib/supabase-storage";
+import { uploadToStorage, deleteFromStorage } from "@/lib/supabase-storage";
 import { getSession } from "@/lib/session";
 import { currentCompanyId } from "@/lib/tenant";
 import { seedDemoProject } from "@/lib/demo-seed";
@@ -137,6 +137,28 @@ export async function uploadCompanyLogo(formData: FormData) {
 
   revalidatePath("/settings");
   return { success: true as const, url: logoUrl };
+}
+
+/** Remove the company logo: delete the file from storage and clear the setting. */
+export async function removeCompanyLogo() {
+  await requireRole(ADMIN_ROLES);
+  const cid = await currentCompanyId();
+  if (!cid) return { success: false as const, error: "no_company" as const };
+
+  const existing = await db.systemSetting.findUnique({
+    where: { companyId_key: { companyId: cid, key: "company_logo" } },
+    select: { value: true },
+  });
+
+  // Best-effort: remove the stored file (non-fatal if it fails).
+  if (existing?.value) {
+    try { await deleteFromStorage(existing.value); } catch { /* ignore */ }
+  }
+
+  await db.systemSetting.deleteMany({ where: { companyId: cid, key: "company_logo" } });
+
+  revalidatePath("/settings");
+  return { success: true as const };
 }
 
 export async function injectDemoData() {

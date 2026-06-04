@@ -2373,7 +2373,9 @@
         "uploading": "Uploading...",
         "error": "Logo upload failed. Please try again.",
         "hint": "PNG, JPG up to 2 MB",
-        "placeholder": "Logo"
+        "placeholder": "Logo",
+        "remove": "Remove",
+        "replace": "Replace logo"
       },
       "systemInfo": {
         "title": "System Info",

@@ -210,6 +210,7 @@ model Company {
   notifications     Notification[]
   activityLogs      ActivityLog[]
   communicationLogs CommunicationLog[]
+  systemSettings    SystemSetting[]
 }
 
 // ─── Users & Auth ────────────────────────────────────────────────────────────
@@ -905,8 +906,13 @@ model CommunicationLog {
 
 model SystemSetting {
   id          String   @id @default(cuid())
-  key         String   @unique
+  companyId   String?
+  company     Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  key         String
   value       String
   description String?
   updatedAt   DateTime @updatedAt
+
+  // Settings are per-company: each company has its own "company_name", "company_logo", etc.
+  @@unique([companyId, key])
 }

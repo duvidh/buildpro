@@ -6,6 +6,7 @@ import { getLocale } from "next-intl/server";
 import { requireRole, ADMIN_ROLES } from "@/lib/auth-utils";
 import { uploadToStorage } from "@/lib/supabase-storage";
 import { getSession } from "@/lib/session";
+import { currentCompanyId } from "@/lib/tenant";
 import { seedDemoProject } from "@/lib/demo-seed";
 
 const SETTING_KEYS = [
@@ -29,8 +30,9 @@ const SETTING_KEYS = [
 type SettingKey = (typeof SETTING_KEYS)[number];
 
 export async function getSystemSettings() {
+  const cid = await currentCompanyId();
   const rows = await db.systemSetting.findMany({
-    where: { key: { in: [...SETTING_KEYS] } },
+    where: { companyId: cid, key: { in: [...SETTING_KEYS] } },
   });
   const map: Record<string, string> = {};
   for (const row of rows) map[row.key] = row.value;
@@ -39,10 +41,12 @@ export async function getSystemSettings() {
 
 export async function saveSystemSetting(key: SettingKey, value: string) {
   await requireRole(ADMIN_ROLES);
+  const cid = await currentCompanyId();
+  if (!cid) return { success: false as const, error: "no_company" as const };
   await db.systemSetting.upsert({
-    where: { key },
+    where: { companyId_key: { companyId: cid, key } },
     update: { value },
-    create: { key, value, description: key.replace("company_", "Company ") },
+    create: { companyId: cid, key, value, description: key.replace("company_", "Company ") },
   });
   revalidatePath("/settings");
   return { success: true as const };
@@ -55,9 +59,10 @@ export async function saveSystemSetting(key: SettingKey, value: string) {
  *   - Hebrew locale  → "ILS"
  */
 export async function getCurrencyCode(): Promise<string> {
+  const cid = await currentCompanyId().catch(() => null);
   const [rows, locale] = await Promise.all([
     db.systemSetting.findMany({
-      where: { key: { in: ["company_currency", "default_currency"] } },
+      where: { companyId: cid, key: { in: ["company_currency", "default_currency"] } },
       select: { key: true, value: true },
     }),
     getLocale().catch(() => "he"),
@@ -73,8 +78,9 @@ export async function getCurrencyCode(): Promise<string> {
  * Falls back to "AUTO" if not set.
  */
 export async function getMeasurementSystem(): Promise<string> {
+  const cid = await currentCompanyId().catch(() => null);
   const rows = await db.systemSetting.findMany({
-    where: { key: "company_measurement_system" },
+    where: { companyId: cid, key: "company_measurement_system" },
     select: { value: true },
   });
   return rows[0]?.value || "AUTO";
@@ -82,12 +88,14 @@ export async function getMeasurementSystem(): Promise<string> {
 
 export async function saveAllSettings(data: Partial<Record<SettingKey, string>>) {
   await requireRole(ADMIN_ROLES);
+  const cid = await currentCompanyId();
+  if (!cid) return { success: false as const, error: "no_company" as const };
   for (const [key, value] of Object.entries(data)) {
     if (value === undefined || value === null) continue;
     await db.systemSetting.upsert({
-      where:  { key },
+      where:  { companyId_key: { companyId: cid, key } },
       update: { value },
-      create: { key, value, description: key },
+      create: { companyId: cid, key, value, description: key },
     });
   }
   revalidatePath("/settings");
@@ -119,10 +127,12 @@ export async function uploadCompanyLogo(formData: FormData) {
     return { success: false as const, error: "upload_failed" as const };
   }
 
+  const cid = await currentCompanyId();
+  if (!cid) return { success: false as const, error: "no_company" as const };
   await db.systemSetting.upsert({
-    where:  { key: "company_logo" },
+    where:  { companyId_key: { companyId: cid, key: "company_logo" } },
     update: { value: logoUrl },
-    create: { key: "company_logo", value: logoUrl, description: "Company logo" },
+    create: { companyId: cid, key: "company_logo", value: logoUrl, description: "Company logo" },
   });
 
   revalidatePath("/settings");

@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { getQuoteById } from "@/actions/quotes";
 import { getClients } from "@/actions/clients";
 import { getCatalogItems } from "@/actions/catalog";
+import { getSystemSettings } from "@/actions/settings";
 import { QuoteHeaderForm } from "@/components/quotes/quote-header-form";
 import { QuoteCalculator } from "@/components/quotes/quote-calculator";
 
@@ -34,14 +35,18 @@ export default async function QuoteDetailPage({
 }) {
   const { id } = await params;
 
-  const [quote, clients, catalogItems, t] = await Promise.all([
+  const [quote, clients, catalogItems, settings, t] = await Promise.all([
     getQuoteById(id),
     getClients(),
     getCatalogItems(),
+    getSystemSettings(),
     getTranslations("quotes"),
   ]);
 
   if (!quote) notFound();
+
+  const companyName = settings["company_name"] || undefined;
+  const companyLogo = settings["company_logo"] || undefined;
 
   const clientOptions = clients.map((c) => ({ id: c.id, name: c.name }));
   const catalogOptions = catalogItems.map((c) => ({
@@ -140,6 +145,8 @@ export default async function QuoteDetailPage({
             date={fmtDate(quote.date)}
             validUntil={fmtDate(quote.validUntil)}
             notes={quote.notes ?? null}
+            companyName={companyName}
+            companyLogo={companyLogo}
           />
         </CardContent>
       </Card>

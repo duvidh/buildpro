@@ -79,12 +79,15 @@ const navGroups: NavGroup[] = [
 export function AppSidebar({
   user,
   companyName,
+  companyLogo,
   mobile = false,
   onNavigate,
   isSuperAdmin = false,
 }: {
   user: SessionUser;
   companyName?: string;
+  /** Company logo URL (Supabase Storage). Shown beside the company name. */
+  companyLogo?: string;
   /** When true, render the full expanded layout unconditionally (mobile drawer). */
   mobile?: boolean;
   /** Called when a nav item is tapped — used to close the mobile drawer. */
@@ -144,11 +147,18 @@ export function AppSidebar({
 
       {/* ── Brand ── */}
       <div className="flex h-16 items-center border-b border-sidebar-border shrink-0 overflow-hidden">
-        {/* Icon — always visible, centered in collapsed state */}
+        {/* Logo (or fallback icon) — always visible, centered in collapsed state */}
         <div className="flex h-16 w-16 shrink-0 items-center justify-center">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary">
-            <Building2 className="h-5 w-5 text-sidebar-primary-foreground" />
-          </div>
+          {companyLogo ? (
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white overflow-hidden ring-1 ring-sidebar-border">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={companyLogo} alt={displayName} className="h-full w-full object-contain" />
+            </div>
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary">
+              <Building2 className="h-5 w-5 text-sidebar-primary-foreground" />
+            </div>
+          )}
         </div>
         {/* Text — fades in on hover */}
         <div className={cn(

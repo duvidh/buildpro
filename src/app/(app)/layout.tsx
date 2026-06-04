@@ -54,6 +54,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const superAdmin        = isSuperAdminEmail(session.email);
   const companyName       = settings["company_name"] || undefined;
+  const companyLogo       = settings["company_logo"]  || undefined;
   const defaultCurrency   = locale === "en" ? "USD" : "ILS";
   const currencyCode      = settings["company_currency"] || settings["default_currency"] || defaultCurrency;
   const measurementSystem = settings["company_measurement_system"] || "AUTO";
@@ -67,12 +68,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       {/* Sidebar — hidden on mobile, visible md+ (appears on right in RTL) */}
       <div className="hidden md:block">
-        <AppSidebar user={user} companyName={companyName} isSuperAdmin={superAdmin} />
+        <AppSidebar user={user} companyName={companyName} companyLogo={companyLogo} isSuperAdmin={superAdmin} />
       </div>
 
       {/* Main area */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <AppHeader notificationCount={notificationCount} user={user} isSuperAdmin={superAdmin} />
+        <AppHeader notificationCount={notificationCount} user={user} isSuperAdmin={superAdmin} companyName={companyName} companyLogo={companyLogo} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
 

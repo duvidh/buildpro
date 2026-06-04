@@ -11,6 +11,7 @@ import {
   Plus,
   Loader2,
   Wallet,
+  Printer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,14 +63,25 @@ const STATUS_CLS: Record<string, string> = {
   CANCELLED: "bg-slate-100 text-slate-500 border-slate-200",
 };
 
+type Company = {
+  name: string;
+  logo: string;
+  phone: string;
+  email: string;
+  address: string;
+  vat: string;
+};
+
 export function InvoiceDetailClient({
   invoice,
   currencyCode,
   locale,
+  company,
 }: {
   invoice: Invoice;
   currencyCode: string;
   locale: string;
+  company: Company;
 }) {
   const t = useTranslations("clients.invoices");
   const tFin = useTranslations("financialsClient");
@@ -116,17 +128,25 @@ export function InvoiceDetailClient({
   const headline = invoice.description?.trim() || invoice.invoiceNumber;
 
   return (
-    <div className="space-y-5 max-w-3xl" dir={dir}>
-      {/* Back link */}
-      {invoice.client && (
-        <Link
-          href={`/clients/${invoice.client.id}/invoices`}
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowRight className="h-4 w-4" />
-          {invoice.client.name}
-        </Link>
-      )}
+    <>
+    {/* ── On-screen management view (hidden when printing) ── */}
+    <div className="space-y-5 max-w-3xl print:hidden" dir={dir}>
+      {/* Back link + print */}
+      <div className="flex items-center justify-between gap-3">
+        {invoice.client ? (
+          <Link
+            href={`/clients/${invoice.client.id}/invoices`}
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowRight className="h-4 w-4" />
+            {invoice.client.name}
+          </Link>
+        ) : <span />}
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
+          <Printer className="h-4 w-4" />
+          {t("printInvoice")}
+        </Button>
+      </div>
 
       {/* Header card */}
       <Card className="shadow-sm">
@@ -280,6 +300,98 @@ export function InvoiceDetailClient({
         </DialogContent>
       </Dialog>
     </div>
+
+    {/* ── Printable invoice document (only visible when printing) ── */}
+    <div className="hidden print:block" dir={dir}>
+      <div className="mx-auto max-w-3xl bg-white text-black p-8" style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}>
+        {/* Brand header */}
+        <div className="flex items-start justify-between gap-6 border-b-2 border-gray-300 pb-5 mb-6">
+          <div className="flex items-center gap-3">
+            {company.logo && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={company.logo} alt={company.name} className="h-16 w-16 object-contain" />
+            )}
+            <div>
+              {company.name && <p className="text-xl font-bold">{company.name}</p>}
+              <div className="text-xs text-gray-600 mt-1 space-y-0.5">
+                {company.address && <p>{company.address}</p>}
+                {company.phone && <p dir="ltr" className="inline-block">{company.phone}</p>}
+                {company.email && <p dir="ltr" className="inline-block ms-2">{company.email}</p>}
+                {company.vat && <p>{t("vatNumberLabel")}: {company.vat}</p>}
+              </div>
+            </div>
+          </div>
+          <div className="text-end">
+            <h1 className="text-2xl font-bold">{t("documentTitle")}</h1>
+            <p className="text-sm text-gray-600 mt-1" dir="ltr">{invoice.invoiceNumber}</p>
+          </div>
+        </div>
+
+        {/* Bill-to + dates */}
+        <div className="flex justify-between gap-6 mb-6 text-sm">
+          <div>
+            <p className="text-xs text-gray-500 mb-0.5">{t("billToLabel")}</p>
+            <p className="font-semibold">{invoice.client?.name ?? ""}</p>
+            {invoice.project && <p className="text-gray-600">{invoice.project.name}</p>}
+          </div>
+          <div className="text-end space-y-0.5">
+            <p>{t("dateLabel")}: <span dir="ltr">{fmtDate(invoice.date)}</span></p>
+            {invoice.dueDate && <p>{t("dueDateLabel")}: <span dir="ltr">{fmtDate(invoice.dueDate)}</span></p>}
+          </div>
+        </div>
+
+        {/* Line / description */}
+        <table className="w-full text-sm border-collapse mb-6">
+          <thead>
+            <tr className="border-b-2 border-gray-300">
+              <th className="text-start py-2">{t("descriptionLabel")}</th>
+              <th className="text-end py-2">{t("amountLabel")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-gray-200">
+              <td className="py-2">{invoice.description?.trim() || invoice.invoiceNumber}</td>
+              <td className="py-2 text-end tabular-nums">{fmt(invoice.amount)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Totals */}
+        <div className="flex justify-end">
+          <div className="w-64 text-sm space-y-1">
+            <div className="flex justify-between text-gray-600">
+              <span>{t("subtotalLabel")}</span>
+              <span className="tabular-nums">{fmt(invoice.amount)}</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>{t("vatLine", { n: invoice.taxPercent })}</span>
+              <span className="tabular-nums">{fmt(invoice.taxAmount)}</span>
+            </div>
+            <div className="flex justify-between font-bold text-base border-t-2 border-gray-300 pt-1.5 mt-1.5">
+              <span>{t("totalLabel")}</span>
+              <span className="tabular-nums">{fmt(invoice.total)}</span>
+            </div>
+            {invoice.paidAmount > 0 && (
+              <>
+                <div className="flex justify-between text-gray-600 pt-1">
+                  <span>{t("paidLabel")}</span>
+                  <span className="tabular-nums">{fmt(invoice.paidAmount)}</span>
+                </div>
+                <div className="flex justify-between font-semibold">
+                  <span>{t("balanceLabel")}</span>
+                  <span className="tabular-nums">{fmt(balance)}</span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {invoice.notes && (
+          <p className="text-xs text-gray-600 border-t border-gray-200 mt-6 pt-3">{invoice.notes}</p>
+        )}
+      </div>
+    </div>
+    </>
   );
 }
 

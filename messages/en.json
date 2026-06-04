@@ -593,7 +593,11 @@
       "methodColumn": "Method",
       "referenceColumn": "Reference",
       "referencePlaceholder": "Reference no. (optional)",
-      "noAccess": "You don't have permission to view financial data."
+      "noAccess": "You don't have permission to view financial data.",
+      "printInvoice": "Print / PDF",
+      "documentTitle": "Invoice",
+      "billToLabel": "Bill to",
+      "vatNumberLabel": "VAT/Company No."
     },
     "quotesList": {
       "count": "{n} quotes",

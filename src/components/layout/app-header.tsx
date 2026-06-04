@@ -55,10 +55,14 @@ export function AppHeader({
   notificationCount = 0,
   user,
   isSuperAdmin = false,
+  companyName,
+  companyLogo,
 }: {
   notificationCount?: number;
   user: SessionUser;
   isSuperAdmin?: boolean;
+  companyName?: string;
+  companyLogo?: string;
 }) {
   const pathname          = usePathname();
   const title             = usePageTitle(pathname);
@@ -100,7 +104,7 @@ export function AppHeader({
           </Button>
         </SheetTrigger>
         <SheetContent side={sheetSide} className="p-0 w-64">
-          <AppSidebar user={user} mobile isSuperAdmin={isSuperAdmin} onNavigate={() => setMobileNavOpen(false)} />
+          <AppSidebar user={user} mobile isSuperAdmin={isSuperAdmin} companyName={companyName} companyLogo={companyLogo} onNavigate={() => setMobileNavOpen(false)} />
         </SheetContent>
       </Sheet>
 

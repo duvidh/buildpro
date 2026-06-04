@@ -97,6 +97,8 @@ type Props = {
   date?: string;
   validUntil?: string | null;
   notes?: string | null;
+  companyName?: string | null;
+  companyLogo?: string | null;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -161,6 +163,8 @@ export function QuoteCalculator({
   date,
   validUntil,
   notes,
+  companyName,
+  companyLogo,
 }: Props) {
   const t      = useTranslations("quotes");
   const locale = useLocale();
@@ -907,6 +911,22 @@ export function QuoteCalculator({
       >
         {/* Document header */}
         <div className="bg-gradient-to-l from-primary/5 to-primary/10 px-8 py-6 border-b border-border">
+          {/* Company brand row — logo + name (appears on the printed document) */}
+          {(companyLogo || companyName) && (
+            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border/60">
+              {companyLogo && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={companyLogo}
+                  alt={companyName ?? ""}
+                  className="h-12 w-12 object-contain rounded-md bg-white"
+                />
+              )}
+              {companyName && (
+                <span className="text-lg font-bold text-foreground">{companyName}</span>
+              )}
+            </div>
+          )}
           <div className="flex items-start justify-between gap-6">
             <div>
               <h1 className="text-2xl font-bold text-foreground mb-1">

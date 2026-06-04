@@ -593,7 +593,11 @@
       "methodColumn": "אמצעי תשלום",
       "referenceColumn": "אסמכתא",
       "referencePlaceholder": "מס׳ אסמכתא (אופציונלי)",
-      "noAccess": "אין לך הרשאה לצפות בנתוני כספים."
+      "noAccess": "אין לך הרשאה לצפות בנתוני כספים.",
+      "printInvoice": "הדפסה / PDF",
+      "documentTitle": "חשבונית",
+      "billToLabel": "לכבוד",
+      "vatNumberLabel": "ח.פ / ע.מ"
     },
     "quotesList": {
       "count": "{n} הצעות מחיר",

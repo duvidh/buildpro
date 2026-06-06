@@ -5,7 +5,7 @@ import { cache } from "react";
 import { db } from "@/lib/db";
 import type { LeadStatusValue } from "@/lib/constants/lead-enums";
 import { createLeadSchema, type CreateLeadInput } from "@/lib/schemas/lead-schema";
-import { requireRole, CLIENT_ROLES, DELETE_ROLES } from "@/lib/auth-utils";
+import { requireRole, CLIENT_ROLES, DELETE_ROLES, ownerScopeUserId } from "@/lib/auth-utils";
 import { currentCompanyId } from "@/lib/tenant";
 
 export const getLeadById = cache(async (id: string) => {
@@ -20,8 +20,9 @@ export const getLeadById = cache(async (id: string) => {
 
 export async function getLeads() {
   const cid = await currentCompanyId();
+  const ownerId = await ownerScopeUserId();
   return db.lead.findMany({
-    where: { companyId: cid },
+    where: { companyId: cid, ...(ownerId ? { assignedToId: ownerId } : {}) },
     orderBy: { createdAt: "desc" },
     include: {
       assignedTo: { select: { id: true, name: true } },
@@ -31,7 +32,8 @@ export async function getLeads() {
 }
 
 export async function createLead(raw: CreateLeadInput) {
-  try { await requireRole(CLIENT_ROLES); }
+  let session;
+  try { session = await requireRole(CLIENT_ROLES); }
   catch { return { success: false as const, error: "אין הרשאה לבצע פעולה זו" }; }
 
   const parsed = createLeadSchema.safeParse(raw);
@@ -44,6 +46,10 @@ export async function createLead(raw: CreateLeadInput) {
   const sizeNum = estimatedSize ? parseFloat(estimatedSize) : null;
   const cid = await currentCompanyId();
 
+  // SALES users only see leads assigned to them — auto-assign on create so the
+  // lead remains visible to its creator.
+  const assignedToId = session.role === "SALES" ? session.userId : null;
+
   await db.lead.create({
     data: {
       ...rest,
@@ -53,6 +59,7 @@ export async function createLead(raw: CreateLeadInput) {
       estimatedSize: sizeNum && !isNaN(sizeNum) ? sizeNum : null,
       constructionTypes: constructionTypes ?? [],
       assignedEmployeeId: assignedEmployeeId || null,
+      assignedToId,
     },
   });
 

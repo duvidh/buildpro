@@ -1939,7 +1939,8 @@
       "ADMIN": "System Admin",
       "OFFICE_MANAGER": "Office Manager",
       "PROJECT_MANAGER": "Project Manager",
-      "FIELD_WORKER": "Field Worker"
+      "FIELD_WORKER": "Field Worker",
+      "SALES": "Sales Rep"
     }
   },
   "fieldClient": {
@@ -2279,7 +2280,8 @@
       "ADMIN": "System Admin",
       "OFFICE_MANAGER": "Office Manager",
       "PROJECT_MANAGER": "Project Manager",
-      "FIELD_WORKER": "Field Worker"
+      "FIELD_WORKER": "Field Worker",
+      "SALES": "Sales Rep"
     }
   },
   "offlineIndicator": {
@@ -2347,7 +2349,8 @@
       "ADMIN": "System Admin",
       "OFFICE_MANAGER": "Office Manager",
       "PROJECT_MANAGER": "Project Manager",
-      "FIELD_WORKER": "Field Worker"
+      "FIELD_WORKER": "Field Worker",
+      "SALES": "Sales Rep"
     },
     "save": "Save",
     "saved": "Settings saved",

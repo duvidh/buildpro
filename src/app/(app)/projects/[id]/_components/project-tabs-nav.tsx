@@ -67,9 +67,9 @@ export function ProjectTabsNav({
   const t        = useTranslations("projects.tabs");
   const pathname = usePathname();
 
-  const isFieldWorker     = userRole === "FIELD_WORKER";
-  const canViewFinancials = !isFieldWorker;
-  const canViewSettings   = !isFieldWorker;
+  const isRestricted      = userRole === "FIELD_WORKER" || userRole === "SALES";
+  const canViewFinancials = !isRestricted;
+  const canViewSettings   = !isRestricted;
 
   // ── Core tabs ──────────────────────────────────────────────────────────────
   const coreTabs: Tab[] = [

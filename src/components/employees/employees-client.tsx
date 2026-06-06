@@ -36,7 +36,7 @@ type EmployeeUser = {
 };
 
 const ROLE_VALUES: UserRole[] = [
-  "ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER", "FIELD_WORKER",
+  "ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER", "FIELD_WORKER", "SALES",
 ];
 
 const ROLE_BADGE_CLS: Record<UserRole, string> = {
@@ -44,6 +44,7 @@ const ROLE_BADGE_CLS: Record<UserRole, string> = {
   OFFICE_MANAGER:  "bg-blue-100 text-blue-700 border-blue-200",
   PROJECT_MANAGER: "bg-emerald-100 text-emerald-700 border-emerald-200",
   FIELD_WORKER:    "bg-amber-100 text-amber-700 border-amber-200",
+  SALES:           "bg-orange-100 text-orange-700 border-orange-200",
 };
 
 // ─── Component ──────────────────────────────────────────────────────────────────

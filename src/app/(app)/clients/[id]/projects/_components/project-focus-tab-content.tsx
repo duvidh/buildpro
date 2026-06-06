@@ -52,7 +52,7 @@ export async function ProjectFocusTabContent({
   const session   = await getSession();
   if (!session) redirect("/login");
   const userRole  = session.role as UserRole;
-  const isFieldWorker = userRole === "FIELD_WORKER";
+  const isFieldWorker = userRole === "FIELD_WORKER" || userRole === "SALES";
   const t = await getTranslations("projects");
 
   switch (tab) {

@@ -9,14 +9,15 @@ import {
 } from "@/lib/schemas/project-schema";
 import {
   requireRole,
-  PROJECT_ROLES, DELETE_ROLES, FINANCE_VIEW_ROLES,
+  PROJECT_ROLES, DELETE_ROLES, FINANCE_VIEW_ROLES, ownerScopeUserId,
 } from "@/lib/auth-utils";
 import { currentCompanyId } from "@/lib/tenant";
 
 export async function getProjects() {
   const cid = await currentCompanyId();
+  const ownerId = await ownerScopeUserId();
   return db.project.findMany({
-    where: { companyId: cid },
+    where: { companyId: cid, ...(ownerId ? { managerId: ownerId } : {}) },
     orderBy: { createdAt: "desc" },
     include: {
       client: { select: { id: true, name: true } },
@@ -30,7 +31,8 @@ export async function getProjects() {
 }
 
 export async function createProject(raw: CreateProjectInput) {
-  try { await requireRole(PROJECT_ROLES); }
+  let session;
+  try { session = await requireRole(PROJECT_ROLES); }
   catch { return { success: false as const, error: "אין הרשאה לבצע פעולה זו" }; }
 
   const parsed = createProjectSchema.safeParse(raw);
@@ -42,6 +44,10 @@ export async function createProject(raw: CreateProjectInput) {
 
   const cid = await currentCompanyId();
 
+  // SALES users only see projects they manage — auto-assign as manager on create
+  // so the project remains visible to its creator.
+  const managerId = session.role === "SALES" ? session.userId : null;
+
   const project = await db.project.create({
     data: {
       companyId: cid,
@@ -49,6 +55,7 @@ export async function createProject(raw: CreateProjectInput) {
       description: description || null,
       address: address || null,
       clientId,
+      managerId,
       status,
       startDate: startDate ? new Date(startDate) : null,
       endDate: endDate ? new Date(endDate) : null,

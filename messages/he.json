@@ -1880,7 +1880,8 @@
       "ADMIN": "מנהל מערכת",
       "OFFICE_MANAGER": "מנהל/ת משרד",
       "PROJECT_MANAGER": "מנהל פרויקטים",
-      "FIELD_WORKER": "איש שטח"
+      "FIELD_WORKER": "איש שטח",
+      "SALES": "איש מכירות"
     }
   },
   "widgets": {
@@ -2279,7 +2280,8 @@
       "ADMIN": "מנהל מערכת",
       "OFFICE_MANAGER": "מנהל/ת משרד",
       "PROJECT_MANAGER": "מנהל פרויקטים",
-      "FIELD_WORKER": "איש שטח"
+      "FIELD_WORKER": "איש שטח",
+      "SALES": "איש מכירות"
     }
   },
   "offlineIndicator": {
@@ -2347,7 +2349,8 @@
       "ADMIN": "מנהל מערכת",
       "OFFICE_MANAGER": "מנהל/ת משרד",
       "PROJECT_MANAGER": "מנהל פרויקטים",
-      "FIELD_WORKER": "איש שטח"
+      "FIELD_WORKER": "איש שטח",
+      "SALES": "איש מכירות"
     },
     "save": "שמור",
     "saved": "ההגדרות נשמרו",

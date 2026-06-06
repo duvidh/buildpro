@@ -102,9 +102,9 @@ export function ProjectFocusOverlay({
 
   const s = settings ?? DEFAULT_SETTINGS;
 
-  const isFieldWorker     = userRole === "FIELD_WORKER";
-  const canViewFinancials = !isFieldWorker;
-  const canViewSettings   = !isFieldWorker;
+  const isRestricted      = userRole === "FIELD_WORKER" || userRole === "SALES";
+  const canViewFinancials = !isRestricted;
+  const canViewSettings   = !isRestricted;
 
   // ── Build tab list (mirrors ProjectTabsNav) ──────────────────────────────
   const coreTabs: TabDef[] = [

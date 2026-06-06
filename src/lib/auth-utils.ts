@@ -11,7 +11,8 @@ export type UserRole =
   | "ADMIN"
   | "OFFICE_MANAGER"
   | "PROJECT_MANAGER"
-  | "FIELD_WORKER";
+  | "FIELD_WORKER"
+  | "SALES";
 
 // ─── Permission Sets ──────────────────────────────────────────────────────────
 
@@ -28,12 +29,12 @@ export const DELETE_ROLES: UserRole[] = ["ADMIN", "OFFICE_MANAGER"];
 
 /** Can manage clients and leads. */
 export const CLIENT_ROLES: UserRole[] = [
-  "ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER",
+  "ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER", "SALES",
 ];
 
 /** Can create / update projects and related entities. */
 export const PROJECT_ROLES: UserRole[] = [
-  "ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER",
+  "ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER", "SALES",
 ];
 
 /** Full system administration. */
@@ -70,4 +71,16 @@ export async function getRole(): Promise<UserRole | null> {
 export async function hasRole(allowed: UserRole[]): Promise<boolean> {
   const role = await getRole();
   return role !== null && allowed.includes(role);
+}
+
+/**
+ * For owner-scoped roles (currently SALES), returns the userId that records
+ * must belong to in order to be visible. Returns null for roles that see
+ * every record in their company.
+ *
+ * Use in list queries: `where: { companyId, ...(ownerId ? { ownerField: ownerId } : {}) }`.
+ */
+export async function ownerScopeUserId(): Promise<string | null> {
+  const session = await getSession();
+  return session?.role === "SALES" ? session.userId : null;
 }

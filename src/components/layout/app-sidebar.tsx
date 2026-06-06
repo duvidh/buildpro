@@ -47,20 +47,20 @@ const navGroups: NavGroup[] = [
     groupKey: "groups.management",
     items: [
       { href: "/dashboard", icon: LayoutDashboard, labelKey: "dashboard" },
-      { href: "/leads",     icon: TrendingUp,      labelKey: "leads",          roles: ["ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER"] },
-      { href: "/clients",   icon: Users,           labelKey: "clients",         roles: ["ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER"] },
+      { href: "/leads",     icon: TrendingUp,      labelKey: "leads",          roles: ["ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER", "SALES"] },
+      { href: "/clients",   icon: Users,           labelKey: "clients",         roles: ["ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER", "SALES"] },
       { href: "/projects",  icon: FolderKanban,    labelKey: "projects" },
-      { href: "/quotes",    icon: FileText,         labelKey: "quotes",          roles: ["ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER"] },
+      { href: "/quotes",    icon: FileText,         labelKey: "quotes",          roles: ["ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER", "SALES"] },
       { href: "/employees", icon: UsersRound,       labelKey: "employees",       roles: ["ADMIN"] },
     ],
   },
   {
     groupKey: "groups.field",
     items: [
-      { href: "/field",      icon: HardHat,       labelKey: "fieldReports" },
+      { href: "/field",      icon: HardHat,       labelKey: "fieldReports", roles: ["ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER", "FIELD_WORKER"] },
       { href: "/hr",         icon: UserCog,       labelKey: "hr",         roles: ["ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER"] },
-      { href: "/equipment",  icon: Wrench,        labelKey: "equipment" },
-      { href: "/daily-logs", icon: ClipboardList, labelKey: "dailyLogs" },
+      { href: "/equipment",  icon: Wrench,        labelKey: "equipment", roles: ["ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER", "FIELD_WORKER"] },
+      { href: "/daily-logs", icon: ClipboardList, labelKey: "dailyLogs", roles: ["ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER", "FIELD_WORKER"] },
       { href: "/tasks",      icon: CheckSquare,   labelKey: "tasks" },
     ],
   },
@@ -131,7 +131,7 @@ export function AppSidebar({
     });
   }
 
-  const canViewSettings = user.role !== "FIELD_WORKER";
+  const canViewSettings = user.role !== "FIELD_WORKER" && user.role !== "SALES";
   const displayName = companyName || APP_CONFIG.companyName;
 
   // When in the mobile drawer, the sidebar is always fully expanded: full width

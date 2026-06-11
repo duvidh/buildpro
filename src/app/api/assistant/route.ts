@@ -6,6 +6,7 @@ import {
   type UIMessage,
 } from "ai";
 import { z } from "zod";
+import { google } from "@ai-sdk/google";
 import { getSession } from "@/lib/session";
 import { consumeAiQuery } from "@/lib/ai-quota";
 import { getProjects, getProjectFinancials } from "@/actions/projects";
@@ -13,7 +14,8 @@ import { getClients, getClientOverview, getClientInvoices } from "@/actions/clie
 import { getDailyLogsByProject } from "@/actions/field";
 import type { AIContext } from "@/actions/ai";
 
-const MODEL = "anthropic/claude-sonnet-4.6";
+// gemini-1.5-flash is retired; gemini-3.5-flash is the current flash-tier model.
+const MODEL = google("gemini-3.5-flash");
 
 function systemPrompt(locale: string, context: AIContext, entityId: string) {
   const language = locale === "he" ? "Hebrew" : "English";

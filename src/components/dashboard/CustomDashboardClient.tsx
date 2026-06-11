@@ -23,6 +23,7 @@ import {
   FinanceWidget, ProjectsWidget, PaymentsWidget,
   ClockWidget, MilestonesWidget, InvoicesDueWidget,
   ActivityWidget, QuickActionsWidget, MapWidget,
+  ExecStatsWidget, FieldActivityWidget,
 } from "./widgets";
 import type { DashboardData, WidgetLayoutItem } from "./widgets";
 
@@ -76,6 +77,8 @@ function findFreePosition(
 function WidgetContent({ id, data }: { id: string; data: DashboardData }) {
   const t = useTranslations("dashboard");
   switch (id) {
+    case "exec_stats":    return <ExecStatsWidget data={data} />;
+    case "field_activity":return <FieldActivityWidget data={data} />;
     case "kpis":          return <KpiWidget data={data} />;
     case "finance":       return <FinanceWidget data={data} />;
     case "leads":         return <LeadsWidget data={data} />;

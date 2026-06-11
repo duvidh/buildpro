@@ -1,4 +1,4 @@
-import { getDashboardData } from "@/actions/dashboard";
+import { getDashboardData, getDashboardStats } from "@/actions/dashboard";
 import { getSetupProgress } from "@/actions/onboarding";
 import { getSession } from "@/lib/session";
 import { db } from "@/lib/db";
@@ -10,18 +10,20 @@ import type { WidgetLayoutItem } from "@/components/dashboard/widgets";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [dashboardData, session, locale, setupProgress] = await Promise.all([
-    getDashboardData(),
-    getSession(),
-    getLocale(),
-    getSetupProgress(),
-  ]);
+  const [dashboardData, execStats, session, locale, setupProgress] =
+    await Promise.all([
+      getDashboardData(),
+      getDashboardStats(),
+      getSession(),
+      getLocale(),
+      getSetupProgress(),
+    ]);
 
   const userName = session?.name ?? "User";
 
-  // Progressive disclosure: brand-new companies see a focused setup
-  // checklist instead of the full widget grid.
-  if (setupProgress?.showChecklist) {
+  // Progressive disclosure: only companies with NO data at all see the setup
+  // checklist — anyone with activity lands on the executive command center.
+  if (setupProgress?.showChecklist && setupProgress.completedCount === 0) {
     return <SetupChecklist progress={setupProgress} userName={userName} />;
   }
 
@@ -43,7 +45,7 @@ export default async function DashboardPage() {
 
   return (
     <CustomDashboardClient
-      dashboardData={dashboardData}
+      dashboardData={{ ...dashboardData, execStats }}
       savedLayout={savedLayout}
       userName={userName}
       locale={locale}

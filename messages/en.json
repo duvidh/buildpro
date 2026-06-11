@@ -148,6 +148,14 @@
       "tools": "🛠️ Tools"
     },
     "widgetDefs": {
+      "exec_stats": {
+        "label": "Command Center",
+        "description": "Active projects, approved revenue and pending quotes"
+      },
+      "field_activity": {
+        "label": "Field Activity",
+        "description": "Latest daily logs across all projects"
+      },
       "kpis": {
         "label": "Key Metrics",
         "description": "Leads, projects, tasks, monthly revenue"
@@ -224,6 +232,20 @@
     "map": {
       "empty": "No projects with a location yet — pick an address from the suggestions when creating a project.",
       "openProject": "Open project"
+    },
+    "execStats": {
+      "activeProjects": "Active Projects",
+      "activeProjectsSub": "currently in progress",
+      "approvedRevenue": "Approved Revenue (₪)",
+      "pendingQuotes": "Pending Quotes (₪)",
+      "quoteCount": "{count, plural, =0 {no quotes} one {1 quote} other {# quotes}}"
+    },
+    "fieldActivity": {
+      "empty": "No field reports yet",
+      "by": "by {name}",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "viewAll": "All daily logs"
     },
     "setup": {
       "welcome": "Welcome, {name} 👋",

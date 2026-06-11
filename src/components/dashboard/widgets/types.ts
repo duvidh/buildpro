@@ -81,8 +81,13 @@ export type DashboardActivity = {
   user: { name: string } | null;
 };
 
+// Re-exported from the action so widgets and the page share one shape.
+export type { DashboardExecStats, DashboardFieldLog } from "@/actions/dashboard";
+import type { DashboardExecStats as ExecStats } from "@/actions/dashboard";
+
 export type DashboardData = {
   kpis: DashboardKpis;
+  execStats: ExecStats;
   upcomingTasks: DashboardTask[];
   projects: DashboardProject[];
   chartData: { month: string; revenue: number }[];

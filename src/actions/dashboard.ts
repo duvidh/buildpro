@@ -228,3 +228,89 @@ export async function getDashboardData() {
     return buildEmptyData(now);
   }
 }
+
+// ─── Executive stats (חמ"ל ניהולי) ───────────────────────────────────────────
+
+export type DashboardFieldLog = {
+  id: string;
+  date: string; // ISO
+  notes: string | null;
+  workforceCount: number | null;
+  projectId: string;
+  projectName: string;
+  supervisorName: string | null;
+};
+
+export type DashboardExecStats = {
+  activeProjectsCount: number;
+  financials: {
+    /** Sum of quotes with status ACCEPTED ("approved revenue"). */
+    approvedTotal: number;
+    approvedCount: number;
+    /** Sum of quotes still in DRAFT or SENT ("pending pipeline"). */
+    pendingTotal: number;
+    pendingCount: number;
+  };
+  recentLogs: DashboardFieldLog[];
+};
+
+const EMPTY_EXEC_STATS: DashboardExecStats = {
+  activeProjectsCount: 0,
+  financials: { approvedTotal: 0, approvedCount: 0, pendingTotal: 0, pendingCount: 0 },
+  recentLogs: [],
+};
+
+/** Aggregates for the executive command-center widgets. */
+export async function getDashboardStats(): Promise<DashboardExecStats> {
+  try {
+    const cid = await currentCompanyId();
+    const [activeProjectsCount, approved, pending, logs] = await Promise.all([
+      db.project.count({ where: { status: "ACTIVE", companyId: cid } }),
+      db.quote.aggregate({
+        where: { companyId: cid, status: "ACCEPTED" },
+        _sum: { total: true },
+        _count: { _all: true },
+      }),
+      db.quote.aggregate({
+        where: { companyId: cid, status: { in: ["DRAFT", "SENT"] } },
+        _sum: { total: true },
+        _count: { _all: true },
+      }),
+      db.dailyLog.findMany({
+        where: { companyId: cid },
+        orderBy: { date: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          date: true,
+          notes: true,
+          workforceCount: true,
+          project: { select: { id: true, name: true } },
+          supervisor: { select: { name: true } },
+        },
+      }),
+    ]);
+
+    return {
+      activeProjectsCount,
+      financials: {
+        approvedTotal: approved._sum.total ?? 0,
+        approvedCount: approved._count._all,
+        pendingTotal: pending._sum.total ?? 0,
+        pendingCount: pending._count._all,
+      },
+      recentLogs: logs.map((l) => ({
+        id: l.id,
+        date: l.date.toISOString(),
+        notes: l.notes,
+        workforceCount: l.workforceCount,
+        projectId: l.project.id,
+        projectName: l.project.name,
+        supervisorName: l.supervisor?.name ?? null,
+      })),
+    };
+  } catch (err) {
+    console.error("[getDashboardStats] failed — rendering empty stats:", err);
+    return EMPTY_EXEC_STATS;
+  }
+}

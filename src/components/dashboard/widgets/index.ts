@@ -2,6 +2,7 @@ import {
   BarChart3, TrendingUp, CheckSquare, FolderKanban,
   CreditCard, LayoutDashboard, Clock, Flag,
   FileText, Activity, Zap, Map as MapIcon,
+  Gauge, HardHat,
 } from "lucide-react";
 import type { WidgetLayoutItem } from "./types";
 import type React from "react";
@@ -18,6 +19,8 @@ export { InvoicesDueWidget }      from "./InvoicesDueWidget";
 export { ActivityWidget }         from "./ActivityWidget";
 export { QuickActionsWidget }     from "./QuickActionsWidget";
 export { MapWidget }              from "./MapWidget";
+export { ExecStatsWidget }        from "./ExecStatsWidget";
+export { FieldActivityWidget }    from "./FieldActivityWidget";
 export type { DashboardData, WidgetLayoutItem } from "./types";
 
 // ─── Widget definitions ───────────────────────────────────────────────────────
@@ -32,6 +35,22 @@ export type WidgetDef = {
 };
 
 export const WIDGET_DEFS: Record<string, WidgetDef> = {
+  exec_stats: {
+    labelKey: "dashboard.widgetDefs.exec_stats.label",
+    icon: Gauge,
+    descriptionKey: "dashboard.widgetDefs.exec_stats.description",
+    category: "finance",
+    accentColor: "from-blue-600 to-indigo-600",
+    defaultSize: { w: 12, h: 2, minW: 6, minH: 2 },
+  },
+  field_activity: {
+    labelKey: "dashboard.widgetDefs.field_activity.label",
+    icon: HardHat,
+    descriptionKey: "dashboard.widgetDefs.field_activity.description",
+    category: "projects",
+    accentColor: "from-amber-500 to-orange-500",
+    defaultSize: { w: 4, h: 5, minW: 3, minH: 4 },
+  },
   kpis: {
     labelKey: "dashboard.widgetDefs.kpis.label",
     icon: LayoutDashboard,
@@ -135,25 +154,24 @@ export const WIDGET_DEFS: Record<string, WidgetDef> = {
 // from compactType="vertical" to compactType={null}).  Saved layouts that
 // don't carry this version marker are automatically discarded and replaced
 // with DEFAULT_LAYOUT on the next page load.
-export const LAYOUT_VERSION = 3;
+export const LAYOUT_VERSION = 4;
 
-// ─── Default layout ───────────────────────────────────────────────────────────
+// ─── Default layout — "Command Center" (חמ"ל ניהולי) ─────────────────────────
 
 export const DEFAULT_LAYOUT: WidgetLayoutItem[] = [
-  // Row 0-1: KPIs full-width
-  { i: "kpis",         x: 0, y: 0,  w: 12, h: 2,  minW: 6,  minH: 2 },
-  // Row 2-5: clock | quick_actions | finance (side-by-side)
-  { i: "clock",        x: 0, y: 2,  w: 3,  h: 4,  minW: 2,  minH: 3 },
-  { i: "quick_actions",x: 3, y: 2,  w: 4,  h: 4,  minW: 3,  minH: 3 },
-  { i: "finance",      x: 7, y: 2,  w: 5,  h: 5,  minW: 4,  minH: 4 },
-  // Row 6-10: leads | tasks | projects (side-by-side)
+  // Row 0-1: executive stats full-width (projects, approved ₪, pending ₪)
+  { i: "exec_stats",    x: 0, y: 0,  w: 12, h: 2,  minW: 6,  minH: 2 },
+  // Row 2-6: field activity feed | revenue chart
+  { i: "field_activity",x: 0, y: 2,  w: 4,  h: 5,  minW: 3,  minH: 4 },
+  { i: "finance",       x: 4, y: 2,  w: 8,  h: 5,  minW: 4,  minH: 4 },
+  // Row 7-11: leads | tasks | projects (side-by-side)
   { i: "leads",        x: 0, y: 7,  w: 4,  h: 5,  minW: 3,  minH: 4 },
   { i: "tasks",        x: 4, y: 7,  w: 4,  h: 5,  minW: 3,  minH: 3 },
   { i: "projects",     x: 8, y: 7,  w: 4,  h: 5,  minW: 3,  minH: 3 },
-  // Row 12-15: invoices | milestones | activity (side-by-side)
+  // Row 12-15: invoices | milestones | quick actions (side-by-side)
   { i: "invoices_due", x: 0, y: 12, w: 4,  h: 4,  minW: 3,  minH: 3 },
   { i: "milestones",   x: 4, y: 12, w: 4,  h: 4,  minW: 3,  minH: 3 },
-  { i: "activity",     x: 8, y: 12, w: 4,  h: 4,  minW: 3,  minH: 3 },
+  { i: "quick_actions",x: 8, y: 12, w: 4,  h: 4,  minW: 3,  minH: 3 },
   // Row 16-20: projects map (full width)
   { i: "map",          x: 0, y: 16, w: 12, h: 5,  minW: 4,  minH: 4 },
 ];

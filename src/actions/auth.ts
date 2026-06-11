@@ -84,7 +84,7 @@ export async function changeOwnPassword(
     const user = await db.user.update({
       where: { id: session.userId },
       data: { passwordHash },
-      select: { id: true, role: true, name: true, email: true },
+      select: { id: true, role: true, name: true, email: true, companyId: true },
     });
 
     await createSession({
@@ -92,6 +92,7 @@ export async function changeOwnPassword(
       role: user.role,
       name: user.name,
       email: user.email,
+      companyId: user.companyId,
       mustChangePassword: false,
     });
   } catch (error) {

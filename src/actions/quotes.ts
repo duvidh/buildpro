@@ -23,8 +23,9 @@ export async function getQuotes() {
 }
 
 export async function getQuoteById(id: string) {
-  return db.quote.findUnique({
-    where: { id },
+  const cid = await currentCompanyId();
+  return db.quote.findFirst({
+    where: { id, companyId: cid },
     include: {
       client: { select: { id: true, name: true } },
       lead:   { select: { id: true, name: true } },
@@ -82,6 +83,9 @@ export async function createQuote(data: CreateQuoteInput) {
 
 export async function updateQuoteHeader(id: string, data: UpdateQuoteHeaderInput) {
   await requireRole(PROJECT_ROLES);
+  const cid = await currentCompanyId();
+  const owned = await db.quote.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const };
   await db.quote.update({
     where: { id },
     data: {
@@ -123,6 +127,9 @@ export async function deleteQuote(id: string) {
 
 export async function createQuoteCategory(quoteId: string, name: string) {
   await requireRole(PROJECT_ROLES);
+  const cid = await currentCompanyId();
+  const owned = await db.quote.findFirst({ where: { id: quoteId, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const, category: null };
   const last = await db.quoteCategory.findFirst({
     where: { quoteId },
     orderBy: { order: "desc" },
@@ -137,19 +144,27 @@ export async function createQuoteCategory(quoteId: string, name: string) {
 
 export async function updateQuoteCategory(id: string, name: string) {
   await requireRole(PROJECT_ROLES);
-  const cat = await db.quoteCategory.update({
-    where: { id },
-    data: { name },
+  const cid = await currentCompanyId();
+  const cat = await db.quoteCategory.findFirst({
+    where: { id, quote: { companyId: cid } },
     select: { quoteId: true },
   });
+  if (!cat) return { success: false as const };
+  await db.quoteCategory.update({ where: { id }, data: { name } });
   revalidatePath(`/quotes/${cat.quoteId}`);
   return { success: true as const };
 }
 
 export async function deleteQuoteCategory(id: string) {
   await requireRole(DELETE_ROLES);
+  const cid = await currentCompanyId();
+  const cat = await db.quoteCategory.findFirst({
+    where: { id, quote: { companyId: cid } },
+    select: { quoteId: true },
+  });
+  if (!cat) return { success: false as const };
   // Items become uncategorized (categoryId → null) due to SetNull on the relation
-  const cat = await db.quoteCategory.delete({ where: { id } });
+  await db.quoteCategory.delete({ where: { id } });
   revalidatePath(`/quotes/${cat.quoteId}`);
   return { success: true as const };
 }
@@ -158,6 +173,9 @@ export async function deleteQuoteCategory(id: string) {
 
 export async function addQuoteItem(quoteId: string, categoryId?: string | null) {
   await requireRole(PROJECT_ROLES);
+  const cid = await currentCompanyId();
+  const owned = await db.quote.findFirst({ where: { id: quoteId, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const, item: null };
   const last = await db.quoteItem.findFirst({
     where: { quoteId },
     orderBy: { order: "desc" },
@@ -178,7 +196,13 @@ export async function addQuoteItem(quoteId: string, categoryId?: string | null) 
 
 export async function deleteQuoteItem(id: string) {
   await requireRole(DELETE_ROLES);
-  const item = await db.quoteItem.delete({ where: { id } });
+  const cid = await currentCompanyId();
+  const item = await db.quoteItem.findFirst({
+    where: { id, quote: { companyId: cid } },
+    select: { quoteId: true },
+  });
+  if (!item) return { success: false as const };
+  await db.quoteItem.delete({ where: { id } });
   revalidatePath(`/quotes/${item.quoteId}`);
   return { success: true as const };
 }
@@ -205,11 +229,13 @@ export async function saveQuoteItems(
   contingencyPercent: number,
 ) {
   await requireRole(PROJECT_ROLES);
-  const quote = await db.quote.findUnique({
-    where: { id: quoteId },
+  const cid = await currentCompanyId();
+  const quote = await db.quote.findFirst({
+    where: { id: quoteId, companyId: cid },
     select: { taxPercent: true },
   });
-  const taxPercent = quote?.taxPercent ?? 17;
+  if (!quote) return { success: false as const };
+  const taxPercent = quote.taxPercent ?? 17;
 
   const subtotal       = Math.round(items.reduce((s, i) => s + i.linePrice, 0) * 100) / 100;
   const contingencyAmt = Math.round(subtotal * (contingencyPercent / 100) * 100) / 100;
@@ -219,8 +245,10 @@ export async function saveQuoteItems(
 
   await db.$transaction(async (tx) => {
     for (const item of items) {
-      await tx.quoteItem.update({
-        where: { id: item.id },
+      // updateMany so the filter can pin the item to this quote — blocks
+      // cross-quote item IDs smuggled into the payload.
+      await tx.quoteItem.updateMany({
+        where: { id: item.id, quoteId },
         data: {
           categoryId:    item.categoryId,
           catalogItemId: item.catalogItemId,

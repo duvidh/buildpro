@@ -12,9 +12,9 @@ import type { UserRole } from "@/generated/prisma/client";
 
 /** All pending (not yet accepted) invitations — Admin only. */
 export async function getInvitations() {
-  await requireRole(ADMIN_ROLES);
+  const session = await requireRole(ADMIN_ROLES);
   return db.invitation.findMany({
-    where:   { acceptedAt: null },
+    where:   { acceptedAt: null, companyId: session.companyId ?? null },
     orderBy: { createdAt: "desc" },
     select: {
       id:        true,
@@ -53,7 +53,13 @@ export async function inviteUser(email: string, role: UserRole) {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
   const invitation = await db.invitation.create({
-    data: { email: normalised, role, expiresAt, invitedById: session.userId },
+    data: {
+      email:       normalised,
+      role,
+      expiresAt,
+      invitedById: session.userId,
+      companyId:   session.companyId ?? null,
+    },
   });
 
   let emailSent = true;
@@ -130,20 +136,35 @@ export async function acceptInvitation(
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  await db.user.create({
-    data: {
-      email:        invitation.email,
-      name:         name.trim(),
-      passwordHash,
-      role:         invitation.role,
-      active:       true,
-    },
-  });
+  try {
+    await db.$transaction(async (tx) => {
+      // Atomically claim the token first — blocks double-submit / token-reuse races.
+      const claimed = await tx.invitation.updateMany({
+        where: { token, acceptedAt: null },
+        data:  { acceptedAt: new Date() },
+      });
+      if (claimed.count === 0) throw new Error("already_accepted");
 
-  await db.invitation.update({
-    where: { token },
-    data:  { acceptedAt: new Date() },
-  });
+      await tx.user.create({
+        data: {
+          email:        invitation.email,
+          name:         name.trim(),
+          passwordHash,
+          role:         invitation.role,
+          active:       true,
+          // Join the inviting company — without this the new user lands in
+          // onboarding and creates an empty company of their own.
+          companyId:    invitation.companyId,
+        },
+      });
+    });
+  } catch (e) {
+    if (e instanceof Error && e.message === "already_accepted") {
+      return { error: "already_accepted" };
+    }
+    console.error("[acceptInvitation]", e instanceof Error ? e.message : e);
+    return { error: "user_exists" };
+  }
 
   return { success: true };
 }

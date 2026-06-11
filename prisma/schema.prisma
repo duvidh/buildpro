@@ -246,6 +246,8 @@ model User {
   activityLogs           ActivityLog[]
   communicationLogs      CommunicationLog[]
   sentInvitations        Invitation[]       @relation("SentInvitations")
+
+  @@index([companyId])
 }
 
 model Invitation {
@@ -260,6 +262,8 @@ model Invitation {
   expiresAt   DateTime
   acceptedAt  DateTime?
   createdAt   DateTime  @default(now())
+
+  @@index([companyId])
 }
 
 // ─── CRM ─────────────────────────────────────────────────────────────────────
@@ -295,6 +299,10 @@ model Lead {
   communications CommunicationLog[]
   files          ProjectFile[]
   tasks          Task[]
+
+  @@index([companyId, status])
+  @@index([companyId, createdAt])
+  @@index([assignedToId])
 }
 
 model Client {
@@ -321,6 +329,8 @@ model Client {
   communications CommunicationLog[]
   files          ProjectFile[]
   tasks          Task[]
+
+  @@index([companyId, createdAt])
 }
 
 // ─── Projects ────────────────────────────────────────────────────────────────
@@ -364,6 +374,11 @@ model Project {
   quotes         Quote[]
   invoices       Invoice[]
   prefabElements PrefabElement[]
+
+  @@index([companyId, status])
+  @@index([companyId, createdAt])
+  @@index([clientId])
+  @@index([managerId])
 }
 
 model ProjectSettings {
@@ -389,6 +404,7 @@ model ProjectMember {
   createdAt DateTime   @default(now())
 
   @@unique([projectId, userId])
+  @@index([userId])
 }
 
 enum FileCategory {
@@ -415,6 +431,10 @@ model ProjectFile {
   uploadedById String?
   uploadedBy   User?        @relation(fields: [uploadedById], references: [id])
   createdAt    DateTime     @default(now())
+
+  @@index([projectId])
+  @@index([leadId])
+  @@index([clientId])
 }
 
 // ─── Planning ────────────────────────────────────────────────────────────────
@@ -434,6 +454,9 @@ model Milestone {
   invoice     Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 
   tasks Task[]
+
+  @@index([projectId])
+  @@index([invoiceId])
 }
 
 model Task {
@@ -465,6 +488,13 @@ model Task {
   updatedAt      DateTime     @updatedAt
 
   prefabElements PrefabElement[]
+
+  @@index([companyId, status])
+  @@index([projectId, status])
+  @@index([companyId, dueDate])
+  @@index([assignedToId])
+  @@index([leadId])
+  @@index([clientId])
 }
 
 // ─── WBS & Catalog ───────────────────────────────────────────────────────────
@@ -485,6 +515,8 @@ model CatalogItem {
 
   bomItems   BOMItem[]
   quoteItems QuoteItem[]
+
+  @@index([companyId, active])
 }
 
 model WorkPackage {
@@ -503,6 +535,8 @@ model WorkPackage {
   updatedAt         DateTime  @updatedAt
 
   bomItems BOMItem[]
+
+  @@index([projectId])
 }
 
 model BOMItem {
@@ -516,6 +550,8 @@ model BOMItem {
   quantity      Float        @default(0)
   unitCost      Float        @default(0)
   totalCost     Float        @default(0)
+
+  @@index([workPackageId])
 }
 
 // ─── Quality & Safety ────────────────────────────────────────────────────────
@@ -531,6 +567,8 @@ model QualityCheck {
   notes     String?
   photos    String?
   createdAt DateTime @default(now())
+
+  @@index([projectId, date])
 }
 
 model NCR {
@@ -546,6 +584,8 @@ model NCR {
   closedAt    DateTime?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+
+  @@index([projectId, status])
 }
 
 model Risk {
@@ -559,6 +599,8 @@ model Risk {
   status      RiskStatus @default(OPEN)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
+  @@index([projectId, status])
 }
 
 model ChangeRequest {
@@ -576,6 +618,8 @@ model ChangeRequest {
   approvedAt     DateTime?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
+
+  @@index([projectId, status])
 }
 
 model DailyLog {
@@ -594,6 +638,8 @@ model DailyLog {
   createdAt         DateTime @default(now())
 
   @@unique([projectId, date])
+  @@index([companyId, date])
+  @@index([supervisorId])
 }
 
 // ─── HR & Field ──────────────────────────────────────────────────────────────
@@ -616,6 +662,8 @@ model Employee {
   expenses      Expense[]
   equipmentLogs EquipmentLog[]
   assignedLeads Lead[]         @relation("LeadEmployee")
+
+  @@index([companyId, active])
 }
 
 model TimeEntry {
@@ -634,6 +682,9 @@ model TimeEntry {
   approvedBy   User?     @relation("TimeEntryApprover", fields: [approvedById], references: [id])
   approvedAt   DateTime?
   createdAt    DateTime  @default(now())
+
+  @@index([projectId, date])
+  @@index([employeeId])
 }
 
 model Expense {
@@ -652,6 +703,9 @@ model Expense {
   approvedBy   User?           @relation("ExpenseApprover", fields: [approvedById], references: [id])
   approvedAt   DateTime?
   createdAt    DateTime        @default(now())
+
+  @@index([projectId, date])
+  @@index([employeeId])
 }
 
 model Equipment {
@@ -669,6 +723,8 @@ model Equipment {
   updatedAt        DateTime        @updatedAt
 
   logs EquipmentLog[]
+
+  @@index([companyId, status])
 }
 
 model EquipmentLog {
@@ -683,6 +739,9 @@ model EquipmentLog {
   checkInDate  DateTime?
   notes        String?
   createdAt    DateTime  @default(now())
+
+  @@index([equipmentId, checkInDate])
+  @@index([projectId])
 }
 
 // ─── Quotes & Invoices ───────────────────────────────────────────────────────
@@ -713,6 +772,12 @@ model Quote {
   categories QuoteCategory[]
   items      QuoteItem[]
   invoices   Invoice[]
+
+  @@index([companyId, status])
+  @@index([companyId, createdAt])
+  @@index([clientId])
+  @@index([leadId])
+  @@index([projectId])
 }
 
 model QuoteCategory {
@@ -724,6 +789,8 @@ model QuoteCategory {
   createdAt DateTime @default(now())
 
   items QuoteItem[]
+
+  @@index([quoteId])
 }
 
 model QuoteItem {
@@ -744,6 +811,9 @@ model QuoteItem {
   linePrice     Float          @default(0)
   profitPercent Float          @default(0)
   order         Int            @default(0)
+
+  @@index([quoteId])
+  @@index([categoryId])
 }
 
 model Invoice {
@@ -772,6 +842,11 @@ model Invoice {
 
   payments   Payment[]
   milestones Milestone[]
+
+  @@index([companyId, status])
+  @@index([companyId, dueDate])
+  @@index([projectId])
+  @@index([clientId])
 }
 
 model Payment {
@@ -784,6 +859,8 @@ model Payment {
   reference String?
   notes     String?
   createdAt DateTime      @default(now())
+
+  @@index([invoiceId, date])
 }
 
 // ─── Procurement ─────────────────────────────────────────────────────────────
@@ -806,6 +883,8 @@ model Supplier {
   updatedAt   DateTime     @updatedAt
 
   contracts Contract[]
+
+  @@index([companyId, active])
 }
 
 model Contract {
@@ -829,6 +908,10 @@ model Contract {
   updatedAt         DateTime       @updatedAt
 
   payments SupplierPayment[]
+
+  @@index([companyId, status])
+  @@index([projectId])
+  @@index([supplierId])
 }
 
 model SupplierPayment {
@@ -840,6 +923,8 @@ model SupplierPayment {
   reference  String?
   notes      String?
   createdAt  DateTime @default(now())
+
+  @@index([contractId])
 }
 
 // ─── Prefab / Production Tracking ───────────────────────────────────────────
@@ -858,6 +943,8 @@ model PrefabElement {
   notes               String?
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
+
+  @@index([projectId, status])
 }
 
 // ─── System ──────────────────────────────────────────────────────────────────
@@ -875,6 +962,9 @@ model Notification {
   relatedId   String?
   relatedType String?
   createdAt   DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([companyId])
 }
 
 model ActivityLog {
@@ -888,6 +978,9 @@ model ActivityLog {
   entityId   String?
   details    String?
   createdAt  DateTime @default(now())
+
+  @@index([companyId, createdAt])
+  @@index([entityType, entityId])
 }
 
 model CommunicationLog {
@@ -903,6 +996,10 @@ model CommunicationLog {
   authorId  String
   author    User              @relation(fields: [authorId], references: [id])
   createdAt DateTime          @default(now())
+
+  @@index([leadId])
+  @@index([clientId])
+  @@index([companyId, createdAt])
 }
 
 model SystemSetting {

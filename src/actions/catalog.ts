@@ -41,6 +41,9 @@ export async function updateCatalogItem(id: string, raw: CatalogItemInput) {
     return { success: false as const, error: parsed.error.issues[0]?.message ?? "שגיאה" };
   }
   const { name, sku, unit, unitCost, category, description } = parsed.data;
+  const cid = await currentCompanyId();
+  const owned = await db.catalogItem.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const, error: "אין הרשאה לבצע פעולה זו" };
   await db.catalogItem.update({
     where: { id },
     data: {

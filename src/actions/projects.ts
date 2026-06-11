@@ -154,6 +154,10 @@ export async function updateProjectSettings(
   try { await requireRole(PROJECT_ROLES); }
   catch { return { success: false as const, error: "אין הרשאה לבצע פעולה זו" }; }
 
+  const cid = await currentCompanyId();
+  const owned = await db.project.findFirst({ where: { id: projectId, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const, error: "אין הרשאה לבצע פעולה זו" };
+
   await db.projectSettings.update({
     where: { projectId },
     data: patch,
@@ -164,10 +168,17 @@ export async function updateProjectSettings(
 
 // ─── Focused per-tab queries ──────────────────────────────────────────────────
 
+/** Tenant filter for child-table queries: rows must belong to a project in the caller's company. */
+async function projectScope(id: string) {
+  const cid = await currentCompanyId();
+  return { projectId: id, project: { companyId: cid } };
+}
+
 /** Lean header query for layout.tsx — deduped via React cache. */
 export const getProjectHeader = cache(async (id: string) => {
-  return db.project.findUnique({
-    where: { id },
+  const cid = await currentCompanyId();
+  return db.project.findFirst({
+    where: { id, companyId: cid },
     select: {
       id: true,
       name: true,
@@ -195,8 +206,9 @@ export const getProjectHeader = cache(async (id: string) => {
 
 /** Overview tab: recent tasks + upcoming milestones + team members. */
 export async function getProjectOverview(id: string) {
-  return db.project.findUnique({
-    where: { id },
+  const cid = await currentCompanyId();
+  return db.project.findFirst({
+    where: { id, companyId: cid },
     select: {
       tasks: {
         orderBy: { createdAt: "desc" },
@@ -221,7 +233,7 @@ export async function getProjectOverview(id: string) {
 /** Tasks tab: all tasks with assignments. */
 export async function getProjectTasks(id: string) {
   return db.task.findMany({
-    where: { projectId: id },
+    where: await projectScope(id),
     orderBy: { createdAt: "desc" },
     include: { assignedTo: { select: { id: true, name: true } } },
   });
@@ -236,8 +248,9 @@ export async function getProjectFinancials(id: string) {
   try { await requireRole(FINANCE_VIEW_ROLES); }
   catch { return null; }
 
-  return db.project.findUnique({
-    where: { id },
+  const cid = await currentCompanyId();
+  return db.project.findFirst({
+    where: { id, companyId: cid },
     select: {
       contractValue: true,
       invoices: {
@@ -257,8 +270,9 @@ export async function getProjectFinancials(id: string) {
 
 /** Field tab: time entries, expenses, daily logs. */
 export async function getProjectField(id: string) {
-  return db.project.findUnique({
-    where: { id },
+  const cid = await currentCompanyId();
+  return db.project.findFirst({
+    where: { id, companyId: cid },
     select: {
       timeEntries: {
         orderBy: { date: "desc" },
@@ -281,8 +295,9 @@ export async function getProjectField(id: string) {
 
 /** Team tab: members and active equipment. */
 export async function getProjectTeam(id: string) {
-  return db.project.findUnique({
-    where: { id },
+  const cid = await currentCompanyId();
+  return db.project.findFirst({
+    where: { id, companyId: cid },
     select: {
       members: {
         include: { user: { select: { id: true, name: true, avatarUrl: true } } },
@@ -299,13 +314,13 @@ export async function getProjectTeam(id: string) {
 
 /** Settings tab: just the project settings row. */
 export async function getProjectSettings(id: string) {
-  return db.projectSettings.findUnique({ where: { projectId: id } });
+  return db.projectSettings.findFirst({ where: await projectScope(id) });
 }
 
 /** Milestones tab. */
 export async function getProjectMilestones(id: string) {
   return db.milestone.findMany({
-    where: { projectId: id },
+    where: await projectScope(id),
     orderBy: { order: "asc" },
     select: {
       id: true, projectId: true, name: true, date: true,
@@ -317,14 +332,15 @@ export async function getProjectMilestones(id: string) {
 
 /** QC tab: quality checks + NCRs. */
 export async function getProjectQC(id: string) {
+  const scope = await projectScope(id);
   const [qualityChecks, ncrs] = await Promise.all([
     db.qualityCheck.findMany({
-      where: { projectId: id },
+      where: scope,
       orderBy: { date: "desc" },
       take: 30,
     }),
     db.nCR.findMany({
-      where: { projectId: id },
+      where: scope,
       orderBy: { date: "desc" },
       take: 20,
     }),
@@ -335,7 +351,7 @@ export async function getProjectQC(id: string) {
 /** Risks tab. */
 export async function getProjectRisks(id: string) {
   return db.risk.findMany({
-    where: { projectId: id },
+    where: await projectScope(id),
     orderBy: { createdAt: "desc" },
     take: 20,
   });
@@ -344,7 +360,7 @@ export async function getProjectRisks(id: string) {
 /** Change Requests tab. */
 export async function getProjectCR(id: string) {
   return db.changeRequest.findMany({
-    where: { projectId: id },
+    where: await projectScope(id),
     orderBy: { date: "desc" },
     select: {
       id: true, status: true, costImpact: true, description: true,
@@ -356,7 +372,7 @@ export async function getProjectCR(id: string) {
 /** Procurement tab: subcontractor contracts. */
 export async function getProjectProcurement(id: string) {
   return db.contract.findMany({
-    where: { projectId: id },
+    where: await projectScope(id),
     orderBy: { createdAt: "desc" },
     include: {
       supplier: { select: { id: true, name: true, type: true } },
@@ -368,7 +384,7 @@ export async function getProjectProcurement(id: string) {
 /** WBS / Gantt tab: work packages. */
 export async function getProjectWorkPackages(id: string) {
   return db.workPackage.findMany({
-    where: { projectId: id },
+    where: await projectScope(id),
     orderBy: { order: "asc" },
   });
 }
@@ -377,7 +393,7 @@ export async function getProjectWorkPackages(id: string) {
 export async function getProjectTaskProgress(id: string) {
   const groups = await db.task.groupBy({
     by: ["status"],
-    where: { projectId: id },
+    where: await projectScope(id),
     _count: { id: true },
   });
   const total = groups.reduce((s, g) => s + g._count.id, 0);
@@ -387,8 +403,9 @@ export async function getProjectTaskProgress(id: string) {
 
 // Legacy full-fetch (kept for backwards compatibility)
 export async function getProjectById(id: string) {
-  return db.project.findUnique({
-    where: { id },
+  const cid = await currentCompanyId();
+  return db.project.findFirst({
+    where: { id, companyId: cid },
     include: {
       client: { select: { id: true, name: true } },
       manager: { select: { id: true, name: true } },

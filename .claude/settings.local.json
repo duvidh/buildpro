@@ -144,7 +144,24 @@
       "Bash(git commit -m 'fix: add the missing invoice detail page \\(clicking an invoice 404'\\\\''d\\)' -m 'Invoice rows linked to /invoices/[id] but that route never existed, so *)",
       "Bash(powershell *)",
       "Bash(xargs grep -l \"invoices\")",
-      "Bash(xargs grep -l \"useParams\\\\|use-params\")"
+      "Bash(xargs grep -l \"useParams\\\\|use-params\")",
+      "Bash(git commit -m 'feat: company logo in sidebar + on quote/invoice documents, printable invoice' -m 'The uploaded company logo now appears beside the company name in the sidebar *)",
+      "Bash(awk '/^model SystemSetting/,/^\\\\}/' prisma/schema.prisma)",
+      "Bash(git commit -m 'fix: scope company settings \\(name/logo/VAT\\) per tenant' -m 'SystemSetting was global \\(key was uniquely constrained alone\\), so every *)",
+      "Bash(git commit -m 'feat: allow removing the company logo' -m 'Added a removeCompanyLogo action \\(deletes the stored file + clears the *)",
+      "Bash(xargs grep -l \"createTranslator\\\\|has\\(\")",
+      "Bash(git commit -m 'fix: missing page-title keys \\(invoices/employees/admin\\) + safe lookup' -m 'Opening an invoice \\(and the employees/admin pages\\) logged a *)",
+      "Bash(awk '/^enum UserRole/,/^\\\\}/' prisma/schema.prisma)",
+      "Bash(sed -n '/export type UserRole/,/;/p' src/lib/auth-utils.ts)",
+      "Bash(awk '/^model Lead /,/^\\\\}/' prisma/schema.prisma)",
+      "Bash(awk '/^model Client /,/^\\\\}/' prisma/schema.prisma)",
+      "Bash(awk '/^model Project /,/^\\\\}/' prisma/schema.prisma)",
+      "Bash(awk '/^model Quote /,/^\\\\}/' prisma/schema.prisma)",
+      "Bash(sed -n '33,52p' src/actions/leads.ts)",
+      "Bash(sed -n '32,50p' src/actions/projects.ts)",
+      "Bash(git commit -m 'feat: add SALES role \\(sees own leads/projects, all clients\\)' -m 'New SALES role \\(איש מכירות\\). Sidebar limited to Dashboard, Leads, Clients, *)",
+      "PowerShell(Get-ChildItem node_modules\\\\next\\\\dist\\\\docs\\\\01-app -Recurse -File | Select-Object -First 150 -ExpandProperty FullName | ForEach-Object { $_.Replace\\('C:\\\\Users\\\\User.DESKTOP-R26AVG6\\\\Documents\\\\buildpro\\\\node_modules\\\\next\\\\dist\\\\docs\\\\', ''\\) })",
+      "PowerShell(npx prisma validate 2>&1)"
     ]
   }
 }

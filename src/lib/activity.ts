@@ -7,6 +7,7 @@
  * The projectId is used to filter logs per project via a `contains` query.
  */
 import { db } from "@/lib/db";
+import { currentCompanyId } from "@/lib/tenant";
 
 // ─── Activity log ─────────────────────────────────────────────────────────────
 
@@ -21,8 +22,10 @@ export type LogActivityInput = {
 
 export async function logActivity(input: LogActivityInput): Promise<void> {
   try {
+    const companyId = await currentCompanyId().catch(() => null);
     await db.activityLog.create({
       data: {
+        companyId,
         userId:     input.userId     ?? null,
         action:     input.action,
         entityType: input.entityType,
@@ -53,8 +56,10 @@ export type SendNotificationInput = {
 
 export async function sendNotification(input: SendNotificationInput): Promise<void> {
   try {
+    const companyId = await currentCompanyId().catch(() => null);
     await db.notification.create({
       data: {
+        companyId,
         userId:      input.userId,
         type:        input.type,
         title:       input.title,

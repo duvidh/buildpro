@@ -240,6 +240,9 @@ export async function updateDailyLog(
 ) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized access");
+  const cid = await currentCompanyId();
+  const owned = await db.dailyLog.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const, error: "unauthorized" as const };
   await db.dailyLog.update({
     where: { id },
     data: {

@@ -95,8 +95,9 @@ export async function deleteClient(id: string) {
 
 /** Lean query for the layout sticky header (deduped across layout+page). */
 export const getClientHeader = cache(async (id: string) => {
-  return db.client.findUnique({
-    where: { id },
+  const cid = await currentCompanyId();
+  return db.client.findFirst({
+    where: { id, companyId: cid },
     select: {
       id: true,
       name: true,
@@ -116,8 +117,9 @@ export const getClientHeader = cache(async (id: string) => {
 
 /** Financial KPIs for the overview tab. */
 export async function getClientOverview(id: string) {
-  const data = await db.client.findUnique({
-    where: { id },
+  const cid = await currentCompanyId();
+  const data = await db.client.findFirst({
+    where: { id, companyId: cid },
     select: {
       projects: { select: { contractValue: true } },
       invoices: { select: { total: true, paidAmount: true } },
@@ -137,8 +139,9 @@ export async function getClientOverview(id: string) {
 
 /** Projects list for the /projects tab. */
 export async function getClientProjects(id: string) {
+  const cid = await currentCompanyId();
   return db.project.findMany({
-    where: { clientId: id },
+    where: { clientId: id, companyId: cid },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -155,8 +158,9 @@ export async function getClientProjects(id: string) {
 
 /** Quotes list for the /quotes tab. */
 export async function getClientQuotes(id: string) {
+  const cid = await currentCompanyId();
   return db.quote.findMany({
-    where: { clientId: id },
+    where: { clientId: id, companyId: cid },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -191,8 +195,9 @@ export async function getClientInvoices(id: string) {
 
 // Keep legacy full fetch for any code that still needs it
 export async function getClientById(id: string) {
-  return db.client.findUnique({
-    where: { id },
+  const cid = await currentCompanyId();
+  return db.client.findFirst({
+    where: { id, companyId: cid },
     include: {
       leads: {
         select: { id: true, name: true, createdAt: true, status: true, source: true },

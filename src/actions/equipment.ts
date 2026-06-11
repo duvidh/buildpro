@@ -55,6 +55,12 @@ export async function assignEquipmentToProject(
   projectId: string,
   notes?: string
 ) {
+  const cid = await currentCompanyId();
+  const [ownedEquipment, ownedProject] = await Promise.all([
+    db.equipment.findFirst({ where: { id: equipmentId, companyId: cid }, select: { id: true } }),
+    db.project.findFirst({ where: { id: projectId, companyId: cid }, select: { id: true } }),
+  ]);
+  if (!ownedEquipment || !ownedProject) return { success: false as const };
   await db.$transaction([
     db.equipmentLog.create({
       data: { equipmentId, projectId, checkOutDate: new Date(), notes: notes || null },
@@ -70,6 +76,9 @@ export async function assignEquipmentToProject(
 }
 
 export async function unassignEquipment(equipmentId: string) {
+  const cid = await currentCompanyId();
+  const owned = await db.equipment.findFirst({ where: { id: equipmentId, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const };
   await db.$transaction(async (tx) => {
     const activeLog = await tx.equipmentLog.findFirst({
       where: { equipmentId, checkInDate: null },

@@ -1798,6 +1798,28 @@
     }
   },
   "quotes": {
+    "print": {
+      "docTitle": "הצעת מחיר",
+      "date": "תאריך",
+      "validUntil": "בתוקף עד",
+      "billTo": "לכבוד",
+      "vatNumber": "ח.פ. / ע.מ.",
+      "item": "תיאור סעיף",
+      "unit": "יח'",
+      "qty": "כמות",
+      "unitPrice": "מחיר יחידה",
+      "lineTotal": "סה\"כ",
+      "subtotal": "סה\"כ ביניים",
+      "contingency": "בצ\"מ {pct}%",
+      "vat": "מע\"מ {pct}%",
+      "grandTotal": "סה\"כ לתשלום",
+      "validity30": "הצעה זו בתוקף ל-30 יום מתאריך ההפקה, אלא אם צוין אחרת.",
+      "validityUntil": "הצעה זו בתוקף עד {date}.",
+      "companySignature": "חתימה וחותמת",
+      "clientSignature": "אישור הלקוח (שם + חתימה)",
+      "printBtn": "הדפס / שמור כ-PDF",
+      "back": "חזרה להצעה"
+    },
     "title": "הצעות מחיר",
     "subtitle": "{count} הצעות",
     "newQuote": "הצעת מחיר חדשה",
@@ -1853,6 +1875,7 @@
       "breadcrumb": "הצעות מחיר",
       "newQuoteLabel": "הצעה חדשה",
       "noAssignment": "ללא שיוך",
+      "printPdf": "הפק מסמך (PDF)",
       "headerSection": "פרטי הצעה",
       "itemsSection": "פריטי הצעה"
     },

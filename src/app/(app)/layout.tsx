@@ -62,25 +62,33 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
   <CurrencyProvider currencyCode={currencyCode}>
   <MeasurementProvider measurementSystem={measurementSystem}>
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-background print:h-auto print:overflow-visible print:bg-white">
       {/* Animated background blobs */}
-      <LivingBackground />
+      <div className="print:hidden contents">
+        <LivingBackground />
+      </div>
 
       {/* Sidebar — hidden on mobile, visible md+ (appears on right in RTL) */}
-      <div className="hidden md:block">
+      <div className="hidden md:block print:hidden">
         <AppSidebar user={user} companyName={companyName} companyLogo={companyLogo} isSuperAdmin={superAdmin} />
       </div>
 
       {/* Main area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <AppHeader notificationCount={notificationCount} user={user} isSuperAdmin={superAdmin} companyName={companyName} companyLogo={companyLogo} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
+      <div className="flex flex-1 flex-col overflow-hidden print:overflow-visible">
+        <div className="print:hidden">
+          <AppHeader notificationCount={notificationCount} user={user} isSuperAdmin={superAdmin} companyName={companyName} companyLogo={companyLogo} />
+        </div>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 print:overflow-visible print:p-0">{children}</main>
       </div>
 
       {/* Global offline banner — renders only when navigator.onLine === false */}
-      <OfflineIndicator />
+      <div className="print:hidden contents">
+        <OfflineIndicator />
+      </div>
       {/* Global AI Assistant — context-aware floating bar */}
-      <AIAssistantBar />
+      <div className="print:hidden contents">
+        <AIAssistantBar />
+      </div>
     </div>
   </MeasurementProvider>
   </CurrencyProvider>

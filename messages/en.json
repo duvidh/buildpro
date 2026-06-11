@@ -1798,6 +1798,28 @@
     }
   },
   "quotes": {
+    "print": {
+      "docTitle": "Price Quote",
+      "date": "Date",
+      "validUntil": "Valid until",
+      "billTo": "Bill To",
+      "vatNumber": "Tax ID",
+      "item": "Item Description",
+      "unit": "Unit",
+      "qty": "Qty",
+      "unitPrice": "Unit Price",
+      "lineTotal": "Total",
+      "subtotal": "Subtotal",
+      "contingency": "Contingency {pct}%",
+      "vat": "VAT {pct}%",
+      "grandTotal": "Total Due",
+      "validity30": "This quote is valid for 30 days from the issue date, unless stated otherwise.",
+      "validityUntil": "This quote is valid until {date}.",
+      "companySignature": "Signature & Stamp",
+      "clientSignature": "Client Approval (name + signature)",
+      "printBtn": "Print / Save as PDF",
+      "back": "Back to quote"
+    },
     "title": "Quotes",
     "subtitle": "{count} quotes",
     "newQuote": "New Quote",
@@ -1853,6 +1875,7 @@
       "breadcrumb": "Quotes",
       "newQuoteLabel": "New Quote",
       "noAssignment": "Unassigned",
+      "printPdf": "Generate PDF",
       "headerSection": "Quote Details",
       "itemsSection": "Quote Items"
     },

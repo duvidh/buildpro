@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, FileText } from "lucide-react";
+import { ArrowRight, FileText, Printer } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -99,9 +99,17 @@ export default async function QuoteDetailPage({
             </div>
           </div>
         </div>
-        <Badge variant={STATUS_VARIANT[quote.status] ?? "secondary"} className="text-sm px-3 py-1">
-          {tStatus(quote.status)}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild className="gap-1.5">
+            <Link href={`/quotes/${quote.id}/print`}>
+              <Printer className="h-3.5 w-3.5" />
+              {t("detail.printPdf")}
+            </Link>
+          </Button>
+          <Badge variant={STATUS_VARIANT[quote.status] ?? "secondary"} className="text-sm px-3 py-1">
+            {tStatus(quote.status)}
+          </Badge>
+        </div>
       </div>
 
       <Separator />

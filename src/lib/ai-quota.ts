@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 
 /** Hard cap on AI assistant queries per company (SaaS quota model, phase 1). */
-export const AI_QUERY_LIMIT = 7;
+export const AI_QUERY_LIMIT = 100;
 
 /**
  * Atomically consume one AI query for the company.

@@ -177,6 +177,7 @@ export async function executeCreateTask(payload: {
   priority: string;
   entityId: string;
   entityType?: "project" | "client";
+  startDate?: string;
 }) {
   const title = payload.title?.trim() ?? "";
   if (title.length < 2) {
@@ -190,10 +191,10 @@ export async function executeCreateTask(payload: {
   );
 
   // The model emits dates as strings — only pass ones Prisma can parse.
-  const dueDate =
-    payload.dueDate && !Number.isNaN(new Date(payload.dueDate).getTime())
-      ? payload.dueDate
-      : undefined;
+  const validDate = (s: string | undefined) =>
+    s && !Number.isNaN(new Date(s).getTime()) ? s : undefined;
+  const dueDate = validDate(payload.dueDate);
+  const startDate = validDate(payload.startDate);
 
   // The entity id originates from the model/client — owned-check it before
   // linking, and fall back to an unlinked task instead of failing approval.
@@ -216,7 +217,7 @@ export async function executeCreateTask(payload: {
     }
   }
 
-  return createTask({ name: title, priority, dueDate, projectId, clientId });
+  return createTask({ name: title, priority, startDate, dueDate, projectId, clientId });
 }
 
 export async function updateTaskStatus(id: string, status: TaskStatusValue) {
@@ -225,6 +226,11 @@ export async function updateTaskStatus(id: string, status: TaskStatusValue) {
   if (!session) throw new Error("Unauthorized access");
   const actorId   = session.userId;
   const actorName = session.name;
+
+  // Owned-check: the task must belong to the caller's company.
+  const cid = await currentCompanyId();
+  const owned = await db.task.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const, error: "unauthorized" as const };
 
   const task = await db.task.update({
     where: { id },
@@ -305,6 +311,11 @@ export async function updateTask(
   const session   = await requireRole(PROJECT_ROLES);
   const actorName = session.name;
 
+  // Owned-check: the task must belong to the caller's company.
+  const cid = await currentCompanyId();
+  const owned = await db.task.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const, error: "unauthorized" as const };
+
   const task = await db.task.update({
     where: { id },
     data:  {
@@ -336,8 +347,50 @@ export async function updateTask(
   return { success: true as const };
 }
 
+/**
+ * Focused date update for schedule/Gantt interactions — moves or resizes a
+ * task bar without touching name/status/priority.
+ */
+export async function updateTaskDates(
+  taskId: string,
+  startDate: string | null,
+  endDate: string | null,
+) {
+  await requireRole(PROJECT_ROLES);
+
+  // Owned-check: the task must belong to the caller's company.
+  const cid = await currentCompanyId();
+  const owned = await db.task.findFirst({
+    where: { id: taskId, companyId: cid },
+    select: { id: true },
+  });
+  if (!owned) return { success: false as const, error: "unauthorized" as const };
+
+  const parse = (s: string | null) =>
+    s && !Number.isNaN(new Date(s).getTime()) ? new Date(s) : null;
+
+  const task = await db.task.update({
+    where: { id: taskId },
+    data: { startDate: parse(startDate), dueDate: parse(endDate) },
+    select: { projectId: true },
+  });
+
+  if (task.projectId) {
+    revalidatePath(`/projects/${task.projectId}`);
+    revalidatePath(`/projects/${task.projectId}/gantt`);
+  }
+  revalidatePath("/tasks");
+  return { success: true as const };
+}
+
 export async function deleteTask(id: string) {
   await requireRole(DELETE_ROLES);
+
+  // Owned-check: the task must belong to the caller's company.
+  const cid = await currentCompanyId();
+  const owned = await db.task.findFirst({ where: { id, companyId: cid }, select: { id: true } });
+  if (!owned) return { success: false as const, error: "unauthorized" as const };
+
   const task = await db.task.delete({
     where:  { id },
     select: { projectId: true, leadId: true, clientId: true },

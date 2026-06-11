@@ -195,7 +195,7 @@ const RECORDING_MS = 2500;
 
 // ─── Task confirmation card (human-in-the-loop) ───────────────────────────────
 
-type TaskDraft = { title?: string; dueDate?: string; priority?: string };
+type TaskDraft = { title?: string; startDate?: string; dueDate?: string; priority?: string };
 type TaskOutcome = { status?: string } | undefined;
 
 const PRIORITY_BADGE: Record<string, string> = {
@@ -224,13 +224,18 @@ function TaskConfirmationCard({
   const [saving, setSaving] = useState(false);
 
   const priority = draft.priority?.toUpperCase() ?? "MEDIUM";
-  const dueParsed = draft.dueDate ? new Date(draft.dueDate) : null;
-  const dueLabel =
-    dueParsed && !Number.isNaN(dueParsed.getTime())
-      ? new Intl.DateTimeFormat(locale === "he" ? "he-IL" : "en-US", {
-          day: "numeric", month: "long", year: "numeric",
-        }).format(dueParsed)
-      : draft.dueDate ?? "—";
+  const fmtDay = (raw: string | undefined): string | null => {
+    if (!raw) return null;
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return raw || null;
+    return new Intl.DateTimeFormat(locale === "he" ? "he-IL" : "en-US", {
+      day: "numeric", month: "long", year: "numeric",
+    }).format(d);
+  };
+  const startLabel = fmtDay(draft.startDate);
+  const dueLabel = fmtDay(draft.dueDate) ?? "—";
+  // Show a range for scheduled tasks, a single due date otherwise.
+  const dateLabel = startLabel ? `${startLabel} ← ${dueLabel}` : dueLabel;
 
   async function handleApprove() {
     setSaving(true);
@@ -268,7 +273,7 @@ function TaskConfirmationCard({
         </p>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <CalendarDays className="h-3.5 w-3.5" />
-          <span>{u.taskDue}: {dueLabel}</span>
+          <span>{u.taskDue}: {dateLabel}</span>
         </div>
       </div>
 
@@ -770,6 +775,7 @@ export function AIAssistantBar() {
   async function approveTask(toolCallId: string, draft: TaskDraft) {
     const res = await executeCreateTask({
       title:      draft.title ?? "",
+      startDate:  draft.startDate || undefined,
       dueDate:    draft.dueDate ?? "",
       priority:   draft.priority ?? "MEDIUM",
       entityId,

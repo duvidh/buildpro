@@ -50,7 +50,7 @@ function systemPrompt(
     '- listClients (no input — pass {})',
     ...(caps.finance ? ['- getClientBalance (input: { "clientId": "<id>" })'] : []),
     '- getProjectDailyLogs (input: { "projectId": "<id>" })',
-    '- createTask (input: { "title": "<short title>", "dueDate": "YYYY-MM-DD", "priority": "LOW" | "MEDIUM" | "HIGH" | "URGENT" })',
+    '- createTask (input: { "title": "<short title>", "startDate": "YYYY-MM-DD or empty string", "dueDate": "YYYY-MM-DD", "priority": "LOW" | "MEDIUM" | "HIGH" | "URGENT" })',
     '- createDailyLog (input: { "projectId": "<id>", "date": "YYYY-MM-DD", "weather": "<text>", "workforceCount": <number>, "progressNotes": "<text>", "safetyIssues": "<text or empty>" })',
     ...(caps.quotes
       ? ['- generateQuoteDraft (input: { "title": "<text>", "items": [{ "description": "<text>", "quantity": <number>, "unitPrice": <number>, "unit": "<text>" }] })']
@@ -79,7 +79,9 @@ ${toolLines}
 Call at most ONE tool at a time, with valid JSON input only. If you don't know an id, first call listProjects or listClients to find it. If no tool fits the question, answer from results you already have or refuse.
 ${restrictions ? `\nROLE RESTRICTIONS\n${restrictions}\n` : ""}
 PROPOSING DATA (${proposeNames}) — these tools only PROPOSE a record: the user must approve it in a confirmation card shown by the UI. Never claim anything was saved until the tool result says status "created". If the result says "cancelled", acknowledge briefly and move on.
-For createDailyLog: extract weather, workforce count, progress and safety details from the user's free-form report, in the user's language. Use today's date unless they name another day. If they say there were no safety issues, pass an empty string for safetyIssues. Use the current page's project id; on a general page, resolve it with listProjects first.${caps.quotes ? `
+For createDailyLog: extract weather, workforce count, progress and safety details from the user's free-form report, in the user's language. Use today's date unless they name another day. If they say there were no safety issues, pass an empty string for safetyIssues. Use the current page's project id; on a general page, resolve it with listProjects first.
+
+SCHEDULE BUILDING — when the user asks you to build a construction schedule (לו"ז), break the work into consecutive tasks following conventional building order: demolition/site prep → excavation/foundations → frame (שלד) floor by floor → roof → plumbing & electrical rough-in → plaster → flooring/tiling → carpentry & finishes → painting → handover. Propose them ONE createTask call at a time, each with startDate and dueDate so consecutive tasks form a timeline within the user's stated period; after each card is approved or cancelled, continue with the next task until the schedule is complete, then summarize it. Mention the schedule is visible in the project's Gantt tab.${caps.quotes ? `
 For generateQuoteDraft: break the requested work into 3-12 conventional-construction line items (demolition, plumbing, electrical, tiling, plaster, paint, labor, subcontractors). Estimate realistic Israeli market quantities and unit prices in ILS, excluding VAT. Use units like מ"ר, מ"א, יח', קומפלט. Descriptions in the user's language. These are estimates the user will edit — say so briefly when you summarize.` : ""}
 
 DATA RULES
@@ -236,7 +238,10 @@ function buildTools() {
         "Propose a new task for the user to approve. The task is NOT saved by this tool — the user must confirm it in the UI first.",
       inputSchema: z.object({
         title: z.string().describe("Short task title, in the user's language"),
-        dueDate: z.string().describe("Due date in YYYY-MM-DD format"),
+        startDate: z
+          .string()
+          .describe("Start date in YYYY-MM-DD format, or an empty string when only a due date matters"),
+        dueDate: z.string().describe("Due / end date in YYYY-MM-DD format"),
         priority: z
           .enum(["LOW", "MEDIUM", "HIGH", "URGENT"])
           .describe("Task priority"),

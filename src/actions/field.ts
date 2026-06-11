@@ -74,8 +74,9 @@ export async function getExpensesByProject(projectId: string) {
 }
 
 export async function getDailyLogsByProject(projectId: string) {
+  const cid = await currentCompanyId();
   return db.dailyLog.findMany({
-    where: { projectId },
+    where: { projectId, companyId: cid },
     orderBy: { date: "desc" },
     include: { supervisor: { select: { id: true, name: true } } },
   });

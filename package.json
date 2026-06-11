@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/react": "^3.0.203",
     "@ducanh2912/next-pwa": "^10.2.9",
     "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^5.2.2",
@@ -22,6 +23,7 @@
     "@types/pg": "^8.20.0",
     "@types/ws": "^8.18.1",
     "@vercel/blob": "^2.4.0",
+    "ai": "^6.0.201",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.9.0",
     "class-variance-authority": "^0.7.1",

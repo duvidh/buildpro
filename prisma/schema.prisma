@@ -212,6 +212,15 @@ model Company {
   activityLogs      ActivityLog[]
   communicationLogs CommunicationLog[]
   systemSettings    SystemSetting[]
+  aiUsage           AiUsage?
+}
+
+model AiUsage {
+  id        String   @id @default(cuid())
+  companyId String   @unique
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
 }
 
 // ─── Users & Auth ────────────────────────────────────────────────────────────

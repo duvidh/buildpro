@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocale } from "next-intl";
 import { usePathname, useParams } from "next/navigation";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport, isToolUIPart } from "ai";
 import {
-  Sparkles, X, Send, BotMessageSquare, RotateCcw, Mic, MicOff,
+  Sparkles, X, Send, BotMessageSquare, RotateCcw, Mic, MicOff, Zap, Database,
 } from "lucide-react";
-import { askProjectAI, type AIContext } from "@/actions/ai";
+import { getAiQuota, type AIContext, type AiQuota } from "@/actions/ai";
 import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -20,42 +22,38 @@ type Chip = RegularChip | VoiceChip;
 const CHIPS: Record<AIContext, Record<"he" | "en", Chip[]>> = {
   project: {
     he: [
-      { label: "💰 סטטוס תשלומים ופרויקט", prompt: "תשלומים סטטוס" },
-      { label: "➕ צור משימה למחר",          prompt: "משימה ליצור"  },
-      { label: "📱 נסח WhatsApp ללקוח",      prompt: "whatsapp"     },
-      { label: "🎙️ הקלט משימה/דיווח",       voice: true            },
+      { label: "💰 סטטוס תקציב ותשלומים", prompt: "מה סטטוס התקציב והתשלומים של הפרויקט הזה?" },
+      { label: "📋 מה דווח מהשטח?",        prompt: "סכם לי את יומני העבודה האחרונים של הפרויקט הזה" },
+      { label: "🎙️ הקלט משימה/דיווח",     voice: true },
     ],
     en: [
-      { label: "💰 Payments & Status", prompt: "payments status" },
-      { label: "➕ Create Task",        prompt: "create task"    },
-      { label: "📱 Draft WhatsApp",     prompt: "whatsapp"       },
-      { label: "🎙️ Record Voice",      voice: true              },
+      { label: "💰 Budget & Payments", prompt: "What's the budget and payment status of this project?" },
+      { label: "📋 Field Reports",      prompt: "Summarize the recent daily logs for this project" },
+      { label: "🎙️ Record Voice",      voice: true },
     ],
   },
   client: {
     he: [
-      { label: "💰 סיכום חובות",      prompt: "חובות"    },
-      { label: "📄 חשבוניות פתוחות", prompt: "חשבוניות" },
-      { label: "🤝 היסטוריית לקוח",  prompt: "היסטוריה" },
-      { label: "🎙️ הקלט הערה",       voice: true        },
+      { label: "💰 יתרת חוב",         prompt: "מה יתרת החוב של הלקוח הזה?" },
+      { label: "📄 חשבוניות פתוחות", prompt: "אילו חשבוניות פתוחות יש ללקוח הזה?" },
+      { label: "🎙️ הקלט הערה",        voice: true },
     ],
     en: [
-      { label: "💰 Outstanding Balance", prompt: "balance"  },
-      { label: "📄 Open Invoices",        prompt: "invoices" },
-      { label: "🤝 Client History",       prompt: "history"  },
-      { label: "🎙️ Record Note",         voice: true        },
+      { label: "💰 Outstanding Balance", prompt: "What's this client's outstanding balance?" },
+      { label: "📄 Open Invoices",        prompt: "Which invoices are still open for this client?" },
+      { label: "🎙️ Record Note",         voice: true },
     ],
   },
   generic: {
     he: [
-      { label: "📊 מצב תקציב",    prompt: "תקציב"  },
-      { label: "⚠️ חוסר בחומרים", prompt: "חומרים" },
-      { label: "🎙️ דיווח שטח",   voice: true       },
+      { label: "🏗️ אילו פרויקטים פעילים?", prompt: "אילו פרויקטים פעילים יש לנו ומה ההתקדמות שלהם?" },
+      { label: "💰 מי חייב לנו כסף?",       prompt: "לאילו לקוחות יש יתרת חוב פתוחה?" },
+      { label: "🎙️ דיווח שטח",             voice: true },
     ],
     en: [
-      { label: "📊 Budget Status",        prompt: "budget"    },
-      { label: "⚠️ Material Shortages",  prompt: "materials" },
-      { label: "🎙️ Field Report",        voice: true         },
+      { label: "🏗️ Active Projects",  prompt: "Which projects are active and how are they progressing?" },
+      { label: "💰 Who owes us money?", prompt: "Which clients have an open balance?" },
+      { label: "🎙️ Field Report",      voice: true },
     ],
   },
 };
@@ -63,12 +61,12 @@ const CHIPS: Record<AIContext, Record<"he" | "en", Chip[]>> = {
 // Two flavours per locale — one task-oriented, one log-oriented — picked at random.
 const MOCK_TRANSCRIPTIONS: Record<"he" | "en", readonly string[]> = {
   he: [
-    "שים לב, צריך לפתוח משימה דחופה למחר: להביא צינורות 4 צול לאינסטלטור.",
-    "התקדמות יפה היום בשטח, סיימנו ריצוף קומה א׳. הכל תקין, ממשיכים מחר.",
+    "מה מצב התשלומים בפרויקט הזה? יש חשבוניות באיחור?",
+    "תן לי סיכום של הדיווחים האחרונים מהשטח בפרויקט הזה.",
   ],
   en: [
-    "Urgent task for tomorrow: bring 4-inch pipes for the plumber — mark it critical.",
-    "Good progress on site today, finished tiling floor 1. All good, continuing tomorrow.",
+    "What's the payment status on this project? Any overdue invoices?",
+    "Give me a summary of the recent field reports for this project.",
   ],
 };
 
@@ -80,26 +78,38 @@ const CONTEXT_TITLE = {
 
 const UI = {
   he: {
-    trigger:    "✨ שאל את עוזר ה-AI",
-    badge:      "POC",
-    placeholder:"שאל שאלה חופשית...",
-    hint:       "בחר נושא מהירושים למטה, או כתוב שאלה.",
-    analyzing:  "מנתח נתונים...",
-    reset:      "שאלה חדשה",
-    recording:  "מקליט...",
-    cancelRec:  "ביטול הקלטה",
-    micLabel:   "הקלט הודעה קולית",
+    trigger:       "✨ שאל את עוזר ה-AI",
+    badge:         "Beta",
+    placeholder:   "שאל שאלה חופשית...",
+    quotaReached:  "המכסה הסתיימה (Quota reached)",
+    hint:          "בחר נושא מהירושים למטה, או כתוב שאלה.",
+    analyzing:     "מנתח נתונים...",
+    checkingData:  "בודק נתוני מערכת...",
+    reset:         "שיחה חדשה",
+    recording:     "מקליט...",
+    cancelRec:     "ביטול הקלטה",
+    micLabel:      "הקלט הודעה קולית",
+    quotaLeft:     (n: number, total: number) => `נותרו ${n} שאלות מתוך ${total}`,
+    quotaDone:     "מכסת השאלות הסתיימה",
+    error:         "אירעה שגיאה — נסה שוב.",
+    errorQuota:    "מכסת השאלות של החברה הסתיימה.",
   },
   en: {
-    trigger:    "✨ Ask AI Assistant",
-    badge:      "POC",
-    placeholder:"Ask a free-form question...",
-    hint:       "Pick a topic below, or type a question.",
-    analyzing:  "Analyzing data…",
-    reset:      "New question",
-    recording:  "Recording...",
-    cancelRec:  "Cancel",
-    micLabel:   "Record voice message",
+    trigger:       "✨ Ask AI Assistant",
+    badge:         "Beta",
+    placeholder:   "Ask a free-form question...",
+    quotaReached:  "Quota reached",
+    hint:          "Pick a topic below, or type a question.",
+    analyzing:     "Analyzing data…",
+    checkingData:  "Checking system data…",
+    reset:         "New conversation",
+    recording:     "Recording...",
+    cancelRec:     "Cancel",
+    micLabel:      "Record voice message",
+    quotaLeft:     (n: number, total: number) => `${n} of ${total} queries left`,
+    quotaDone:     "Query quota reached",
+    error:         "Something went wrong — please try again.",
+    errorQuota:    "Your company's query quota has been reached.",
   },
 } as const;
 
@@ -125,22 +135,65 @@ export function AIAssistantBar() {
 
   // UI state
   const [open,        setOpen]        = useState(false);
-  const [response,    setResponse]    = useState<string | null>(null);
   const [input,       setInput]       = useState("");
   const [isRecording, setIsRecording] = useState(false);
-  const [isPending,   startTrans]     = useTransition();
+  const [quota,       setQuota]       = useState<AiQuota | null>(null);
 
-  const inputRef       = useRef<HTMLInputElement>(null);
-  const recTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef    = useRef<HTMLInputElement>(null);
+  const bodyRef     = useRef<HTMLDivElement>(null);
+  const recTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const refreshQuota = useCallback(() => {
+    getAiQuota().then(setQuota).catch(() => {});
+  }, []);
+
+  // Chat
+  const { messages, sendMessage, status, error, setMessages, clearError } = useChat({
+    transport: new DefaultChatTransport({ api: "/api/assistant" }),
+    onFinish: refreshQuota,
+    // A 403 (quota) also lands here — resync the counter with the server.
+    onError: refreshQuota,
+  });
+
+  const isBusy        = status === "submitted" || status === "streaming";
+  const quotaExceeded = quota !== null && quota.remaining <= 0;
 
   const u     = UI[locale];
   const chips = CHIPS[context][locale];
   const title = CONTEXT_TITLE[context][locale];
 
+  // Fetch the quota the first time the panel opens
+  useEffect(() => {
+    if (open && quota === null) refreshQuota();
+  }, [open, quota, refreshQuota]);
+
   // Focus input on open
   useEffect(() => {
     if (open && !isRecording) setTimeout(() => inputRef.current?.focus(), 120);
   }, [open, isRecording]);
+
+  // Cleanup recording timer on unmount
+  useEffect(() => () => { if (recTimerRef.current) clearTimeout(recTimerRef.current); }, []);
+
+  // Auto-scroll the conversation as messages stream in
+  useEffect(() => {
+    if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+  }, [messages, status]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  function handleOpen()  { setOpen(true); }
+  function handleClose() {
+    cancelRecording();
+    setOpen(false);
+    setInput("");
+  }
+  function handleReset() {
+    setMessages([]);
+    clearError();
+    setInput("");
+    setTimeout(() => inputRef.current?.focus(), 80);
+  }
 
   // Close on Escape
   useEffect(() => {
@@ -151,39 +204,21 @@ export function AIAssistantBar() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Cleanup recording timer on unmount
-  useEffect(() => () => { if (recTimerRef.current) clearTimeout(recTimerRef.current); }, []);
-
-  // Reset response + chips when navigating to a different context
-  useEffect(() => { setResponse(null); }, [context]);
-
-  // ── Handlers ──────────────────────────────────────────────────────────────
-
-  function handleOpen()  { setOpen(true); }
-  function handleClose() {
-    cancelRecording();
-    setOpen(false);
-    setResponse(null);
-    setInput("");
-  }
-  function handleReset() {
-    setResponse(null);
-    setInput("");
-    setTimeout(() => inputRef.current?.focus(), 80);
-  }
-
   const ask = useCallback((prompt: string) => {
-    setResponse(null);
-    startTrans(async () => {
-      const result = await askProjectAI(prompt, entityId, context, locale);
-      setResponse(result);
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entityId, context, locale]);
+    if (quotaExceeded) return;
+    // Optimistic decrement — onFinish/onError resync with the server.
+    setQuota((q) =>
+      q ? { ...q, used: Math.min(q.used + 1, q.limit), remaining: Math.max(q.remaining - 1, 0) } : q,
+    );
+    sendMessage(
+      { text: prompt },
+      { body: { context, entityId, locale } },
+    );
+  }, [quotaExceeded, sendMessage, context, entityId, locale]);
 
   function handleSend() {
     const q = input.trim();
-    if (!q || isPending || isRecording) return;
+    if (!q || isBusy || isRecording || quotaExceeded) return;
     setInput("");
     ask(q);
   }
@@ -193,8 +228,7 @@ export function AIAssistantBar() {
   }
 
   function startVoiceRecording() {
-    if (isRecording || isPending) return;
-    setResponse(null);
+    if (isRecording || isBusy || quotaExceeded) return;
     setInput("");
     setIsRecording(true);
     recTimerRef.current = setTimeout(() => {
@@ -217,6 +251,8 @@ export function AIAssistantBar() {
       ask(chip.prompt);
     }
   }
+
+  const inputDisabled = isBusy || quotaExceeded;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -285,18 +321,31 @@ export function AIAssistantBar() {
                   {u.badge}
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={handleClose}
-                aria-label="Close"
-                className="shrink-0 rounded-lg p-1 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {messages.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    aria-label={u.reset}
+                    title={u.reset}
+                    className="rounded-lg p-1 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  aria-label="Close"
+                  className="rounded-lg p-1 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
-            {/* ── Body (response / hint / recording) ──────────────────────── */}
-            <div className="px-4 pt-3 pb-2 min-h-[68px] max-h-[320px] overflow-y-auto">
+            {/* ── Body (conversation / hint / recording) ──────────────────── */}
+            <div ref={bodyRef} className="px-4 pt-3 pb-2 min-h-[68px] max-h-[320px] overflow-y-auto">
               {isRecording ? (
                 /* Recording indicator */
                 <div className="flex items-center gap-4 animate-in fade-in duration-150">
@@ -314,40 +363,82 @@ export function AIAssistantBar() {
                     </p>
                   </div>
                 </div>
-              ) : isPending ? (
-                /* Thinking dots */
-                <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-violet-400 animate-bounce [animation-delay:0ms]" />
-                    <span className="h-2 w-2 rounded-full bg-violet-400 animate-bounce [animation-delay:150ms]" />
-                    <span className="h-2 w-2 rounded-full bg-violet-400 animate-bounce [animation-delay:300ms]" />
-                  </div>
-                  <span>{u.analyzing}</span>
-                </div>
-              ) : response ? (
-                /* AI response */
-                <div className="space-y-2 animate-in fade-in slide-in-from-bottom-1 duration-250">
-                  <div className="rounded-xl bg-gradient-to-br from-muted/70 to-muted/30 border border-border/30 px-3.5 py-3 text-sm leading-relaxed text-foreground whitespace-pre-wrap font-[inherit]">
-                    {response}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleReset}
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                    {u.reset}
-                  </button>
-                </div>
-              ) : (
+              ) : messages.length === 0 && !error ? (
                 /* Default hint */
                 <p className="text-sm text-muted-foreground/80">{u.hint}</p>
+              ) : (
+                <div className="space-y-2.5">
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={cn(
+                        "animate-in fade-in slide-in-from-bottom-1 duration-200",
+                        message.role === "user" ? "flex justify-end" : "",
+                      )}
+                    >
+                      {message.role === "user" ? (
+                        <div className="max-w-[85%] rounded-2xl rounded-ee-md bg-gradient-to-br from-violet-600 to-indigo-600 px-3.5 py-2 text-sm leading-relaxed text-white whitespace-pre-wrap">
+                          {message.parts
+                            .filter((p) => p.type === "text")
+                            .map((p) => (p.type === "text" ? p.text : ""))
+                            .join("")}
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {message.parts.map((part, i) => {
+                            if (part.type === "text") {
+                              return (
+                                <div
+                                  key={`${message.id}-${i}`}
+                                  className="rounded-xl bg-gradient-to-br from-muted/70 to-muted/30 border border-border/30 px-3.5 py-2.5 text-sm leading-relaxed text-foreground whitespace-pre-wrap"
+                                >
+                                  {part.text}
+                                </div>
+                              );
+                            }
+                            if (isToolUIPart(part) && part.state !== "output-available") {
+                              return (
+                                <div
+                                  key={`${message.id}-${i}`}
+                                  className="flex items-center gap-1.5 px-1 text-[11px] text-muted-foreground"
+                                >
+                                  <Database className="h-3 w-3 animate-pulse" />
+                                  {u.checkingData}
+                                </div>
+                              );
+                            }
+                            return null;
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Thinking dots while waiting for the first token */}
+                  {status === "submitted" && (
+                    <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <span className="h-2 w-2 rounded-full bg-violet-400 animate-bounce [animation-delay:0ms]" />
+                        <span className="h-2 w-2 rounded-full bg-violet-400 animate-bounce [animation-delay:150ms]" />
+                        <span className="h-2 w-2 rounded-full bg-violet-400 animate-bounce [animation-delay:300ms]" />
+                      </div>
+                      <span>{u.analyzing}</span>
+                    </div>
+                  )}
+
+                  {/* Error banner */}
+                  {error && (
+                    <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 text-xs text-destructive">
+                      {quotaExceeded ? u.errorQuota : u.error}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
-            {/* ── Chips ───────────────────────────────────────────────────── */}
-            {!isPending && !response && !isRecording && (
-              <div className="flex flex-wrap gap-2 px-4 pb-3 animate-in fade-in duration-200">
+            {/* ── Chips (only before the first message) ───────────────────── */}
+            {!isBusy && messages.length === 0 && !isRecording && !quotaExceeded && (
+              <div className="flex flex-wrap gap-2 px-4 pb-2 animate-in fade-in duration-200">
                 {chips.map((chip) => (
                   <button
                     key={chip.label}
@@ -362,6 +453,27 @@ export function AIAssistantBar() {
                     {chip.label}
                   </button>
                 ))}
+              </div>
+            )}
+
+            {/* ── Quota counter ───────────────────────────────────────────── */}
+            {quota !== null && (
+              <div className="px-4 pb-1.5">
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                    quota.remaining <= 0
+                      ? "bg-destructive/10 text-destructive"
+                      : quota.remaining <= 2
+                      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                      : "bg-violet-500/10 text-violet-600 dark:text-violet-300",
+                  )}
+                >
+                  <Zap className="h-3 w-3" />
+                  {quota.remaining <= 0
+                    ? u.quotaDone
+                    : u.quotaLeft(quota.remaining, quota.limit)}
+                </span>
               </div>
             )}
 
@@ -385,8 +497,8 @@ export function AIAssistantBar() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  disabled={isPending}
-                  placeholder={u.placeholder}
+                  disabled={inputDisabled}
+                  placeholder={quotaExceeded ? u.quotaReached : u.placeholder}
                   className={cn(
                     "min-w-0 flex-1 rounded-xl border border-border/50 bg-muted/30",
                     "px-3.5 py-2 text-sm placeholder:text-muted-foreground/50 outline-none",
@@ -398,7 +510,7 @@ export function AIAssistantBar() {
                 <button
                   type="button"
                   onClick={startVoiceRecording}
-                  disabled={isPending}
+                  disabled={inputDisabled}
                   aria-label={u.micLabel}
                   className={cn(
                     "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
@@ -414,7 +526,7 @@ export function AIAssistantBar() {
                 <button
                   type="button"
                   onClick={handleSend}
-                  disabled={isPending || !input.trim()}
+                  disabled={inputDisabled || !input.trim()}
                   aria-label="Send"
                   className={cn(
                     "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",

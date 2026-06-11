@@ -224,6 +224,44 @@
     "map": {
       "empty": "No projects with a location yet — pick an address from the suggestions when creating a project.",
       "openProject": "Open project"
+    },
+    "setup": {
+      "welcome": "Welcome, {name} 👋",
+      "title": "Let's set up your business in BuildPro",
+      "subtitle": "Five quick steps — and your dashboard will come to life with your real business data",
+      "progressLabel": "{completed} of {total} steps completed",
+      "stepDone": "Done ✓",
+      "start": "Start",
+      "steps": {
+        "client": {
+          "title": "Add your first client",
+          "description": "Every project starts with a client — add your first client's details"
+        },
+        "project": {
+          "title": "Create a project",
+          "description": "Open your first project and link it to a client"
+        },
+        "quote": {
+          "title": "Build a quote",
+          "description": "Build a professional quote with line items, quantities and prices"
+        },
+        "team": {
+          "title": "Invite your team",
+          "description": "Invite foremen and field workers to join your account"
+        },
+        "dailyLog": {
+          "title": "Report from the field",
+          "description": "Log a work day — progress, weather and safety"
+        }
+      },
+      "sampleQuestion": "Prefer to see how it works?",
+      "sampleHint": "We'll load a full sample project for you — client, tasks, milestones and invoices. You can delete it all at any time.",
+      "sampleCta": "Load sample data",
+      "sampleLoading": "Loading sample data…",
+      "sampleSuccess": "Sample data loaded — welcome to your dashboard! 🎉",
+      "sampleError": "Loading sample data failed — please try again",
+      "dismiss": "Hide this checklist",
+      "dismissError": "Saving your preference failed — please try again"
     }
   },
   "leads": {

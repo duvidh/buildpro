@@ -25,6 +25,7 @@ import {
   ActivityWidget, QuickActionsWidget, MapWidget,
   ExecStatsWidget, FieldActivityWidget,
 } from "./widgets";
+import { DashboardCharts } from "./DashboardCharts";
 import type { DashboardData, WidgetLayoutItem } from "./widgets";
 
 // ─── Layout version helpers ───────────────────────────────────────────────────
@@ -79,6 +80,7 @@ function WidgetContent({ id, data }: { id: string; data: DashboardData }) {
   switch (id) {
     case "exec_stats":    return <ExecStatsWidget data={data} />;
     case "field_activity":return <FieldActivityWidget data={data} />;
+    case "charts":        return <DashboardCharts data={data} />;
     case "kpis":          return <KpiWidget data={data} />;
     case "finance":       return <FinanceWidget data={data} />;
     case "leads":         return <LeadsWidget data={data} />;

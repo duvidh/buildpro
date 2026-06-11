@@ -252,19 +252,28 @@ export type DashboardExecStats = {
     pendingCount: number;
   };
   recentLogs: DashboardFieldLog[];
+  /** Project count per status — for the status pie chart. */
+  projectStatusData: { status: string; count: number }[];
+  /** Approved (ACCEPTED) quote totals per month, last 6 months — bar chart. */
+  revenueData: { month: string; total: number }[];
 };
 
 const EMPTY_EXEC_STATS: DashboardExecStats = {
   activeProjectsCount: 0,
   financials: { approvedTotal: 0, approvedCount: 0, pendingTotal: 0, pendingCount: 0 },
   recentLogs: [],
+  projectStatusData: [],
+  revenueData: [],
 };
 
 /** Aggregates for the executive command-center widgets. */
 export async function getDashboardStats(): Promise<DashboardExecStats> {
   try {
     const cid = await currentCompanyId();
-    const [activeProjectsCount, approved, pending, logs] = await Promise.all([
+    const now = new Date();
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+    const [activeProjectsCount, approved, pending, logs, statusGroups, approvedQuotes] = await Promise.all([
       db.project.count({ where: { status: "ACTIVE", companyId: cid } }),
       db.quote.aggregate({
         where: { companyId: cid, status: "ACCEPTED" },
@@ -289,7 +298,29 @@ export async function getDashboardStats(): Promise<DashboardExecStats> {
           supervisor: { select: { name: true } },
         },
       }),
+      db.project.groupBy({
+        by: ["status"],
+        where: { companyId: cid },
+        _count: { _all: true },
+      }),
+      db.quote.findMany({
+        where: { companyId: cid, status: "ACCEPTED", date: { gte: sixMonthsAgo } },
+        select: { date: true, total: true },
+      }),
     ]);
+
+    // Bucket approved quotes into the last 6 calendar months (same scheme as
+    // the invoice revenue chart — Hebrew month labels).
+    const revenueData = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      const total = approvedQuotes
+        .filter((q) => {
+          const x = new Date(q.date);
+          return x.getFullYear() === d.getFullYear() && x.getMonth() === d.getMonth();
+        })
+        .reduce((s, q) => s + q.total, 0);
+      return { month: HE_MONTHS[d.getMonth()]!, total };
+    });
 
     return {
       activeProjectsCount,
@@ -308,6 +339,10 @@ export async function getDashboardStats(): Promise<DashboardExecStats> {
         projectName: l.project.name,
         supervisorName: l.supervisor?.name ?? null,
       })),
+      projectStatusData: statusGroups
+        .map((g) => ({ status: g.status, count: g._count._all }))
+        .filter((g) => g.count > 0),
+      revenueData,
     };
   } catch (err) {
     console.error("[getDashboardStats] failed — rendering empty stats:", err);

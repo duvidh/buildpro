@@ -4,7 +4,9 @@ import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { clientSchema, type ClientInput } from "@/lib/schemas/client-schema";
-import { requireRole, CLIENT_ROLES, DELETE_ROLES } from "@/lib/auth-utils";
+import {
+  requireRole, CLIENT_ROLES, DELETE_ROLES, QUOTE_ROLES, FINANCE_VIEW_ROLES,
+} from "@/lib/auth-utils";
 import { currentCompanyId } from "@/lib/tenant";
 
 export async function createClient(raw: ClientInput) {
@@ -158,6 +160,7 @@ export async function getClientProjects(id: string) {
 
 /** Quotes list for the /quotes tab. */
 export async function getClientQuotes(id: string) {
+  await requireRole(QUOTE_ROLES); // throws "Unauthorized access" for field-level roles
   const cid = await currentCompanyId();
   return db.quote.findMany({
     where: { clientId: id, companyId: cid },
@@ -175,6 +178,7 @@ export async function getClientQuotes(id: string) {
 
 /** Invoices list for the /invoices tab. */
 export async function getClientInvoices(id: string) {
+  await requireRole(FINANCE_VIEW_ROLES); // throws "Unauthorized access" for FIELD_WORKER / SALES
   const cid = await currentCompanyId();
   return db.invoice.findMany({
     where: { clientId: id, companyId: cid },

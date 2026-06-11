@@ -12,14 +12,20 @@ type Counts = { projects: number; quotes: number; invoices: number };
 export function ClientTabsNav({
   clientId,
   counts,
+  canViewQuotes = true,
+  canViewInvoices = true,
 }: {
   clientId: string;
   counts: Counts;
+  /** QUOTE_ROLES only — field-level roles never see pricing documents. */
+  canViewQuotes?: boolean;
+  /** FINANCE_VIEW_ROLES only — mirrors the getClientInvoices gate. */
+  canViewInvoices?: boolean;
 }) {
   const t       = useTranslations("clients.tabs");
   const pathname = usePathname();
 
-  const tabs = [
+  const allTabs = [
     {
       labelKey: "overview",
       href:     `/clients/${clientId}`,
@@ -70,6 +76,12 @@ export function ClientTabsNav({
       exact:    false,
     },
   ] as const;
+
+  const tabs = allTabs.filter((tab) => {
+    if (tab.labelKey === "quotes")   return canViewQuotes;
+    if (tab.labelKey === "invoices") return canViewInvoices;
+    return true;
+  });
 
   const isTabActive = (href: string, exact: boolean) =>
     exact ? pathname === href : pathname.startsWith(href);

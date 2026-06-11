@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { getClientHeader } from "@/actions/clients";
 import { getSession } from "@/lib/session";
 import type { UserRole } from "@/lib/auth-utils";
-import { DELETE_ROLES } from "@/lib/auth-utils";
+import { DELETE_ROLES, QUOTE_ROLES, FINANCE_VIEW_ROLES } from "@/lib/auth-utils";
 import { ClientHeader } from "./_components/client-header";
 import { ClientTabsNav } from "./_components/client-tabs-nav";
 
@@ -26,6 +26,8 @@ export default async function ClientLayout({
   if (!session) redirect("/login");
   const userRole = session.role as UserRole;
   const canDelete = DELETE_ROLES.includes(userRole);
+  const canViewQuotes = QUOTE_ROLES.includes(userRole);
+  const canViewInvoices = FINANCE_VIEW_ROLES.includes(userRole);
 
   return (
     <div className="-mt-4 -mx-4 sm:-mt-6 sm:-mx-6 flex flex-col min-h-full">
@@ -35,7 +37,12 @@ export default async function ClientLayout({
           <ClientHeader client={client} canDelete={canDelete} />
         </div>
         <div className="px-4 sm:px-6">
-          <ClientTabsNav clientId={id} counts={client._count} />
+          <ClientTabsNav
+            clientId={id}
+            counts={client._count}
+            canViewQuotes={canViewQuotes}
+            canViewInvoices={canViewInvoices}
+          />
         </div>
       </div>
 

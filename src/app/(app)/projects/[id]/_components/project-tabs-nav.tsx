@@ -19,6 +19,7 @@ import {
   CalendarRange,
   Settings2,
   Factory,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/lib/auth-utils";
@@ -79,6 +80,7 @@ export function ProjectTabsNav({
       ? [{ href: `/projects/${projectId}/financials`, labelKey: "financials", icon: Wallet, count: null }]
       : []),
     { href: `/projects/${projectId}/field`,   labelKey: "field",      icon: HardHat,         count: null },
+    { href: `/projects/${projectId}/logs`,    labelKey: "logs",       icon: ClipboardList,    count: null },
     { href: `/projects/${projectId}/team`,    labelKey: "team",       icon: Users,            count: null },
     { href: `/projects/${projectId}/prefab`,  labelKey: "prefab",     icon: Factory,          count: null },
     { href: `/projects/${projectId}/files`,   labelKey: "files",      icon: FolderOpen,       count: counts.files },

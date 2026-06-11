@@ -762,6 +762,7 @@
       "tasks": "Tasks",
       "financials": "Financials",
       "field": "Field Reports",
+      "logs": "Daily Logs",
       "team": "Team & Equipment",
       "prefab": "Prefab",
       "files": "Files",
@@ -2254,6 +2255,35 @@
       "DELIVERED": "Delivered to Site",
       "INSTALLED": "Installed"
     }
+  },
+  "projectLogs": {
+    "title": "Daily Logs",
+    "subtitle": "Daily report from the field — weather, workforce and progress",
+    "addLog": "New Log",
+    "form": {
+      "title": "New Daily Report",
+      "date": "Date",
+      "weather": "Weather",
+      "weatherPlaceholder": "Sunny, hot, rainy...",
+      "workforce": "Workforce on site",
+      "workforcePlaceholder": "Number of workers",
+      "progress": "Daily progress",
+      "progressPlaceholder": "What was done on site today? (pours, block walls, plaster...)",
+      "safety": "Safety incidents",
+      "safetyPlaceholder": "Incidents, near-misses, hazards — leave empty if none",
+      "submit": "Save Log",
+      "cancel": "Cancel"
+    },
+    "toastCreated": "Log saved successfully!",
+    "toastDuplicate": "A daily log already exists for this date",
+    "toastError": "Saving the log failed — please try again",
+    "empty": "No daily logs for this project yet",
+    "emptyHint": "Create the first daily report from the field",
+    "workers": "{count} workers on site",
+    "noSafety": "No safety incidents",
+    "reportedBy": "Reported by {name}",
+    "today": "Today",
+    "yesterday": "Yesterday"
   },
   "projectOverview": {
     "cannotLoad": "Cannot load overview data.",

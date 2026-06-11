@@ -11,11 +11,12 @@ import {
 } from "ai";
 import {
   Sparkles, X, Send, BotMessageSquare, RotateCcw, Mic, MicOff, Zap, Database,
-  CheckSquare, CalendarDays, Check, Loader2,
+  CheckSquare, CalendarDays, Check, Loader2, ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getAiQuota, type AIContext, type AiQuota } from "@/actions/ai";
 import { executeCreateTask } from "@/actions/tasks";
+import { executeCreateDailyLog } from "@/actions/daily-logs";
 import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -110,6 +111,18 @@ const UI = {
     taskFailedMsg: "יצירת המשימה נכשלה",
     taskToast:     "המשימה נוצרה בהצלחה!",
     priorities:    { LOW: "נמוכה", MEDIUM: "בינונית", HIGH: "גבוהה", URGENT: "דחופה" } as Record<string, string>,
+    logCardTitle:  "אישור יומן עבודה",
+    logWeather:    "מזג אוויר",
+    logWorkforce:  "כוח אדם",
+    logWorkers:    (n: number) => `${n} עובדים`,
+    logSafety:     "בטיחות",
+    logNoSafety:   "ללא אירועי בטיחות",
+    logApprove:    "אשר יומן",
+    logApproved:   "היומן נשמר ✓",
+    logCancelled:  "היומן בוטל",
+    logFailedMsg:  "שמירת היומן נכשלה",
+    logDuplicate:  "כבר קיים יומן עבודה לתאריך זה",
+    logToast:      "היומן נשמר בהצלחה!",
   },
   en: {
     trigger:       "✨ Ask AI Assistant",
@@ -137,6 +150,18 @@ const UI = {
     taskFailedMsg: "Creating the task failed",
     taskToast:     "Task created successfully!",
     priorities:    { LOW: "Low", MEDIUM: "Medium", HIGH: "High", URGENT: "Urgent" } as Record<string, string>,
+    logCardTitle:  "Confirm Daily Log",
+    logWeather:    "Weather",
+    logWorkforce:  "Workforce",
+    logWorkers:    (n: number) => `${n} workers`,
+    logSafety:     "Safety",
+    logNoSafety:   "No safety incidents",
+    logApprove:    "Approve Log",
+    logApproved:   "Log saved ✓",
+    logCancelled:  "Log cancelled",
+    logFailedMsg:  "Saving the log failed",
+    logDuplicate:  "A daily log already exists for this date",
+    logToast:      "Log saved successfully!",
   },
 } as const;
 
@@ -248,6 +273,145 @@ function TaskConfirmationCard({
             >
               {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
               {u.taskApprove}
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={saving}
+              className="rounded-lg border border-border/50 bg-muted/30 px-3.5 py-1.5 text-xs font-medium text-muted-foreground
+                hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+            >
+              {u.taskCancel}
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" />…
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Daily log confirmation card (human-in-the-loop) ──────────────────────────
+
+type DailyLogDraft = {
+  projectId?: string;
+  date?: string;
+  weather?: string;
+  workforceCount?: number;
+  progressNotes?: string;
+  safetyIssues?: string;
+};
+
+function DailyLogConfirmationCard({
+  draft,
+  ready,
+  outcome,
+  locale,
+  onApprove,
+  onCancel,
+}: {
+  draft: DailyLogDraft;
+  ready: boolean;
+  outcome: TaskOutcome;
+  locale: "he" | "en";
+  onApprove: () => Promise<void>;
+  onCancel: () => void;
+}) {
+  const u = UI[locale];
+  const [saving, setSaving] = useState(false);
+
+  const dateParsed = draft.date ? new Date(draft.date) : null;
+  const dateLabel =
+    dateParsed && !Number.isNaN(dateParsed.getTime())
+      ? new Intl.DateTimeFormat(locale === "he" ? "he-IL" : "en-US", {
+          weekday: "short", day: "numeric", month: "long",
+        }).format(dateParsed)
+      : draft.date ?? "—";
+
+  async function handleApprove() {
+    setSaving(true);
+    try { await onApprove(); } finally { setSaving(false); }
+  }
+
+  const status = outcome?.status;
+
+  return (
+    <div
+      className={cn(
+        "rounded-xl border overflow-hidden transition-colors",
+        status === "created"
+          ? "border-emerald-500/30 bg-emerald-500/[0.04]"
+          : status === "cancelled" || status === "failed"
+          ? "border-border/40 bg-muted/20 opacity-75"
+          : "border-sky-300/50 dark:border-sky-700/50 bg-gradient-to-br from-sky-50/60 to-cyan-50/40 dark:from-sky-950/20 dark:to-cyan-950/15",
+      )}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2 px-3.5 pt-3">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-sky-700 dark:text-sky-300">
+          <ClipboardList className="h-3.5 w-3.5" />
+          {u.logCardTitle}
+        </div>
+        <span className="text-[11px] font-medium text-muted-foreground">{dateLabel}</span>
+      </div>
+
+      {/* Details */}
+      <div className="px-3.5 py-2.5 space-y-1.5 text-xs">
+        <div className="flex flex-wrap gap-1.5">
+          {draft.weather && (
+            <span className="rounded-full bg-sky-500/10 px-2 py-0.5 font-medium text-sky-600 dark:text-sky-400">
+              {u.logWeather}: {draft.weather}
+            </span>
+          )}
+          {typeof draft.workforceCount === "number" && (
+            <span className="rounded-full bg-violet-500/10 px-2 py-0.5 font-medium text-violet-600 dark:text-violet-300">
+              {u.logWorkforce}: {u.logWorkers(draft.workforceCount)}
+            </span>
+          )}
+        </div>
+        {draft.progressNotes && (
+          <p className="text-sm leading-snug text-foreground whitespace-pre-wrap">
+            {draft.progressNotes}
+          </p>
+        )}
+        <p className={cn(
+          "text-[11px]",
+          draft.safetyIssues ? "text-amber-600 dark:text-amber-400" : "text-emerald-600",
+        )}>
+          {u.logSafety}: {draft.safetyIssues || u.logNoSafety}
+        </p>
+      </div>
+
+      {/* Footer: outcome or actions */}
+      <div className="px-3.5 pb-3">
+        {status === "created" ? (
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+            <Check className="h-3.5 w-3.5" strokeWidth={3} />
+            {u.logApproved}
+          </div>
+        ) : status === "cancelled" ? (
+          <p className="text-xs text-muted-foreground">{u.logCancelled}</p>
+        ) : status === "failed" ? (
+          <p className="text-xs text-destructive">{u.logFailedMsg}</p>
+        ) : ready ? (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleApprove}
+              disabled={saving}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold text-white",
+                "bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm",
+                "hover:shadow-[0_4px_12px_rgba(16,185,129,0.35)] hover:scale-[1.02]",
+                "active:scale-95 transition-all duration-150",
+                "disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100",
+              )}
+            >
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+              {u.logApprove}
             </button>
             <button
               type="button"
@@ -445,6 +609,48 @@ export function AIAssistantBar() {
     });
   }
 
+  // ── Human-in-the-loop: daily log approval ─────────────────────────────────
+
+  async function approveDailyLog(toolCallId: string, draft: DailyLogDraft) {
+    const res = await executeCreateDailyLog({
+      projectId:
+        draft.projectId || (context === "project" ? entityId : ""),
+      date:           draft.date,
+      weather:        draft.weather,
+      workforceCount: typeof draft.workforceCount === "number" ? draft.workforceCount : undefined,
+      progressNotes:  draft.progressNotes,
+      safetyIssues:   draft.safetyIssues,
+    });
+    if (res.success) {
+      toast.success(u.logToast);
+      addToolOutput({
+        tool: "createDailyLog",
+        toolCallId,
+        output: { status: "created" },
+      });
+    } else {
+      toast.error(res.error === "duplicate" ? u.logDuplicate : u.logFailedMsg);
+      addToolOutput({
+        tool: "createDailyLog",
+        toolCallId,
+        output: {
+          status: "failed",
+          error: res.error === "duplicate"
+            ? "A daily log already exists for this project and date."
+            : res.error,
+        },
+      });
+    }
+  }
+
+  function cancelDailyLog(toolCallId: string) {
+    addToolOutput({
+      tool: "createDailyLog",
+      toolCallId,
+      output: { status: "cancelled" },
+    });
+  }
+
   const inputDisabled = isBusy || quotaExceeded;
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -602,6 +808,22 @@ export function AIAssistantBar() {
                                   locale={locale}
                                   onApprove={() => approveTask(part.toolCallId, (part.input ?? {}) as TaskDraft)}
                                   onCancel={() => cancelTask(part.toolCallId)}
+                                />
+                              );
+                            }
+                            if (part.type === "tool-createDailyLog") {
+                              return (
+                                <DailyLogConfirmationCard
+                                  key={part.toolCallId}
+                                  draft={(part.input ?? {}) as DailyLogDraft}
+                                  ready={
+                                    part.state === "input-available" ||
+                                    part.state === "approval-requested"
+                                  }
+                                  outcome={part.output as TaskOutcome}
+                                  locale={locale}
+                                  onApprove={() => approveDailyLog(part.toolCallId, (part.input ?? {}) as DailyLogDraft)}
+                                  onCancel={() => cancelDailyLog(part.toolCallId)}
                                 />
                               );
                             }

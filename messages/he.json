@@ -762,6 +762,7 @@
       "tasks": "משימות",
       "financials": "פיננסי",
       "field": "דיווחי שטח",
+      "logs": "יומני עבודה",
       "team": "צוות וציוד",
       "prefab": "ייצור",
       "files": "קבצים",
@@ -2254,6 +2255,35 @@
       "DELIVERED": "נמסר לאתר",
       "INSTALLED": "הותקן"
     }
+  },
+  "projectLogs": {
+    "title": "יומני עבודה",
+    "subtitle": "דיווח יומי מהשטח — מזג אוויר, כוח אדם והתקדמות",
+    "addLog": "יומן חדש",
+    "form": {
+      "title": "דיווח יומי חדש",
+      "date": "תאריך",
+      "weather": "מזג אוויר",
+      "weatherPlaceholder": "שמשי, חם, גשום...",
+      "workforce": "כוח אדם באתר",
+      "workforcePlaceholder": "מספר עובדים",
+      "progress": "התקדמות יומית",
+      "progressPlaceholder": "מה בוצע היום באתר? (יציקות, בלוקים, טיח...)",
+      "safety": "אירועי בטיחות",
+      "safetyPlaceholder": "אירועים, כמעט-תאונות, ליקויים — השאר ריק אם אין",
+      "submit": "שמור יומן",
+      "cancel": "ביטול"
+    },
+    "toastCreated": "היומן נשמר בהצלחה!",
+    "toastDuplicate": "כבר קיים יומן עבודה לתאריך זה",
+    "toastError": "שמירת היומן נכשלה — נסה שוב",
+    "empty": "אין עדיין יומני עבודה לפרויקט זה",
+    "emptyHint": "צור את הדיווח היומי הראשון מהשטח",
+    "workers": "{count} עובדים באתר",
+    "noSafety": "ללא אירועי בטיחות",
+    "reportedBy": "דווח ע\"י {name}",
+    "today": "היום",
+    "yesterday": "אתמול"
   },
   "projectOverview": {
     "cannotLoad": "לא ניתן לטעון נתוני סקירה.",

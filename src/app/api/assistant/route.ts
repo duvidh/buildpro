@@ -15,7 +15,7 @@ import { getDailyLogsByProject } from "@/actions/field";
 import type { AIContext } from "@/actions/ai";
 
 // gemini-1.5-flash is retired; gemini-3.5-flash is the current flash-tier model.
-const MODEL = google("gemini-1.5-flash");
+const MODEL = google("gemini-2.0-flash");
 
 function systemPrompt(locale: string, context: AIContext, entityId: string) {
   const language = locale === "he" ? "Hebrew" : "English";

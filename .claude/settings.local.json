@@ -162,7 +162,9 @@
       "Bash(git commit -m 'feat: add SALES role \\(sees own leads/projects, all clients\\)' -m 'New SALES role \\(איש מכירות\\). Sidebar limited to Dashboard, Leads, Clients, *)",
       "PowerShell(Get-ChildItem node_modules\\\\next\\\\dist\\\\docs\\\\01-app -Recurse -File | Select-Object -First 150 -ExpandProperty FullName | ForEach-Object { $_.Replace\\('C:\\\\Users\\\\User.DESKTOP-R26AVG6\\\\Documents\\\\buildpro\\\\node_modules\\\\next\\\\dist\\\\docs\\\\', ''\\) })",
       "PowerShell(npx prisma validate 2>&1)",
-      "Bash(awk '/type UIMessageStreamOptions/,/^};/' node_modules/ai/dist/index.d.ts)"
+      "Bash(awk '/type UIMessageStreamOptions/,/^};/' node_modules/ai/dist/index.d.ts)",
+      "Bash(sed -n '5,60p')",
+      "Bash(sed -n '1,40p' src/lib/schemas/task-schema.ts)"
     ]
   }
 }

@@ -4,11 +4,18 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocale } from "next-intl";
 import { usePathname, useParams } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, isToolUIPart } from "ai";
+import {
+  DefaultChatTransport,
+  isToolUIPart,
+  lastAssistantMessageIsCompleteWithToolCalls,
+} from "ai";
 import {
   Sparkles, X, Send, BotMessageSquare, RotateCcw, Mic, MicOff, Zap, Database,
+  CheckSquare, CalendarDays, Check, Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { getAiQuota, type AIContext, type AiQuota } from "@/actions/ai";
+import { executeCreateTask } from "@/actions/tasks";
 import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -93,6 +100,16 @@ const UI = {
     quotaDone:     "מכסת השאלות הסתיימה",
     error:         "אירעה שגיאה — נסה שוב.",
     errorQuota:    "מכסת השאלות של החברה הסתיימה.",
+    taskCardTitle: "אישור משימה חדשה",
+    taskDue:       "תאריך יעד",
+    taskPriority:  "עדיפות",
+    taskApprove:   "אשר משימה",
+    taskCancel:    "בטל",
+    taskApproved:  "המשימה נוצרה ✓",
+    taskCancelled: "המשימה בוטלה",
+    taskFailedMsg: "יצירת המשימה נכשלה",
+    taskToast:     "המשימה נוצרה בהצלחה!",
+    priorities:    { LOW: "נמוכה", MEDIUM: "בינונית", HIGH: "גבוהה", URGENT: "דחופה" } as Record<string, string>,
   },
   en: {
     trigger:       "✨ Ask AI Assistant",
@@ -110,10 +127,147 @@ const UI = {
     quotaDone:     "Query quota reached",
     error:         "Something went wrong — please try again.",
     errorQuota:    "Your company's query quota has been reached.",
+    taskCardTitle: "Confirm New Task",
+    taskDue:       "Due date",
+    taskPriority:  "Priority",
+    taskApprove:   "Approve Task",
+    taskCancel:    "Cancel",
+    taskApproved:  "Task created ✓",
+    taskCancelled: "Task cancelled",
+    taskFailedMsg: "Creating the task failed",
+    taskToast:     "Task created successfully!",
+    priorities:    { LOW: "Low", MEDIUM: "Medium", HIGH: "High", URGENT: "Urgent" } as Record<string, string>,
   },
 } as const;
 
 const RECORDING_MS = 2500;
+
+// ─── Task confirmation card (human-in-the-loop) ───────────────────────────────
+
+type TaskDraft = { title?: string; dueDate?: string; priority?: string };
+type TaskOutcome = { status?: string } | undefined;
+
+const PRIORITY_BADGE: Record<string, string> = {
+  LOW:    "bg-slate-500/10 text-slate-600 dark:text-slate-300",
+  MEDIUM: "bg-violet-500/10 text-violet-600 dark:text-violet-300",
+  HIGH:   "bg-orange-500/10 text-orange-600 dark:text-orange-400",
+  URGENT: "bg-red-500/10 text-red-600 dark:text-red-400",
+};
+
+function TaskConfirmationCard({
+  draft,
+  ready,
+  outcome,
+  locale,
+  onApprove,
+  onCancel,
+}: {
+  draft: TaskDraft;
+  ready: boolean;            // tool input fully streamed — buttons may show
+  outcome: TaskOutcome;      // set once the user approved / cancelled
+  locale: "he" | "en";
+  onApprove: () => Promise<void>;
+  onCancel: () => void;
+}) {
+  const u = UI[locale];
+  const [saving, setSaving] = useState(false);
+
+  const priority = draft.priority?.toUpperCase() ?? "MEDIUM";
+  const dueParsed = draft.dueDate ? new Date(draft.dueDate) : null;
+  const dueLabel =
+    dueParsed && !Number.isNaN(dueParsed.getTime())
+      ? new Intl.DateTimeFormat(locale === "he" ? "he-IL" : "en-US", {
+          day: "numeric", month: "long", year: "numeric",
+        }).format(dueParsed)
+      : draft.dueDate ?? "—";
+
+  async function handleApprove() {
+    setSaving(true);
+    try { await onApprove(); } finally { setSaving(false); }
+  }
+
+  const status = outcome?.status;
+
+  return (
+    <div
+      className={cn(
+        "rounded-xl border overflow-hidden transition-colors",
+        status === "created"
+          ? "border-emerald-500/30 bg-emerald-500/[0.04]"
+          : status === "cancelled" || status === "failed"
+          ? "border-border/40 bg-muted/20 opacity-75"
+          : "border-violet-300/50 dark:border-violet-700/50 bg-gradient-to-br from-violet-50/60 to-indigo-50/40 dark:from-violet-950/20 dark:to-indigo-950/15",
+      )}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2 px-3.5 pt-3">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-violet-700 dark:text-violet-300">
+          <CheckSquare className="h-3.5 w-3.5" />
+          {u.taskCardTitle}
+        </div>
+        <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold", PRIORITY_BADGE[priority] ?? PRIORITY_BADGE.MEDIUM)}>
+          {u.priorities[priority] ?? priority}
+        </span>
+      </div>
+
+      {/* Details */}
+      <div className="px-3.5 py-2.5 space-y-1.5">
+        <p className="text-sm font-semibold text-foreground leading-snug">
+          {draft.title ?? "…"}
+        </p>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <CalendarDays className="h-3.5 w-3.5" />
+          <span>{u.taskDue}: {dueLabel}</span>
+        </div>
+      </div>
+
+      {/* Footer: outcome or actions */}
+      <div className="px-3.5 pb-3">
+        {status === "created" ? (
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+            <Check className="h-3.5 w-3.5" strokeWidth={3} />
+            {u.taskApproved}
+          </div>
+        ) : status === "cancelled" ? (
+          <p className="text-xs text-muted-foreground">{u.taskCancelled}</p>
+        ) : status === "failed" ? (
+          <p className="text-xs text-destructive">{u.taskFailedMsg}</p>
+        ) : ready ? (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleApprove}
+              disabled={saving}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold text-white",
+                "bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm",
+                "hover:shadow-[0_4px_12px_rgba(16,185,129,0.35)] hover:scale-[1.02]",
+                "active:scale-95 transition-all duration-150",
+                "disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100",
+              )}
+            >
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+              {u.taskApprove}
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={saving}
+              className="rounded-lg border border-border/50 bg-muted/30 px-3.5 py-1.5 text-xs font-medium text-muted-foreground
+                hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+            >
+              {u.taskCancel}
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" />…
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -148,8 +302,12 @@ export function AIAssistantBar() {
   }, []);
 
   // Chat
-  const { messages, sendMessage, status, error, setMessages, clearError } = useChat({
+  const {
+    messages, sendMessage, status, error, setMessages, clearError, addToolOutput,
+  } = useChat({
     transport: new DefaultChatTransport({ api: "/api/assistant" }),
+    // Resume the model turn automatically once HITL tool results are in.
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     onFinish: refreshQuota,
     // A 403 (quota) also lands here — resync the counter with the server.
     onError: refreshQuota,
@@ -250,6 +408,41 @@ export function AIAssistantBar() {
     } else {
       ask(chip.prompt);
     }
+  }
+
+  // ── Human-in-the-loop: task approval ──────────────────────────────────────
+
+  async function approveTask(toolCallId: string, draft: TaskDraft) {
+    const res = await executeCreateTask({
+      title:      draft.title ?? "",
+      dueDate:    draft.dueDate ?? "",
+      priority:   draft.priority ?? "MEDIUM",
+      entityId,
+      entityType: context === "client" ? "client" : "project",
+    });
+    if (res.success) {
+      toast.success(u.taskToast);
+      addToolOutput({
+        tool: "createTask",
+        toolCallId,
+        output: { status: "created", taskId: res.taskId },
+      });
+    } else {
+      toast.error(u.taskFailedMsg);
+      addToolOutput({
+        tool: "createTask",
+        toolCallId,
+        output: { status: "failed", error: res.error },
+      });
+    }
+  }
+
+  function cancelTask(toolCallId: string) {
+    addToolOutput({
+      tool: "createTask",
+      toolCallId,
+      output: { status: "cancelled" },
+    });
   }
 
   const inputDisabled = isBusy || quotaExceeded;
@@ -394,6 +587,22 @@ export function AIAssistantBar() {
                                 >
                                   {part.text}
                                 </div>
+                              );
+                            }
+                            if (part.type === "tool-createTask") {
+                              return (
+                                <TaskConfirmationCard
+                                  key={part.toolCallId}
+                                  draft={(part.input ?? {}) as TaskDraft}
+                                  ready={
+                                    part.state === "input-available" ||
+                                    part.state === "approval-requested"
+                                  }
+                                  outcome={part.output as TaskOutcome}
+                                  locale={locale}
+                                  onApprove={() => approveTask(part.toolCallId, (part.input ?? {}) as TaskDraft)}
+                                  onCancel={() => cancelTask(part.toolCallId)}
+                                />
                               );
                             }
                             if (isToolUIPart(part) && part.state !== "output-available") {

@@ -166,6 +166,59 @@ export async function createTask(raw: CreateTaskInput) {
   return { success: true as const, taskId: task.id };
 }
 
+/**
+ * AI-assistant approval flow: persist a task the user confirmed in the chat
+ * UI. Delegates to createTask() so role checks, validation, activity log and
+ * notifications stay in one place.
+ */
+export async function executeCreateTask(payload: {
+  title: string;
+  dueDate: string;
+  priority: string;
+  entityId: string;
+  entityType?: "project" | "client";
+}) {
+  const title = payload.title?.trim() ?? "";
+  if (title.length < 2) {
+    return { success: false as const, error: "invalid_title" };
+  }
+
+  const priority = (
+    (["LOW", "MEDIUM", "HIGH", "URGENT"] as const).find(
+      (p) => p === payload.priority?.toUpperCase(),
+    ) ?? "MEDIUM"
+  );
+
+  // The model emits dates as strings — only pass ones Prisma can parse.
+  const dueDate =
+    payload.dueDate && !Number.isNaN(new Date(payload.dueDate).getTime())
+      ? payload.dueDate
+      : undefined;
+
+  // The entity id originates from the model/client — owned-check it before
+  // linking, and fall back to an unlinked task instead of failing approval.
+  let projectId: string | undefined;
+  let clientId: string | undefined;
+  if (payload.entityId) {
+    const cid = await currentCompanyId();
+    if (payload.entityType === "client") {
+      const client = await db.client.findFirst({
+        where: { id: payload.entityId, companyId: cid },
+        select: { id: true },
+      });
+      clientId = client?.id;
+    } else {
+      const project = await db.project.findFirst({
+        where: { id: payload.entityId, companyId: cid },
+        select: { id: true },
+      });
+      projectId = project?.id;
+    }
+  }
+
+  return createTask({ name: title, priority, dueDate, projectId, clientId });
+}
+
 export async function updateTaskStatus(id: string, status: TaskStatusValue) {
   // All authenticated users (including FIELD_WORKER) may update task status
   const session   = await getSession();

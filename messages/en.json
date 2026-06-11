@@ -91,7 +91,14 @@
     }
   },
   "header": {
-    "searchPlaceholder": "Global search...",
+    "searchPlaceholder": "Search projects, clients or tasks...",
+    "search": {
+      "groupProjects": "Projects",
+      "groupClients": "Clients",
+      "groupTasks": "Tasks",
+      "searching": "Searching...",
+      "noResults": "No results found"
+    },
     "pages": {
       "dashboard": "Dashboard",
       "leads": "Leads & Sales",
@@ -2417,7 +2424,9 @@
   "notifications": {
     "title": "Notifications",
     "markAll": "Mark all",
-    "empty": "No notifications",
+    "empty": "No new notifications",
+    "overdueTasks": "Overdue Tasks",
+    "upcomingTasks": "Upcoming Tasks",
     "markRead": "Mark as read",
     "newNotifications": "BuildPro — {count} new notification{plural}",
     "clickForDetails": "Click the notification bell for details"

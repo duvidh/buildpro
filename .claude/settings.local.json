@@ -164,7 +164,9 @@
       "PowerShell(npx prisma validate 2>&1)",
       "Bash(awk '/type UIMessageStreamOptions/,/^};/' node_modules/ai/dist/index.d.ts)",
       "Bash(sed -n '5,60p')",
-      "Bash(sed -n '1,40p' src/lib/schemas/task-schema.ts)"
+      "Bash(sed -n '1,40p' src/lib/schemas/task-schema.ts)",
+      "Bash(sed -n '2424,2428p' messages/he.json)",
+      "Bash(sed -n '2424,2428p' messages/en.json)"
     ]
   }
 }

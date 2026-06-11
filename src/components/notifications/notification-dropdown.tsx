@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useTransition, useEffect, useRef } from "react";
+import Link from "next/link";
 import {
   Bell, Check, CheckCheck, CheckSquare2, Factory,
-  FileText, Loader2, BellOff,
+  FileText, Loader2, BellOff, AlarmClock, CalendarClock,
 } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,8 @@ import {
   getUnreadNotificationCount,
   markAllNotificationsRead,
   markNotificationRead,
+  getTaskAlerts,
+  type TaskAlert,
 } from "@/actions/notifications";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -59,6 +62,68 @@ function fireNativeNotification(title: string, body?: string) {
   }
 }
 
+// ─── Task alert section (overdue / upcoming) ──────────────────────────────────
+
+function TaskAlertSection({
+  title,
+  icon: Icon,
+  tone,
+  items,
+  locale,
+  onNavigate,
+}: {
+  title: string;
+  icon: React.ElementType;
+  tone: "overdue" | "upcoming";
+  items: TaskAlert[];
+  locale: string;
+  onNavigate: () => void;
+}) {
+  const isOverdue = tone === "overdue";
+  const fmtDue = (iso: string) =>
+    iso
+      ? new Intl.DateTimeFormat(locale === "he" ? "he-IL" : "en-US", {
+          day: "numeric", month: "short",
+        }).format(new Date(iso))
+      : "";
+
+  return (
+    <div className={isOverdue ? "bg-destructive/[0.04]" : "bg-amber-500/[0.04]"}>
+      <p
+        className={`flex items-center gap-1.5 px-3 pt-2 pb-1 text-[11px] font-bold ${
+          isOverdue ? "text-destructive" : "text-amber-600 dark:text-amber-400"
+        }`}
+      >
+        <Icon className="h-3.5 w-3.5" />
+        {title}
+      </p>
+      {items.map((task) => (
+        <Link
+          key={task.id}
+          href={task.projectId ? `/projects/${task.projectId}/tasks` : "/tasks"}
+          onClick={onNavigate}
+          className="flex items-baseline justify-between gap-2 px-3 py-1.5 transition-colors hover:bg-muted/50"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-foreground">{task.name}</span>
+            {task.projectName && (
+              <span className="block truncate text-[11px] text-muted-foreground">{task.projectName}</span>
+            )}
+          </span>
+          <span
+            className={`shrink-0 text-[11px] font-semibold tabular-nums ${
+              isOverdue ? "text-destructive" : "text-amber-600 dark:text-amber-400"
+            }`}
+          >
+            {fmtDue(task.dueDate)}
+          </span>
+        </Link>
+      ))}
+      <div className="pb-1.5" />
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 /** Poll interval in milliseconds (45 s keeps cache warm and feels responsive). */
@@ -70,6 +135,7 @@ export function NotificationDropdown({ initialCount }: { initialCount: number })
   const locale = useLocale();
   const [open,          setOpen]          = useState(false);
   const [notifications, setNotifications] = useState<Notification[] | null>(null);
+  const [alerts,        setAlerts]        = useState<{ overdue: TaskAlert[]; upcoming: TaskAlert[] } | null>(null);
   const [unreadCount,   setUnreadCount]   = useState(initialCount);
   const [loading,       setLoading]       = useState(false);
   const [, startTransition] = useTransition();
@@ -122,8 +188,12 @@ export function NotificationDropdown({ initialCount }: { initialCount: number })
     if (next && notifications === null) {
       setLoading(true);
       startTransition(async () => {
-        const data = await getUserNotifications();
+        const [data, taskAlerts] = await Promise.all([
+          getUserNotifications(),
+          getTaskAlerts(),
+        ]);
         setNotifications(data as unknown as Notification[]);
+        setAlerts(taskAlerts);
         setLoading(false);
       });
     }
@@ -210,8 +280,35 @@ export function NotificationDropdown({ initialCount }: { initialCount: number })
             </div>
           )}
 
+          {/* Schedule alerts (derived from task due dates) */}
+          {!loading && alerts && (alerts.overdue.length > 0 || alerts.upcoming.length > 0) && (
+            <div className="border-b border-border/60">
+              {alerts.overdue.length > 0 && (
+                <TaskAlertSection
+                  title={t("overdueTasks")}
+                  icon={AlarmClock}
+                  tone="overdue"
+                  items={alerts.overdue}
+                  locale={locale}
+                  onNavigate={() => setOpen(false)}
+                />
+              )}
+              {alerts.upcoming.length > 0 && (
+                <TaskAlertSection
+                  title={t("upcomingTasks")}
+                  icon={CalendarClock}
+                  tone="upcoming"
+                  items={alerts.upcoming}
+                  locale={locale}
+                  onNavigate={() => setOpen(false)}
+                />
+              )}
+            </div>
+          )}
+
           {/* Empty */}
-          {!loading && notifications !== null && notifications.length === 0 && (
+          {!loading && notifications !== null && notifications.length === 0 &&
+            alerts !== null && alerts.overdue.length === 0 && alerts.upcoming.length === 0 && (
             <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
               <BellOff className="h-6 w-6 text-muted-foreground/40" />
               <p className="text-sm text-muted-foreground">{t("empty")}</p>

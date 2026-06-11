@@ -91,7 +91,14 @@
     }
   },
   "header": {
-    "searchPlaceholder": "חיפוש גלובלי...",
+    "searchPlaceholder": "חפש פרויקטים, לקוחות או משימות...",
+    "search": {
+      "groupProjects": "פרויקטים",
+      "groupClients": "לקוחות",
+      "groupTasks": "משימות",
+      "searching": "מחפש...",
+      "noResults": "לא נמצאו תוצאות"
+    },
     "pages": {
       "dashboard": "לוח בקרה",
       "leads": "לידים ומכירות",
@@ -2417,7 +2424,9 @@
   "notifications": {
     "title": "התראות",
     "markAll": "סמן הכל",
-    "empty": "אין התראות",
+    "empty": "אין התראות חדשות",
+    "overdueTasks": "משימות באיחור",
+    "upcomingTasks": "משימות קרובות",
     "markRead": "סמן כנקרא",
     "newNotifications": "BuildPro — {count} התראה{plural} חדשה",
     "clickForDetails": "לחץ על פעמון ההתראות לפרטים"

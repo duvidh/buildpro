@@ -2,23 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import {
   Menu,
-  Search,
   Settings,
   LogOut,
   User,
   ChevronDown,
 } from "lucide-react";
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
+import { GlobalSearch } from "@/components/layout/global-search";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { HelpGuide } from "@/components/layout/help-guide";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 import type { UserRole } from "@/lib/auth-utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   Avatar,
@@ -68,25 +67,14 @@ export function AppHeader({
   const title             = usePageTitle(pathname);
   const tCommon           = useTranslations("common");
   const tAppHeader        = useTranslations("appHeader");
-  const [searchValue, setSearchValue] = useState("");
-  const tHeader           = useTranslations("header");
   const locale            = useLocale();
   // RTL (Hebrew) opens from the right; LTR (English) opens from the left.
   const sheetSide         = locale === "he" ? "right" : "left";
-  const debounceRef       = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [, startTransition] = useTransition();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Request browser push-notification permission once on mount
   usePushNotifications();
-
-  const handleSearch = useCallback((value: string) => {
-    setSearchValue(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      // Global search will be wired here
-    }, 250);
-  }, []);
 
   function handleLogout() {
     startTransition(async () => {
@@ -114,15 +102,7 @@ export function AppHeader({
       </h1>
 
       {/* Global search */}
-      <div className="relative flex-1 max-w-sm hidden sm:block">
-        <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-        <Input
-          value={searchValue}
-          onChange={(e) => handleSearch(e.target.value)}
-          placeholder={tHeader("searchPlaceholder")}
-          className="pe-9 text-sm bg-muted/50 border-transparent focus:border-border focus:bg-background"
-        />
-      </div>
+      <GlobalSearch />
 
       {/* Help / user guide — sits right next to the search bar */}
       <HelpGuide />

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   ClipboardList, Plus, X, CalendarDays, CloudSun, Users, ShieldCheck,
-  ShieldAlert, Loader2, Minus,
+  ShieldAlert, Loader2, Minus, Camera,
 } from "lucide-react";
 import { toast } from "sonner";
-import { createDailyLog } from "@/actions/daily-logs";
+import { createDailyLog, uploadDailyLogPhoto } from "@/actions/daily-logs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,7 @@ export type SerializedLog = {
   workforceCount: number | null;
   safetyIncidents: string | null;
   notes: string | null;
+  imageUrls: string[];
   supervisorName: string | null;
 };
 
@@ -56,15 +57,45 @@ function NewLogForm({
   const [workforce, setWorkforce] = useState<number | "">("");
   const [progress, setProgress]   = useState("");
   const [safety, setSafety]       = useState("");
+  const [photos, setPhotos]       = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [isSaving, startSaving]   = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function bumpWorkforce(delta: number) {
     setWorkforce((w) => Math.max(0, (typeof w === "number" ? w : 0) + delta));
   }
 
+  async function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = ""; // allow re-selecting the same file
+    if (files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("projectId", projectId);
+        const res = await uploadDailyLogPhoto(formData);
+        if (res.success) {
+          setPhotos((prev) => [...prev, res.url]);
+        } else {
+          toast.error(res.error === "too_large" ? t("form.photoTooLarge") : t("form.photoUploadFailed"));
+        }
+      }
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  function removePhoto(url: string) {
+    setPhotos((prev) => prev.filter((u) => u !== url));
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (isSaving) return;
+    if (isSaving || isUploading) return;
     startSaving(async () => {
       const res = await createDailyLog({
         projectId,
@@ -73,6 +104,7 @@ function NewLogForm({
         workforceCount: workforce === "" ? undefined : workforce,
         progressNotes: progress,
         safetyIssues: safety,
+        imageUrls: photos,
       });
       if (res.success) {
         toast.success(t("toastCreated"));
@@ -206,7 +238,57 @@ function NewLogForm({
         />
       </div>
 
-      <Button type="submit" disabled={isSaving} className="w-full h-12 text-sm font-semibold gap-2">
+      {/* Photos */}
+      <div className="space-y-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          multiple
+          onChange={handleFilesSelected}
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border
+            bg-muted/20 px-4 py-3 text-sm font-medium text-muted-foreground
+            hover:text-foreground hover:bg-muted/40 hover:border-primary/40
+            active:scale-[0.99] transition-all disabled:opacity-60"
+        >
+          {isUploading
+            ? <><Loader2 className="h-4 w-4 animate-spin" />{t("form.photosUploading")}</>
+            : <><Camera className="h-4 w-4" />{t("form.photos")}</>}
+        </button>
+
+        {photos.length > 0 && (
+          <div className="grid grid-cols-4 gap-2">
+            {photos.map((url) => (
+              <div key={url} className="relative aspect-square overflow-hidden rounded-lg border border-border/60 group">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt="" loading="lazy" className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removePhoto(url)}
+                  aria-label={t("form.photoRemove")}
+                  className="absolute top-1 end-1 flex h-5 w-5 items-center justify-center rounded-full
+                    bg-black/60 text-white opacity-80 hover:opacity-100 transition-opacity"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Button
+        type="submit"
+        disabled={isSaving || isUploading}
+        className="w-full h-12 text-sm font-semibold gap-2"
+      >
         {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardList className="h-4 w-4" />}
         {t("form.submit")}
       </Button>
@@ -260,6 +342,25 @@ function LogCard({ log, locale }: { log: SerializedLog; locale: "he" | "en" }) {
         {/* Progress notes */}
         {log.notes && (
           <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">{log.notes}</p>
+        )}
+
+        {/* Photo gallery */}
+        {log.imageUrls.length > 0 && (
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+            {log.imageUrls.map((url) => (
+              <a
+                key={url}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative aspect-square overflow-hidden rounded-lg border border-border/50
+                  hover:opacity-90 hover:ring-2 hover:ring-primary/30 transition-all"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt="" loading="lazy" className="h-full w-full object-cover" />
+              </a>
+            ))}
+          </div>
         )}
 
         {/* Safety */}

@@ -643,9 +643,11 @@ model DailyLog {
   visitors          String?
   safetyIncidents   String?
   notes             String?
+  imageUrls         String[] @default([])
   supervisorId      String?
   supervisor        User?    @relation("LogSupervisor", fields: [supervisorId], references: [id])
   createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
 
   @@unique([projectId, date])
   @@index([companyId, date])

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireRole, type UserRole } from "@/lib/auth-utils";
 import { currentCompanyId } from "@/lib/tenant";
+import { uploadToStorage } from "@/lib/supabase-storage";
 
 // Field crews report too — every operational role may write a daily log.
 const DAILY_LOG_ROLES: UserRole[] = [
@@ -18,6 +19,7 @@ const createDailyLogSchema = z.object({
   workforceCount:  z.coerce.number().int().min(0).max(10000).optional(),
   progressNotes:   z.string().optional(),
   safetyIssues:    z.string().optional(),
+  imageUrls:       z.array(z.string().url()).max(12).optional(),
 });
 
 export type CreateDailyLogInput = z.input<typeof createDailyLogSchema>;
@@ -50,7 +52,7 @@ export async function createDailyLog(raw: CreateDailyLogInput) {
   if (!parsed.success) {
     return { success: false as const, error: "validation" as const };
   }
-  const { projectId, weather, workforceCount, progressNotes, safetyIssues } = parsed.data;
+  const { projectId, weather, workforceCount, progressNotes, safetyIssues, imageUrls } = parsed.data;
 
   const date = toLogDate(parsed.data.date);
   if (!date) return { success: false as const, error: "validation" as const };
@@ -81,6 +83,7 @@ export async function createDailyLog(raw: CreateDailyLogInput) {
       workforceCount:    workforceCount ?? null,
       notes:             progressNotes?.trim() || null,
       safetyIncidents:   safetyIssues?.trim() || null,
+      imageUrls:         imageUrls ?? [],
     },
     include: { supervisor: { select: { id: true, name: true } } },
   });
@@ -89,6 +92,47 @@ export async function createDailyLog(raw: CreateDailyLogInput) {
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/daily-logs");
   return { success: true as const, log };
+}
+
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024; // 10 MB per photo
+
+/**
+ * Upload one field photo to Supabase Storage and return its public URL.
+ * Expects FormData with "file" (image) and "projectId" entries.
+ */
+export async function uploadDailyLogPhoto(formData: FormData) {
+  await requireRole(DAILY_LOG_ROLES);
+  const cid = await currentCompanyId();
+
+  const file = formData.get("file");
+  const projectId = formData.get("projectId");
+  if (!(file instanceof File) || typeof projectId !== "string" || !projectId) {
+    return { success: false as const, error: "validation" as const };
+  }
+  if (!file.type.startsWith("image/")) {
+    return { success: false as const, error: "not_image" as const };
+  }
+  if (file.size > MAX_PHOTO_BYTES) {
+    return { success: false as const, error: "too_large" as const };
+  }
+
+  // Owned-check: photos may only be attached to this company's projects.
+  const project = await db.project.findFirst({
+    where: { id: projectId, companyId: cid },
+    select: { id: true },
+  });
+  if (!project) return { success: false as const, error: "not_found" as const };
+
+  try {
+    const url = await uploadToStorage(
+      `daily-logs/${projectId}/${Date.now()}-${file.name}`,
+      file,
+    );
+    return { success: true as const, url };
+  } catch (e) {
+    console.error("[uploadDailyLogPhoto] failed:", e instanceof Error ? e.message : e);
+    return { success: false as const, error: "upload_failed" as const };
+  }
 }
 
 /**

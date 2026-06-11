@@ -18,6 +18,7 @@ export default async function ProjectLogsPage({
     workforceCount: l.workforceCount,
     safetyIncidents: l.safetyIncidents,
     notes: l.notes,
+    imageUrls: l.imageUrls,
     supervisorName: l.supervisor?.name ?? null,
   }));
 

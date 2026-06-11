@@ -2271,6 +2271,11 @@
       "progressPlaceholder": "מה בוצע היום באתר? (יציקות, בלוקים, טיח...)",
       "safety": "אירועי בטיחות",
       "safetyPlaceholder": "אירועים, כמעט-תאונות, ליקויים — השאר ריק אם אין",
+      "photos": "הוסף תמונות מהשטח",
+      "photosUploading": "מעלה תמונות...",
+      "photoTooLarge": "תמונה גדולה מדי (עד 10MB)",
+      "photoUploadFailed": "העלאת התמונה נכשלה",
+      "photoRemove": "הסר תמונה",
       "submit": "שמור יומן",
       "cancel": "ביטול"
     },

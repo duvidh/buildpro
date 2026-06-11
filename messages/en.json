@@ -2271,6 +2271,11 @@
       "progressPlaceholder": "What was done on site today? (pours, block walls, plaster...)",
       "safety": "Safety incidents",
       "safetyPlaceholder": "Incidents, near-misses, hazards — leave empty if none",
+      "photos": "Add photos from the field",
+      "photosUploading": "Uploading photos...",
+      "photoTooLarge": "Photo too large (max 10MB)",
+      "photoUploadFailed": "Photo upload failed",
+      "photoRemove": "Remove photo",
       "submit": "Save Log",
       "cancel": "Cancel"
     },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useLocale } from "next-intl";
 import { usePathname, useParams } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
@@ -11,12 +12,13 @@ import {
 } from "ai";
 import {
   Sparkles, X, Send, BotMessageSquare, RotateCcw, Mic, MicOff, Zap, Database,
-  CheckSquare, CalendarDays, Check, Loader2, ClipboardList,
+  CheckSquare, CalendarDays, Check, Loader2, ClipboardList, FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getAiQuota, type AIContext, type AiQuota } from "@/actions/ai";
 import { executeCreateTask } from "@/actions/tasks";
 import { executeCreateDailyLog } from "@/actions/daily-logs";
+import { executeCreateQuoteDraft } from "@/actions/quotes";
 import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -123,6 +125,18 @@ const UI = {
     logFailedMsg:  "שמירת היומן נכשלה",
     logDuplicate:  "כבר קיים יומן עבודה לתאריך זה",
     logToast:      "היומן נשמר בהצלחה!",
+    quoteCardTitle: "טיוטת הצעת מחיר",
+    quoteEstimate:  "מחירים משוערים — ניתן לערוך הכל בבונה ההצעות",
+    quoteQty:       "כמות",
+    quoteSubtotal:  'סה"כ לפני מע"מ',
+    quoteVat:       'מע"מ 17%',
+    quoteTotal:     'סה"כ כולל מע"מ',
+    quoteSave:      "שמור כטיוטה",
+    quoteSaved:     "נשמרה כטיוטה ✓",
+    quoteOpen:      "פתח הצעה",
+    quoteCancelled: "ההצעה בוטלה",
+    quoteFailedMsg: "שמירת ההצעה נכשלה",
+    quoteToast:     "הצעת המחיר נשמרה כטיוטה!",
   },
   en: {
     trigger:       "✨ Ask AI Assistant",
@@ -162,6 +176,18 @@ const UI = {
     logFailedMsg:  "Saving the log failed",
     logDuplicate:  "A daily log already exists for this date",
     logToast:      "Log saved successfully!",
+    quoteCardTitle: "Draft Quote",
+    quoteEstimate:  "Estimated prices — everything is editable in the quote builder",
+    quoteQty:       "Qty",
+    quoteSubtotal:  "Subtotal (excl. VAT)",
+    quoteVat:       "VAT 17%",
+    quoteTotal:     "Total (incl. VAT)",
+    quoteSave:      "Save as Draft",
+    quoteSaved:     "Saved as draft ✓",
+    quoteOpen:      "Open quote",
+    quoteCancelled: "Quote cancelled",
+    quoteFailedMsg: "Saving the quote failed",
+    quoteToast:     "Quote saved as draft!",
   },
 } as const;
 
@@ -433,6 +459,171 @@ function DailyLogConfirmationCard({
   );
 }
 
+// ─── Quote draft confirmation card (human-in-the-loop) ────────────────────────
+
+type QuoteItemDraft = {
+  description?: string;
+  quantity?: number;
+  unitPrice?: number;
+  unit?: string;
+};
+type QuoteDraft = { title?: string; items?: QuoteItemDraft[] };
+type QuoteOutcome = { status?: string; quoteId?: string; quoteNumber?: string | null } | undefined;
+
+function fmtILS(n: number, locale: "he" | "en"): string {
+  return new Intl.NumberFormat(locale === "he" ? "he-IL" : "en-US", {
+    style: "currency", currency: "ILS", maximumFractionDigits: 0,
+  }).format(n);
+}
+
+function QuoteDraftCard({
+  draft,
+  ready,
+  outcome,
+  locale,
+  onApprove,
+  onCancel,
+}: {
+  draft: QuoteDraft;
+  ready: boolean;
+  outcome: QuoteOutcome;
+  locale: "he" | "en";
+  onApprove: () => Promise<void>;
+  onCancel: () => void;
+}) {
+  const u = UI[locale];
+  const [saving, setSaving] = useState(false);
+
+  const items = (draft.items ?? []).filter((i) => i?.description);
+  const subtotal = items.reduce(
+    (s, i) => s + (i.quantity ?? 0) * (i.unitPrice ?? 0), 0,
+  );
+  const vat = subtotal * 0.17;
+
+  async function handleApprove() {
+    setSaving(true);
+    try { await onApprove(); } finally { setSaving(false); }
+  }
+
+  const status = outcome?.status;
+
+  return (
+    <div
+      className={cn(
+        "rounded-xl border overflow-hidden transition-colors",
+        status === "created"
+          ? "border-emerald-500/30 bg-emerald-500/[0.04]"
+          : status === "cancelled" || status === "failed"
+          ? "border-border/40 bg-muted/20 opacity-75"
+          : "border-amber-300/60 dark:border-amber-700/50 bg-gradient-to-br from-amber-50/60 to-orange-50/40 dark:from-amber-950/20 dark:to-orange-950/15",
+      )}
+    >
+      {/* Header */}
+      <div className="px-3.5 pt-3 space-y-0.5">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300">
+          <FileText className="h-3.5 w-3.5" />
+          {u.quoteCardTitle}
+        </div>
+        {draft.title && (
+          <p className="text-sm font-semibold text-foreground leading-snug">{draft.title}</p>
+        )}
+      </div>
+
+      {/* Line items */}
+      <div className="px-3.5 py-2.5">
+        <div className="rounded-lg border border-border/40 divide-y divide-border/30 overflow-hidden">
+          {items.map((item, i) => (
+            <div key={i} className="flex items-center justify-between gap-2 px-2.5 py-1.5 text-xs bg-background/50">
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium text-foreground">{item.description}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {item.quantity ?? 0} {item.unit ?? ""} × {fmtILS(item.unitPrice ?? 0, locale)}
+                </p>
+              </div>
+              <span className="shrink-0 font-semibold tabular-nums">
+                {fmtILS((item.quantity ?? 0) * (item.unitPrice ?? 0), locale)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Totals */}
+        <div className="mt-2 space-y-0.5 text-xs">
+          <div className="flex justify-between text-muted-foreground">
+            <span>{u.quoteSubtotal}</span>
+            <span className="tabular-nums">{fmtILS(subtotal, locale)}</span>
+          </div>
+          <div className="flex justify-between text-muted-foreground">
+            <span>{u.quoteVat}</span>
+            <span className="tabular-nums">{fmtILS(vat, locale)}</span>
+          </div>
+          <div className="flex justify-between font-bold text-foreground">
+            <span>{u.quoteTotal}</span>
+            <span className="tabular-nums">{fmtILS(subtotal + vat, locale)}</span>
+          </div>
+        </div>
+
+        <p className="mt-1.5 text-[10px] text-muted-foreground/80">{u.quoteEstimate}</p>
+      </div>
+
+      {/* Footer: outcome or actions */}
+      <div className="px-3.5 pb-3">
+        {status === "created" ? (
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+              <Check className="h-3.5 w-3.5" strokeWidth={3} />
+              {u.quoteSaved} {outcome?.quoteNumber ?? ""}
+            </span>
+            {outcome?.quoteId && (
+              <Link
+                href={`/quotes/${outcome.quoteId}`}
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                {u.quoteOpen} ←
+              </Link>
+            )}
+          </div>
+        ) : status === "cancelled" ? (
+          <p className="text-xs text-muted-foreground">{u.quoteCancelled}</p>
+        ) : status === "failed" ? (
+          <p className="text-xs text-destructive">{u.quoteFailedMsg}</p>
+        ) : ready ? (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleApprove}
+              disabled={saving || items.length === 0}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold text-white",
+                "bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm",
+                "hover:shadow-[0_4px_12px_rgba(16,185,129,0.35)] hover:scale-[1.02]",
+                "active:scale-95 transition-all duration-150",
+                "disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100",
+              )}
+            >
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+              {u.quoteSave}
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={saving}
+              className="rounded-lg border border-border/50 bg-muted/30 px-3.5 py-1.5 text-xs font-medium text-muted-foreground
+                hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+            >
+              {u.taskCancel}
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" />…
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function AIAssistantBar() {
@@ -651,6 +842,50 @@ export function AIAssistantBar() {
     });
   }
 
+  // ── Human-in-the-loop: quote draft approval ───────────────────────────────
+
+  async function approveQuoteDraft(toolCallId: string, draft: QuoteDraft) {
+    const res = await executeCreateQuoteDraft({
+      title: draft.title ?? "",
+      clientId: context === "client" ? entityId : undefined,
+      items: (draft.items ?? [])
+        .filter((i) => i?.description)
+        .map((i) => ({
+          description: i.description ?? "",
+          quantity: typeof i.quantity === "number" ? i.quantity : 1,
+          unitPrice: typeof i.unitPrice === "number" ? i.unitPrice : 0,
+          unit: i.unit,
+        })),
+    });
+    if (res.success) {
+      toast.success(u.quoteToast);
+      addToolOutput({
+        tool: "generateQuoteDraft",
+        toolCallId,
+        output: {
+          status: "created",
+          quoteId: res.quoteId,
+          quoteNumber: res.quoteNumber,
+        },
+      });
+    } else {
+      toast.error(u.quoteFailedMsg);
+      addToolOutput({
+        tool: "generateQuoteDraft",
+        toolCallId,
+        output: { status: "failed", error: res.error },
+      });
+    }
+  }
+
+  function cancelQuoteDraft(toolCallId: string) {
+    addToolOutput({
+      tool: "generateQuoteDraft",
+      toolCallId,
+      output: { status: "cancelled" },
+    });
+  }
+
   const inputDisabled = isBusy || quotaExceeded;
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -808,6 +1043,22 @@ export function AIAssistantBar() {
                                   locale={locale}
                                   onApprove={() => approveTask(part.toolCallId, (part.input ?? {}) as TaskDraft)}
                                   onCancel={() => cancelTask(part.toolCallId)}
+                                />
+                              );
+                            }
+                            if (part.type === "tool-generateQuoteDraft") {
+                              return (
+                                <QuoteDraftCard
+                                  key={part.toolCallId}
+                                  draft={(part.input ?? {}) as QuoteDraft}
+                                  ready={
+                                    part.state === "input-available" ||
+                                    part.state === "approval-requested"
+                                  }
+                                  outcome={part.output as QuoteOutcome}
+                                  locale={locale}
+                                  onApprove={() => approveQuoteDraft(part.toolCallId, (part.input ?? {}) as QuoteDraft)}
+                                  onCancel={() => cancelQuoteDraft(part.toolCallId)}
                                 />
                               );
                             }

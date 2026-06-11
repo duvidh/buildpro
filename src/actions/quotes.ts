@@ -275,3 +275,95 @@ export async function saveQuoteItems(
   revalidatePath("/quotes");
   return { success: true as const, subtotal, contingencyPercent, taxAmount, total };
 }
+
+// ─── AI draft (human-in-the-loop) ─────────────────────────────────────────────
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * AI-assistant approval flow: persist a DRAFT quote with the line items the
+ * user confirmed in the chat UI. Totals use the same math as saveQuoteItems
+ * (default 17% VAT, no contingency); everything stays editable in the quote
+ * builder afterwards.
+ */
+export async function executeCreateQuoteDraft(payload: {
+  title: string;
+  clientId?: string;
+  items: Array<{
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    unit?: string;
+  }>;
+}) {
+  await requireRole(PROJECT_ROLES);
+  const cid = await currentCompanyId();
+
+  const items = (payload.items ?? [])
+    .filter((i) => i && typeof i.description === "string" && i.description.trim())
+    .slice(0, 30)
+    .map((i, idx) => {
+      const quantity  = Number.isFinite(i.quantity)  && i.quantity  > 0 ? round2(i.quantity)  : 1;
+      const unitPrice = Number.isFinite(i.unitPrice) && i.unitPrice >= 0 ? round2(i.unitPrice) : 0;
+      return {
+        name:      i.description.trim(),
+        unit:      i.unit?.trim() || "יח'",
+        quantity,
+        unitPrice,
+        linePrice: round2(quantity * unitPrice),
+        order:     idx,
+      };
+    });
+  if (items.length === 0) {
+    return { success: false as const, error: "validation" as const };
+  }
+
+  // The client id originates from the chat context — owned-check before linking.
+  let clientId: string | null = null;
+  if (payload.clientId) {
+    const client = await db.client.findFirst({
+      where: { id: payload.clientId, companyId: cid },
+      select: { id: true },
+    });
+    clientId = client?.id ?? null;
+  }
+
+  const taxPercent = 17;
+  const subtotal   = round2(items.reduce((s, i) => s + i.linePrice, 0));
+  const taxAmount  = round2(subtotal * (taxPercent / 100));
+  const total      = round2(subtotal + taxAmount);
+
+  try {
+    const quote = await db.$transaction(async (tx) => {
+      const quoteNumber = await generateQuoteNumber(tx, cid);
+      return tx.quote.create({
+        data: {
+          companyId: cid,
+          clientId,
+          quoteNumber,
+          date:   new Date(),
+          status: "DRAFT",
+          taxPercent,
+          subtotal,
+          taxAmount,
+          total,
+          // The Quote model has no title column — the AI title lands in notes.
+          notes: payload.title?.trim() || null,
+          items: { create: items },
+        },
+        select: { id: true, quoteNumber: true, total: true },
+      });
+    });
+
+    revalidatePath("/quotes");
+    return {
+      success: true as const,
+      quoteId: quote.id,
+      quoteNumber: quote.quoteNumber,
+      total: quote.total,
+    };
+  } catch (e) {
+    console.error("[executeCreateQuoteDraft] failed:", e instanceof Error ? e.message : e);
+    return { success: false as const, error: "generic" as const };
+  }
+}

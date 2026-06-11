@@ -161,7 +161,8 @@
       "Bash(sed -n '32,50p' src/actions/projects.ts)",
       "Bash(git commit -m 'feat: add SALES role \\(sees own leads/projects, all clients\\)' -m 'New SALES role \\(איש מכירות\\). Sidebar limited to Dashboard, Leads, Clients, *)",
       "PowerShell(Get-ChildItem node_modules\\\\next\\\\dist\\\\docs\\\\01-app -Recurse -File | Select-Object -First 150 -ExpandProperty FullName | ForEach-Object { $_.Replace\\('C:\\\\Users\\\\User.DESKTOP-R26AVG6\\\\Documents\\\\buildpro\\\\node_modules\\\\next\\\\dist\\\\docs\\\\', ''\\) })",
-      "PowerShell(npx prisma validate 2>&1)"
+      "PowerShell(npx prisma validate 2>&1)",
+      "Bash(awk '/type UIMessageStreamOptions/,/^};/' node_modules/ai/dist/index.d.ts)"
     ]
   }
 }

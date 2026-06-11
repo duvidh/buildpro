@@ -48,9 +48,9 @@ const navGroups: NavGroup[] = [
     items: [
       { href: "/dashboard", icon: LayoutDashboard, labelKey: "dashboard" },
       { href: "/leads",     icon: TrendingUp,      labelKey: "leads",          roles: ["ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER", "SALES"] },
-      { href: "/clients",   icon: Users,           labelKey: "clients",         roles: ["ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER", "SALES"] },
+      { href: "/clients",   icon: Users,           labelKey: "clients",         roles: ["ADMIN", "OFFICE_MANAGER", "SALES"] },
       { href: "/projects",  icon: FolderKanban,    labelKey: "projects" },
-      { href: "/quotes",    icon: FileText,         labelKey: "quotes",          roles: ["ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER", "SALES"] },
+      { href: "/quotes",    icon: FileText,         labelKey: "quotes",          roles: ["ADMIN", "OFFICE_MANAGER", "SALES"] },
       { href: "/employees", icon: UsersRound,       labelKey: "employees",       roles: ["ADMIN"] },
     ],
   },

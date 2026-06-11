@@ -37,6 +37,12 @@ export const PROJECT_ROLES: UserRole[] = [
   "ADMIN", "OFFICE_MANAGER", "PROJECT_MANAGER", "SALES",
 ];
 
+/**
+ * Can view and edit price quotes. Office + sales only — field-level roles
+ * (PROJECT_MANAGER = foreman, FIELD_WORKER) never see pricing documents.
+ */
+export const QUOTE_ROLES: UserRole[] = ["ADMIN", "OFFICE_MANAGER", "SALES"];
+
 /** Full system administration. */
 export const ADMIN_ROLES: UserRole[] = ["ADMIN"];
 

@@ -4,12 +4,13 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { type CreateQuoteInput, type UpdateQuoteHeaderInput } from "@/lib/schemas/quote-schema";
 import type { QuoteStatusValue } from "@/lib/constants/quote-enums";
-import { requireRole, PROJECT_ROLES, DELETE_ROLES } from "@/lib/auth-utils";
+import { requireRole, QUOTE_ROLES, DELETE_ROLES } from "@/lib/auth-utils";
 import { currentCompanyId } from "@/lib/tenant";
 
 // ─── Read ──────────────────────────────────────────────────────────────────────
 
 export async function getQuotes() {
+  await requireRole(QUOTE_ROLES); // throws "Unauthorized access" for field-level roles
   const cid = await currentCompanyId();
   return db.quote.findMany({
     where: { companyId: cid },
@@ -23,6 +24,7 @@ export async function getQuotes() {
 }
 
 export async function getQuoteById(id: string) {
+  await requireRole(QUOTE_ROLES); // throws "Unauthorized access" for field-level roles
   const cid = await currentCompanyId();
   return db.quote.findFirst({
     where: { id, companyId: cid },
@@ -60,7 +62,7 @@ async function generateQuoteNumber(
 }
 
 export async function createQuote(data: CreateQuoteInput) {
-  await requireRole(PROJECT_ROLES);
+  await requireRole(QUOTE_ROLES);
   const cid = await currentCompanyId();
   const quote = await db.$transaction(async (tx) => {
     const quoteNumber = await generateQuoteNumber(tx, cid);
@@ -82,7 +84,7 @@ export async function createQuote(data: CreateQuoteInput) {
 }
 
 export async function updateQuoteHeader(id: string, data: UpdateQuoteHeaderInput) {
-  await requireRole(PROJECT_ROLES);
+  await requireRole(QUOTE_ROLES);
   const cid = await currentCompanyId();
   const owned = await db.quote.findFirst({ where: { id, companyId: cid }, select: { id: true } });
   if (!owned) return { success: false as const };
@@ -103,7 +105,7 @@ export async function updateQuoteHeader(id: string, data: UpdateQuoteHeaderInput
 }
 
 export async function updateQuoteStatus(id: string, status: QuoteStatusValue) {
-  await requireRole(PROJECT_ROLES);
+  await requireRole(QUOTE_ROLES);
   const cid = await currentCompanyId();
   const owned = await db.quote.findFirst({ where: { id, companyId: cid }, select: { id: true } });
   if (!owned) return { success: false as const };
@@ -126,7 +128,7 @@ export async function deleteQuote(id: string) {
 // ─── Category (Chapter) CRUD ──────────────────────────────────────────────────
 
 export async function createQuoteCategory(quoteId: string, name: string) {
-  await requireRole(PROJECT_ROLES);
+  await requireRole(QUOTE_ROLES);
   const cid = await currentCompanyId();
   const owned = await db.quote.findFirst({ where: { id: quoteId, companyId: cid }, select: { id: true } });
   if (!owned) return { success: false as const, category: null };
@@ -143,7 +145,7 @@ export async function createQuoteCategory(quoteId: string, name: string) {
 }
 
 export async function updateQuoteCategory(id: string, name: string) {
-  await requireRole(PROJECT_ROLES);
+  await requireRole(QUOTE_ROLES);
   const cid = await currentCompanyId();
   const cat = await db.quoteCategory.findFirst({
     where: { id, quote: { companyId: cid } },
@@ -172,7 +174,7 @@ export async function deleteQuoteCategory(id: string) {
 // ─── Item CRUD ────────────────────────────────────────────────────────────────
 
 export async function addQuoteItem(quoteId: string, categoryId?: string | null) {
-  await requireRole(PROJECT_ROLES);
+  await requireRole(QUOTE_ROLES);
   const cid = await currentCompanyId();
   const owned = await db.quote.findFirst({ where: { id: quoteId, companyId: cid }, select: { id: true } });
   if (!owned) return { success: false as const, item: null };
@@ -228,7 +230,7 @@ export async function saveQuoteItems(
   items: ItemSaveData[],
   contingencyPercent: number,
 ) {
-  await requireRole(PROJECT_ROLES);
+  await requireRole(QUOTE_ROLES);
   const cid = await currentCompanyId();
   const quote = await db.quote.findFirst({
     where: { id: quoteId, companyId: cid },
@@ -296,7 +298,7 @@ export async function executeCreateQuoteDraft(payload: {
     unit?: string;
   }>;
 }) {
-  await requireRole(PROJECT_ROLES);
+  await requireRole(QUOTE_ROLES);
   const cid = await currentCompanyId();
 
   const items = (payload.items ?? [])
